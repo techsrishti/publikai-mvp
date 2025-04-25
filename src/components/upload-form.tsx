@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,17 +10,58 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card"
 import { FileUploader } from "@/components/file-uploader"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Info, Upload, LinkIcon } from "lucide-react"
+import { ArrowRight, Info, Upload, LinkIcon, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function UploadForm() {
   const [files, setFiles] = useState<File[]>([])
   const [organizationName, setOrganizationName] = useState("")
   const [modelName, setModelName] = useState("")
+  const [tags, setTags] = useState<string[]>(["transformer", "nlp", "bert"])
+  const [tagInput, setTagInput] = useState("")
+  const uploadBtnRef = useRef<HTMLButtonElement>(null)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [isHovering, setIsHovering] = useState(false)
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles(selectedFiles)
   }
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && tagInput.trim()) {
+      e.preventDefault()
+      if (!tags.includes(tagInput.trim())) {
+        setTags([...tags, tagInput.trim()])
+      }
+      setTagInput("")
+    }
+  }
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove))
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (uploadBtnRef.current) {
+      const rect = uploadBtnRef.current.getBoundingClientRect()
+      setMousePosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (uploadBtnRef.current && isHovering) {
+      const btnElement = uploadBtnRef.current
+      const glowElement = btnElement.querySelector(".glow-effect") as HTMLElement
+
+      if (glowElement) {
+        glowElement.style.left = `${mousePosition.x}px`
+        glowElement.style.top = `${mousePosition.y}px`
+      }
+    }
+  }, [mousePosition, isHovering])
 
   return (
     <Card className="p-6 bg-blue-950/40 border-blue-900 backdrop-blur-sm">
@@ -35,7 +78,7 @@ export function UploadForm() {
         </TabsList>
 
         <TabsContent value="upload" className="mt-6">
-          <form className="space-y-6">
+          <form className="space-y-4">
             <div className="space-y-4">
               <div>
                 <label htmlFor="model-name" className="block text-sm font-medium text-blue-200 mb-1">
@@ -55,7 +98,7 @@ export function UploadForm() {
                 <Textarea
                   id="model-description"
                   placeholder="Describe your model, its architecture, and use cases..."
-                  className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[120px]"
+                  className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[80px] max-h-[80px]"
                 />
               </div>
 
@@ -105,12 +148,25 @@ export function UploadForm() {
               <div>
                 <label className="block text-sm font-medium text-blue-200 mb-1">Tags</label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  <Badge className="bg-blue-700 hover:bg-blue-600">transformer</Badge>
-                  <Badge className="bg-blue-700 hover:bg-blue-600">nlp</Badge>
-                  <Badge className="bg-blue-700 hover:bg-blue-600">bert</Badge>
-                  <Badge className="bg-blue-700 hover:bg-blue-600 cursor-pointer">+ Add Tag</Badge>
+                  {tags.map((tag, index) => (
+                    <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1">
+                      {tag}
+                      <X
+                        size={14}
+                        className="cursor-pointer opacity-70 hover:opacity-100"
+                        onClick={() => removeTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-blue-300 mb-2">
+                  <Info size={14} />
+                  <p>To add custom tags, type your tag in the box below and press Enter.</p>
                 </div>
                 <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagInputKeyDown}
                   placeholder="Add a new tag"
                   className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
                 />
@@ -141,17 +197,34 @@ export function UploadForm() {
 
             <div className="pt-4">
               <Button
+                ref={uploadBtnRef}
                 type="button"
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden"
+                onMouseMove={handleMouseMove}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
               >
-                Upload Model <ArrowRight className="ml-2 h-4 w-4" />
+                <span className="relative z-10">
+                  Upload Model <ArrowRight className="ml-2 h-4 w-4 inline" />
+                </span>
+                <span
+                  className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
+                  style={{
+                    background: "radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%)",
+                    transform: "translate(-50%, -50%)",
+                    left: mousePosition.x,
+                    top: mousePosition.y,
+                    opacity: isHovering ? 1 : 0,
+                    transition: "opacity 0.2s ease",
+                  }}
+                />
               </Button>
             </div>
           </form>
         </TabsContent>
 
         <TabsContent value="url" className="mt-6">
-          <form className="space-y-6">
+          <form className="space-y-4">
             <div className="space-y-4">
               <div>
                 <label htmlFor="huggingface-url" className="block text-sm font-medium text-blue-200 mb-1">
@@ -195,19 +268,32 @@ export function UploadForm() {
                 <Textarea
                   id="model-description"
                   placeholder="Why are you using this model? What will you use it for?"
-                  className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[120px]"
+                  className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[80px] max-h-[80px]"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-blue-200 mb-1">Tags</label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  <Badge className="bg-blue-700 hover:bg-blue-600">transformer</Badge>
-                  <Badge className="bg-blue-700 hover:bg-blue-600">nlp</Badge>
-                  <Badge className="bg-blue-700 hover:bg-blue-600">pretrained</Badge>
-                  <Badge className="bg-blue-700 hover:bg-blue-600 cursor-pointer">+ Add Tag</Badge>
+                  {tags.map((tag, index) => (
+                    <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1">
+                      {tag}
+                      <X
+                        size={14}
+                        className="cursor-pointer opacity-70 hover:opacity-100"
+                        onClick={() => removeTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-blue-300 mb-2">
+                  <Info size={14} />
+                  <p>To add custom tags, type your tag in the box below and press Enter.</p>
                 </div>
                 <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagInputKeyDown}
                   placeholder="Add a new tag"
                   className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
                 />
@@ -223,10 +309,27 @@ export function UploadForm() {
 
             <div className="pt-4">
               <Button
+                ref={uploadBtnRef}
                 type="button"
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden"
+                onMouseMove={handleMouseMove}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
               >
-                Use Model <ArrowRight className="ml-2 h-4 w-4" />
+                <span className="relative z-10">
+                  Use Model <ArrowRight className="ml-2 h-4 w-4 inline" />
+                </span>
+                <span
+                  className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
+                  style={{
+                    background: "radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%)",
+                    transform: "translate(-50%, -50%)",
+                    left: mousePosition.x,
+                    top: mousePosition.y,
+                    opacity: isHovering ? 1 : 0,
+                    transition: "opacity 0.2s ease",
+                  }}
+                />
               </Button>
             </div>
           </form>
