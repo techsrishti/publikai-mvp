@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { useAuth } from "@clerk/nextjs";
-import Image from "next/image";
 
 export default function Home() {
   const { userId } = useAuth();

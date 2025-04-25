@@ -1,4 +1,5 @@
-import { auth } from '@clerk/nextjs/server';
+// TODO: Use clerk session and gatekeep the user to access the dashboard.
+// import { auth } from '@clerk/nextjs/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
 
