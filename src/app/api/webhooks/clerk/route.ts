@@ -95,13 +95,13 @@ export async function POST(req: Request) {
       } catch (dbError) {
         console.error('Database operation failed:', dbError);
         // Add more detailed error information
-        const errorMessage = dbError instanceof Error 
-          ? `${dbError.message} (${(dbError as any).code || 'unknown'})` 
-          : 'Unknown database error';
+        // const errorMessage = dbError instanceof Error 
+        //   ? `${dbError.message} (${(dbError as any).code || 'unknown'})` 
+        //   : 'Unknown database error';
         
         return NextResponse.json({ 
           error: 'Failed to process user', 
-          details: errorMessage 
+          details: "Database operation failed" 
         }, { status: 500 });
       }
     }
