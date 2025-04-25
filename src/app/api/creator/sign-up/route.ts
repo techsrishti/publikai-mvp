@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the user's email from Clerk instead of form data
+    // Getting the user's email from the clerk session. TODO: Clean up of rearchitect. 
     const user = await currentUser();
     if (!user || !user.emailAddresses || user.emailAddresses.length === 0) {
       return NextResponse.json(

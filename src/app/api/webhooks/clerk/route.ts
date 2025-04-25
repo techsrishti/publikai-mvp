@@ -2,7 +2,6 @@ import { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { prisma } from '@/lib/prisma';
-import { type Prisma } from '@/generated/client';
 
 export async function POST(req: Request) {
   try {
