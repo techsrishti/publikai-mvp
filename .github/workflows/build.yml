@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
     steps:
     - uses: actions/checkout@v3
@@ -17,7 +19,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-
     
     - name: Setup pnpm
       uses: pnpm/action-setup@v4.0.0
@@ -41,5 +42,6 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
     
+
     - name: Build
       run: pnpm run build
