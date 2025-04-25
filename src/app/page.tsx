@@ -149,7 +149,7 @@ export default function Home() {
               Ready to Share Your AI Models?
             </h2>
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
-              Join India's first AI model marketplace. Start monetizing your models today.
+              Join India&apos;s first AI model marketplace. Start monetizing your models today.
             </p>
             <Link
               href="/creator/sign-up"
@@ -172,7 +172,7 @@ export default function Home() {
                 PublikAI
               </h3>
               <p className="text-white/60">
-                India's platform for AI model creators and users.
+                India&apos;s platform for AI model creators and users.
               </p>
             </div>
             <div>

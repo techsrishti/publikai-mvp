@@ -120,7 +120,7 @@ export default function CreatorQuestionnaire() {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white">What's your experience level in AI development?</h2>
+            <h2 className="text-xl font-semibold text-white">What&apos;s your experience level in AI development?</h2>
             <div className="grid gap-4">
               {EXPERIENCE_LEVELS.map((level) => (
                 <button

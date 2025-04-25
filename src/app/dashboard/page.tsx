@@ -4,7 +4,7 @@ import { UserButton } from '@clerk/nextjs';
 
 export default async function DashboardPage() {
   const user = await currentUser();
-  const { userId } = await auth();
+  // const { userId } = await auth();/
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1040] via-[#2d1875] to-[#4b2395] p-8">

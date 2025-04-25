@@ -15,7 +15,7 @@ export default function CreatorSignUp() {
               Creator Sign Up
             </h2>
             <p className="text-white/80">
-              Join India's first AI model marketplace as a creator
+              Join India&apos;s first AI model marketplace as a creator
             </p>
           </div>
           
