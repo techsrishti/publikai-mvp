@@ -24,8 +24,7 @@ const firaCode = Fira_Code({
 
 export const metadata: Metadata = {
   title: "Creator Dashboard",
-  description: "Dashboard for AI model creators",
-  generator: 'v0.dev'
+  description: "Dashboard for AI model creators"
 }
 
 export default function RootLayout({
