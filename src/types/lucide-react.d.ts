@@ -20,6 +20,7 @@ declare module 'lucide-react' {
   export const Brain: ComponentType<IconProps>
   export const Cpu: ComponentType<IconProps>
   export const BarChart: ComponentType<IconProps>
+  export const BarChart3: ComponentType<IconProps>
   export const Users: ComponentType<IconProps>
   export const ArrowRight: ComponentType<IconProps>
   export const ArrowLeft: ComponentType<IconProps>
@@ -39,5 +40,11 @@ declare module 'lucide-react' {
   export const Dot: ComponentType<IconProps>
   export const GripVertical: ComponentType<IconProps>
   export const PanelLeft: ComponentType<IconProps>
+  export const CreditCard: ComponentType<IconProps>
+  export const Heart: ComponentType<IconProps>
+  export const Menu: ComponentType<IconProps>
+  export const Star: ComponentType<IconProps>
+  export const Layers: ComponentType<IconProps>
+  export type LucideIcon = ComponentType<IconProps>
   // Add other icons as needed
 } 

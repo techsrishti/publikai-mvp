@@ -46,6 +46,7 @@ export function TiltCard({
       mousePosition.y >= rect.top &&
       mousePosition.y <= rect.bottom
 
+    console.log(isHovering)
     setIsHovering(mouseOver)
 
     if (mouseOver) {

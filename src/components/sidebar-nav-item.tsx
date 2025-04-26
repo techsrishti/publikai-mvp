@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import type { LucideIcon } from "lucide-react"
+import  { LucideIcon } from "lucide-react"
 
 interface SidebarNavItemProps {
   icon: LucideIcon
