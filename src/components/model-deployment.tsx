@@ -26,7 +26,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
 
     try {
       // In a real app, you would make an API call to deploy the model
-      const response = await fetch("http://localhost:3000/deploy-model", {
+      await fetch("http://localhost:3000/deploy-model", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

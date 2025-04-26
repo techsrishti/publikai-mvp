@@ -16,6 +16,20 @@ export function ModelManagement({addNotification}: ModelManagementProps) {
     { id: "3", name: "GPT-2-small", version: "0.8", status: "Pending" },
   ])
 
+  const handleUpdate = (modelId: string) => {
+    addNotification("info", `Updating model ${modelId}...`)
+    // In a real app, you would make an API call to update the model
+    setTimeout(() => {
+      // Update the model's version and status
+      setModels(models.map(model => 
+        model.id === modelId 
+          ? { ...model, version: (parseFloat(model.version) + 0.1).toFixed(1), status: "Updated" }
+          : model
+      ))
+      addNotification("success", `Model ${modelId} updated successfully`)
+    }, 1000)
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-white">Model Management</h2>
@@ -49,6 +63,7 @@ export function ModelManagement({addNotification}: ModelManagementProps) {
                       variant="outline"
                       size="sm"
                       className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                      onClick={() => handleUpdate(model.id)}
                     >
                       Update
                     </Button>

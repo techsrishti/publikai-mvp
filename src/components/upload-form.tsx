@@ -9,12 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card"
 import { FileUploader } from "@/components/file-uploader"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Info, Upload, LinkIcon, X } from "lucide-react"
+import { Info, Upload, LinkIcon, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function UploadForm() {
   const [files, setFiles] = useState<File[]>([])
-  const [organizationName, setOrganizationName] = useState("")
   const [modelName, setModelName] = useState("")
   const [tags, setTags] = useState<string[]>(["transformer", "nlp", "bert"])
   const [tagInput, setTagInput] = useState("")
@@ -85,6 +84,8 @@ export function UploadForm() {
                 </label>
                 <Input
                   id="model-name"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
                   placeholder="e.g., bert-base-uncased-finetuned-emotion"
                   className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
                 />
