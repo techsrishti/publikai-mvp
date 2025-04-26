@@ -69,6 +69,10 @@
     font-weight: 600;
   }
 
+  body {
+    font-family: "Inter", sans-serif;
+  }
+
   input::placeholder,
   textarea::placeholder {
     font-family: "Fira Code", monospace;
@@ -98,6 +102,39 @@
       background-position: 0% 50%;
     }
   }
+}
+
+/* Custom Classes */
+.cursor-glow {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.cursor-glow::before {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cursor-glow:hover::before {
+  opacity: 1;
+}
+
+.dashboard-bg {
+  background-color: #0a1025;
+}
+
+.card-bg {
+  background-color: #111a35;
 }
 
 /* Custom Classes */
