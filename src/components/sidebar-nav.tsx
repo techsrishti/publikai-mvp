@@ -3,30 +3,32 @@
 import { Home, Upload, Play, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+type NavItemId = "overview" | "upload" | "deployment" | "management"
+
 interface SidebarNavProps {
-  activeTab: string
-  setActiveTab: (tab: any) => void
+  activeTab: NavItemId
+  setActiveTab: (tab: NavItemId) => void
 }
 
 export function SidebarNav({ activeTab, setActiveTab }: SidebarNavProps) {
   const navItems = [
     {
-      id: "overview",
+      id: "overview" as const,
       label: "Model Overview",
       icon: Home,
     },
     {
-      id: "upload",
+      id: "upload" as const,
       label: "Model Upload",
       icon: Upload,
     },
     {
-      id: "deployment",
+      id: "deployment" as const,
       label: "Model Deployment",
       icon: Play,
     },
     {
-      id: "management",
+      id: "management" as const,
       label: "Model Management",
       icon: Settings,
     },
