@@ -1,48 +1,46 @@
-@import "tailwindcss";
+/* Tailwind Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Root Variables */
 @layer base {
   :root {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
-
     --muted: 223 47% 11%;
     --muted-foreground: 215.4 16.3% 56.9%;
-
     --accent: 216 34% 17%;
     --accent-foreground: 210 40% 98%;
-
     --popover: 224 71% 4%;
     --popover-foreground: 215 20.2% 65.1%;
-
     --border: 216 34% 17%;
     --input: 216 34% 17%;
-
     --card: 224 71% 4%;
     --card-foreground: 213 31% 91%;
-
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 1.2%;
-
     --secondary: 222.2 47.4% 11.2%;
     --secondary-foreground: 210 40% 98%;
-
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-
     --ring: 216 34% 17%;
-
     --radius: 0.5rem;
   }
 }
 
+/* Base Styles */
 @layer base {
   * {
     @apply border-[hsl(var(--border))];
   }
+
   body {
-    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+    @apply bg-[hsl(var(--background))];
+    @apply text-[hsl(var(--foreground))];
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
   h1,
   h2,
   h3,
@@ -52,9 +50,11 @@
     font-family: "Space Grotesk", sans-serif;
     font-weight: 600;
   }
+
   body {
     font-family: "Inter", sans-serif;
   }
+
   input::placeholder,
   textarea::placeholder {
     font-family: "Fira Code", monospace;
@@ -62,6 +62,7 @@
   }
 }
 
+/* Custom Classes */
 .cursor-glow {
   position: relative;
   overflow: hidden;
@@ -84,4 +85,12 @@
 
 .cursor-glow:hover::before {
   opacity: 1;
+}
+
+.dashboard-bg {
+  background-color: #0a1025;
+}
+
+.card-bg {
+  background-color: #111a35;
 }

@@ -76,4 +76,4 @@ export function Notifications({ notifications }: NotificationsProps) {
         ))}
     </div>
   )
-}
+} 

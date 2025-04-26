@@ -57,4 +57,4 @@ export function ModelManagement() {
       </Card>
     </div>
   )
-}
+} 

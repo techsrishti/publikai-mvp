@@ -222,4 +222,4 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       </Card>
     </div>
   )
-}
+} 

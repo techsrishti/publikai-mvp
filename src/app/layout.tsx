@@ -4,8 +4,9 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
-  title: "Hugging Face Model Upload",
-  description: "Upload and share your machine learning models with the community",
+  title: "Creator Dashboard",
+  description: "Dashboard for AI model creators",
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
