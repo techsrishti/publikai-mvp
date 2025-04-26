@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useState } from "react"
 
-export function ModelManagement() {
+interface ModelManagementProps {
+  addNotification: (type: "success" | "error" | "info", message: string) => void
+}
+
+export function ModelManagement({addNotification}: ModelManagementProps) {
   const [models, setModels] = useState([
     { id: "1", name: "BERT-base-uncased", version: "1.0", status: "Deployed" },
     { id: "2", name: "ResNet50", version: "1.2", status: "Active" },
