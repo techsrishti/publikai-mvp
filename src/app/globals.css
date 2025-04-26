@@ -1,5 +1,6 @@
-@import "tailwindcss";
-@config "../../tailwind.config.js";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @font-face {
   font-family: "Cabinet Grotesk";
@@ -44,10 +45,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-[hsl(var(--border))];
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[hsl(var(--background))];
+    @apply text-[hsl(var(--foreground))];
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
