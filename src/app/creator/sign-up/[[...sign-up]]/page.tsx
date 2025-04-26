@@ -36,7 +36,7 @@ export default function CreatorSignUp() {
                   colorSuccess: "#22c55e",
                   colorWarning: "#eab308",
                   colorDanger: "#ef4444",
-                  borderRadius: "0.75rem",
+                  borderRadius: "0.5rem",
                   fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   spacingUnit: "0.75rem"
                 },
