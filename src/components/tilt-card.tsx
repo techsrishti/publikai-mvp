@@ -10,13 +10,31 @@ interface TiltCardProps {
   className?: string
   children: React.ReactNode
   disabled?: boolean
+  gradientIndex?: number
 }
 
-export function TiltCard({ mousePosition, className, children, disabled = false }: TiltCardProps) {
+const GRADIENTS = [
+  "from-purple-500 to-blue-500",
+  "from-blue-500 to-cyan-500",
+  "from-violet-500 to-purple-500",
+  "from-indigo-500 to-blue-500",
+  "from-fuchsia-500 to-purple-500",
+] as const
+
+export function TiltCard({ 
+  mousePosition, 
+  className, 
+  children, 
+  disabled = false,
+  gradientIndex = 0 
+}: TiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const innerCardRef = useRef<HTMLDivElement>(null)
   const glowRef = useRef<HTMLDivElement>(null)
   const [isHovering, setIsHovering] = useState(false)
+  
+  // Use the provided gradientIndex to select gradient
+  const gradient = GRADIENTS[gradientIndex % GRADIENTS.length]
 
   useEffect(() => {
     if (!cardRef.current || !innerCardRef.current || !glowRef.current || disabled) return
@@ -53,20 +71,6 @@ export function TiltCard({ mousePosition, className, children, disabled = false 
       glowRef.current.style.opacity = "0"
     }
   }, [mousePosition, disabled])
-
-  // Generate a random gradient for the glow
-  const getRandomGradient = () => {
-    const gradients = [
-      "from-purple-500 to-blue-500",
-      "from-blue-500 to-cyan-500",
-      "from-violet-500 to-purple-500",
-      "from-indigo-500 to-blue-500",
-      "from-fuchsia-500 to-purple-500",
-    ]
-    return gradients[Math.floor(Math.random() * gradients.length)]
-  }
-
-  const [gradient] = useState(getRandomGradient())
 
   return (
     <div
