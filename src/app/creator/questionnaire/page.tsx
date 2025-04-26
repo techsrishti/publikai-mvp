@@ -67,7 +67,7 @@ export default function CreatorQuestionnaire() {
         const data = await response.json();
         
         if (data.hasCompleted) {
-          router.replace('/dashboard');
+          router.replace('/creator/dashboard');
         }
       } catch (err) {
         console.error('Error checking questionnaire status:', err);
@@ -176,8 +176,8 @@ export default function CreatorQuestionnaire() {
         throw new Error(errorData.message || 'Failed to submit form');
       }
 
-      // Only redirect to dashboard after successful submission
-      router.push('/dashboard');
+      // Redirect to creator dashboard after successful submission
+      router.push('/creator/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit form');
     } finally {

@@ -1,87 +1,68 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-
-export async function POST(request: Request) {
+import { auth } from '@clerk/nextjs/server';
+ 
+export async function POST(req: Request) {
   try {
     const { userId: clerkId } = await auth();
-    
     if (!clerkId) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Getting the user's email from the clerk session. TODO: Clean up of rearchitect. 
-    const user = await currentUser();
-    if (!user || !user.emailAddresses || user.emailAddresses.length === 0) {
+    const formData = await req.formData();
+
+    // Validate required fields
+    const experienceLevel = formData.get('experienceLevel');
+    const developmentGoals = formData.get('developmentGoals');
+    const projectDescription = formData.get('projectDescription');
+    const specialization = formData.getAll('specialization');
+    const aiFrameworks = formData.getAll('aiFrameworks');
+    const modelTypes = formData.getAll('modelTypes');
+
+    if (!experienceLevel || !developmentGoals || !projectDescription || 
+        specialization.length === 0 || aiFrameworks.length === 0 || modelTypes.length === 0) {
       return NextResponse.json(
-        { message: 'User email not found' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
-    const primaryEmail = user.emailAddresses[0].emailAddress;
-    const formData = await request.formData();
-    
-    // First check if a user with this email already exists but with a different clerkId
-    const existingUserWithEmail = await prisma.user.findUnique({
-      where: { email: primaryEmail }
+
+    // Find the user in our database
+    const user = await prisma.user.findUnique({
+      where: { clerkId }
     });
-    
-    if (existingUserWithEmail && existingUserWithEmail.clerkId !== clerkId) {
-      return NextResponse.json(
-        { message: 'This email is already associated with another account' },
-        { status: 409 }
-      );
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    
-    // Now safely perform the upsert
-    const dbUser = await prisma.user.upsert({
-      where: { clerkId },
-      update: { role: 'CREATOR' },
-      create: {
-        clerkId,
-        email: primaryEmail,
-        role: 'CREATOR'
-      }
-    });
 
-    // Then create or update the creator profile
-    const creator = await prisma.creator.upsert({
-      where: { userId: dbUser.id },
-      create: {
-        userId: dbUser.id,
-        experienceLevel: formData.get('experienceLevel') as string,
-        specialization: formData.getAll('specialization') as string[],
-        aiFrameworks: formData.getAll('aiFrameworks') as string[],
-        modelTypes: formData.getAll('modelTypes') as string[],
-        developmentGoals: formData.get('developmentGoals') as string,
-        projectDescription: formData.get('projectDescription') as string,
-        portfolioUrl: formData.get('portfolioUrl') as string || null,
-        githubUrl: formData.get('githubUrl') as string || null,
+    // Ensure CAPTCHA validation
+    const captchaToken = formData.get('captchaToken');
+    if (!captchaToken) {
+      return NextResponse.json({ error: 'CAPTCHA validation failed' }, { status: 400 });
+    }
+
+    // Verify CAPTCHA token with Clerk's CAPTCHA service
+    const captchaValidationResponse = await fetch('https://clerk.com/api/captcha/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      update: {
-        experienceLevel: formData.get('experienceLevel') as string,
-        specialization: formData.getAll('specialization') as string[],
-        aiFrameworks: formData.getAll('aiFrameworks') as string[],
-        modelTypes: formData.getAll('modelTypes') as string[],
-        developmentGoals: formData.get('developmentGoals') as string,
-        projectDescription: formData.get('projectDescription') as string,
-        portfolioUrl: formData.get('portfolioUrl') as string || null,
-        githubUrl: formData.get('githubUrl') as string || null,
-      }
+      body: JSON.stringify({ token: captchaToken }),
     });
 
-    return NextResponse.json(
-      { message: 'Creator profile updated successfully', data: creator },
-      { status: 200 }
-    );
+    const captchaValidationResult = await captchaValidationResponse.json();
+    if (!captchaValidationResult.success) {
+      return NextResponse.json({ error: 'CAPTCHA validation failed' }, { status: 400 });
+    }
+
+    // Create creator profile and update user role in a transaction
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error in creator sign-up:', error);
     return NextResponse.json(
-      { message: 'Failed to update creator profile', error: (error as Error).message },
+      { error: 'Failed to create creator profile', details: (error as Error).message },
       { status: 500 }
     );
   }

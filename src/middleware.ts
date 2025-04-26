@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server'
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
-  '/creator/questionnaire(.*)'
+  '/creator/questionnaire(.*)',
+  '/creator/dashboard(.*)'
 ])
 
 const isQuestionnaireRoute = createRouteMatcher([
