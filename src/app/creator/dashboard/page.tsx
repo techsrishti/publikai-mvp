@@ -17,10 +17,6 @@ export default function CreatorDashboard() {
         const response = await fetch('/api/user/role');
         const data = await response.json();
         
-        if (!response.ok || !data.isCreator) {
-          // Redirect non-creators to the questionnaire
-          router.replace('/creator/questionnaire');
-        }
       } catch (error) {
         console.error('Error checking creator access:', error);
         router.replace('/dashboard');
