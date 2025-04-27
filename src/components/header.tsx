@@ -1,5 +1,6 @@
-import { Bell, Settings, User } from "lucide-react"
+import { Bell, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { UserButton } from "@clerk/nextjs"
 
 export function Header() {
   return (
@@ -7,16 +8,14 @@ export function Header() {
       <div className="flex items-center space-x-2">
         <h1 className="text-xl font-bold text-white font-heading">Creator Dashboard</h1>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-4">
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>
         <Button variant="ghost" size="icon">
           <Settings className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon">
-          <User className="h-5 w-5" />
-        </Button>
+        <UserButton afterSignOutUrl="/" />
       </div>
     </header>
   )
