@@ -328,26 +328,29 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1 md:gap-5">
             <ModelCard
-              name="openai/gpt-4o"
+              name="gpt-4"
               company="OpenAI"
-              description="Latest multimodal model with advanced reasoning capabilities and vision"
+              icon="/icons/openai.svg"
+              description="Latest multimodal model with advanced reasoning capabilities"
               likes={24500}
               runs={1200000}
               mousePosition={mousePosition}
               disabled={isMobile}
             />
             <ModelCard
-              name="meta/llama-3"
-              company="Meta AI"
-              description="Open-source large language model with improved context handling"
+              name="claude-3"
+              company="Anthropic"
+              icon="/icons/anthropic.svg"
+              description="Advanced assistant with strong reasoning and safety features"
               likes={18700}
               runs={980000}
               mousePosition={mousePosition}
               disabled={isMobile}
             />
             <ModelCard
-              name="google/gemini-pro"
+              name="gemini-pro"
               company="Google"
+              icon="/icons/google.svg"
               description="Multimodal AI system for text, code and image generation"
               likes={15200}
               runs={850000}
@@ -355,9 +358,10 @@ export default function Dashboard() {
               disabled={isMobile}
             />
             <ModelCard
-              name="anthropic/claude-3"
-              company="Anthropic"
-              description="Advanced assistant with strong reasoning and safety features"
+              name="llama-2"
+              company="Meta"
+              icon="/icons/meta.svg"
+              description="Open-source large language model with improved context handling"
               likes={12800}
               runs={720000}
               mousePosition={mousePosition}

@@ -11,6 +11,7 @@ interface ModelCardProps {
   runs: number
   mousePosition: { x: number; y: number }
   disabled?: boolean
+  icon: string
 }
 
 export function ModelCard({
@@ -21,6 +22,7 @@ export function ModelCard({
   runs,
   mousePosition,
   disabled = false,
+  icon,
 }: ModelCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const innerCardRef = useRef<HTMLDivElement>(null)
@@ -127,7 +129,7 @@ export function ModelCard({
               className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${getGradient()} p-[1px]`}
             >
               <div className="flex h-full w-full items-center justify-center rounded-lg bg-gray-900">
-                <img src={`/placeholder.svg?height=24&width=24`} alt={`${company} logo`} className="h-4 w-4" />
+                <img src={icon} alt={`${company} logo`} className="h-4 w-4" />
               </div>
             </div>
             <div className="flex flex-col">
