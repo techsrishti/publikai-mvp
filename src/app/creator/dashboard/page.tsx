@@ -16,7 +16,7 @@ export default function CreatorDashboard() {
       try {
         const response = await fetch('/api/user/role');
         const data = await response.json();
-        
+        console.log(data);
       } catch (error) {
         console.error('Error checking creator access:', error);
         router.replace('/dashboard');
