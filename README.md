@@ -29,6 +29,16 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Prisma 
+
+1. Prisma is a database ORM. You can define the DB schema using prisma schema.
+2. The prisma schema is to be placed in ```prisma/schema.prisma```.
+3. Once you're done defining the schema, run ```pnpm prisma db push```. This command will create the tables or change the existing tables as per the prisma schema.
+4. Once you've pushed and you're ready to run the application, use ```pnpm prisma generate``` to generate prisma client. You can import this prisma client in your API's for example and make db operations. For example: prisma client can be import using ```import { PrismaClient } from '@prisma/client';```
+5. It's always good practice to run ```pnpm prisma generate``` before ```pnpm run dev```.
+6. Spin a free neon DB [here](https://neon.tech) and create your first neon database.
+7. Tip: On neon console, click the DB you want to connect to and then click "Connect to your database" and click on ".env" and copy the environment variable and paste it in your env. 
+
 ## Contributing
 
 We welcome contributions to improve this project! Here's how you can contribute:
