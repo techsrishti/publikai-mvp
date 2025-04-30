@@ -1,8 +1,8 @@
-
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Geist, Geist_Mono, Space_Grotesk, Inter, Fira_Code } from 'next/font/google'
 import './globals.css'
+import { Toaster } from 'react-hot-toast'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,8 +37,6 @@ const firaCode = Fira_Code({
   variable: "--font-fira-code",
 })
 
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,6 +47,7 @@ export default function RootLayout({
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           {children}
+          <Toaster position="top-right" />
         </body>
       </html>
     </ClerkProvider>

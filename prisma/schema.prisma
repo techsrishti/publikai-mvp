@@ -12,6 +12,11 @@ enum UserRole {
   ADMIN
 }
 
+enum SourceType {
+  URL
+  UPLOAD
+}
+
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
@@ -36,4 +41,24 @@ model Creator {
   githubUrl         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model Model {
+  id          String     @id @default(cuid())
+  name        String
+  description String
+  modelType   String
+  license     String
+  sourceType  SourceType
+  url         String?    // Optional URL for Hugging Face models
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tags        Tag[]
+}
+
+model Tag {
+  id      String @id @default(cuid())
+  tag     String
+  modelId String
+  model   Model  @relation(fields: [modelId], references: [id])
 }
