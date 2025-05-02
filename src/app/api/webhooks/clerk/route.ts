@@ -93,7 +93,7 @@ export async function POST(req: Request) {
           userId: user.id
         }, { status: 200 });
       } catch (dbError) {
-
+        console.log('Database operation failed:', dbError);
         return NextResponse.json({ 
           error: 'Failed to process user', 
           details: "Database operation failed" 
