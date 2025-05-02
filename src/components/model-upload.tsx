@@ -18,7 +18,6 @@ interface ModelUploadProps {
 }
 
 export function ModelUpload({ addNotification }: ModelUploadProps) {
-  // Upload tab state
   const [uploadFields, setUploadFields] = useState({
     modelName: "",
     description: "",
@@ -28,7 +27,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tagInput: "",
     files: [] as File[],
   })
-  // URL tab state
   const [urlFields, setUrlFields] = useState({
     organizationName: "",
     modelName: "",
@@ -45,7 +43,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   const [loadingUrl, setLoadingUrl] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  // Mouse move handler for glow effect
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
     setMousePosition({
@@ -54,7 +51,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     })
   }
 
-  // Upload tab handlers
   const handleUploadChange = (field: string, value: any) => {
     setUploadFields((prev) => ({ ...prev, [field]: value }))
   }
@@ -76,7 +72,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     addNotification("info", `${selectedFiles.length} file(s) selected`)
   }
 
-  // URL tab handlers
   const handleUrlChange = (field: string, value: any) => {
     setUrlFields((prev) => ({ ...prev, [field]: value }))
   }
@@ -94,7 +89,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     setUrlFields((prev) => ({ ...prev, tags: prev.tags.filter((tag) => tag !== tagToRemove) }))
   }
 
-  // Client-side validation helpers
   function validateUploadFields() {
     const { modelName, description, modelType, license } = uploadFields
     return modelName && description && modelType && license
@@ -175,16 +169,11 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   }, [mousePosition, isHovering])
 
   return (
-    <div className="space-y-6 max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-white font-heading text-center">Model Upload</h2>
-      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-2xl shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-white font-heading">Deploy Hugging Face Model</CardTitle>
-          <CardDescription>Deploy your models or use existing models from Hugging Face</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="upload" className="mb-6">
-            <TabsList className="grid grid-cols-2 bg-blue-900/30 rounded-lg overflow-hidden">
+    <div className="space-y-4">
+      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg">
+        <CardContent className="p-4">
+          <Tabs defaultValue="upload" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4 bg-blue-900/30 rounded-lg overflow-hidden">
               <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Model
@@ -194,117 +183,103 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                 Use Model URL
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="upload" className="mt-6">
-              <form className="space-y-4" action={handleUploadAction}>
-                <div className="space-y-4">
+
+            <TabsContent value="upload">
+              <form className="space-y-3" action={handleUploadAction}>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="model-name" className="block text-sm font-medium text-blue-200 mb-1">
-                      Model Name
-                    </label>
                     <Input
                       id="model-name"
                       value={uploadFields.modelName}
                       onChange={(e) => handleUploadChange("modelName", e.target.value)}
-                      placeholder="e.g., bert-base-uncased-finetuned-emotion"
+                      placeholder="Model Name"
                       className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
                     />
                   </div>
                   <div>
-                    <label htmlFor="model-description" className="block text-sm font-medium text-blue-200 mb-1">
-                      Description
-                    </label>
-                    <Textarea
-                      id="model-description"
-                      value={uploadFields.description}
-                      onChange={(e) => handleUploadChange("description", e.target.value)}
-                      placeholder="Describe your model, its architecture, and use cases..."
-                      className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[80px]"
-                    />
+                    <Select value={uploadFields.modelType} onValueChange={(v) => handleUploadChange("modelType", v)}>
+                      <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white w-full">
+                        <SelectValue placeholder="Model Type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-blue-950 border-blue-800 text-white">
+                        <SelectItem value="text-classification">Text Classification</SelectItem>
+                        <SelectItem value="token-classification">Token Classification</SelectItem>
+                        <SelectItem value="question-answering">Question Answering</SelectItem>
+                        <SelectItem value="translation">Translation</SelectItem>
+                        <SelectItem value="summarization">Summarization</SelectItem>
+                        <SelectItem value="text-generation">Text Generation</SelectItem>
+                        <SelectItem value="image-classification">Image Classification</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="model-type" className="block text-sm font-medium text-blue-200 mb-1">
-                        Model Type
-                      </label>
-                      <Select value={uploadFields.modelType} onValueChange={(v) => handleUploadChange("modelType", v)}>
-                        <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                          <SelectValue placeholder="Select model type" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                          <SelectItem value="text-classification">Text Classification</SelectItem>
-                          <SelectItem value="token-classification">Token Classification</SelectItem>
-                          <SelectItem value="question-answering">Question Answering</SelectItem>
-                          <SelectItem value="translation">Translation</SelectItem>
-                          <SelectItem value="summarization">Summarization</SelectItem>
-                          <SelectItem value="text-generation">Text Generation</SelectItem>
-                          <SelectItem value="image-classification">Image Classification</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label htmlFor="license" className="block text-sm font-medium text-blue-200 mb-1">
-                        License
-                      </label>
-                      <Select value={uploadFields.license} onValueChange={(v) => handleUploadChange("license", v)}>
-                        <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                          <SelectValue placeholder="Select license" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                          <SelectItem value="mit">MIT</SelectItem>
-                          <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
-                          <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
-                          <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
-                          <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
-                          <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-blue-200 mb-1">Tags</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {uploadFields.tags.map((tag, index) => (
-                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1">
-                          {tag}
-                          <X
-                            size={14}
-                            className="cursor-pointer opacity-70 hover:opacity-100"
-                            onClick={() => removeUploadTag(tag)}
-                          />
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-blue-300 mb-2">
-                      <Info size={14} />
-                      <p>To add custom tags, type your tag in the box below and press Enter.</p>
-                    </div>
+                </div>
+
+                <div>
+                  <Textarea
+                    id="model-description"
+                    value={uploadFields.description}
+                    onChange={(e) => handleUploadChange("description", e.target.value)}
+                    placeholder="Model description..."
+                    className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[60px] resize-none"
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Select value={uploadFields.license} onValueChange={(v) => handleUploadChange("license", v)}>
+                    <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
+                      <SelectValue placeholder="License" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-blue-950 border-blue-800 text-white">
+                      <SelectItem value="mit">MIT</SelectItem>
+                      <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
+                      <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
+                      <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
+                      <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
+                      <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex gap-2">
                     <Input
                       value={uploadFields.tagInput}
                       onChange={(e) => handleUploadChange("tagInput", e.target.value)}
                       onKeyDown={handleUploadTagInputKeyDown}
-                      placeholder="Add a new tag"
+                      placeholder="Add tags (press Enter)"
                       className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
                     />
                   </div>
-                  <div className="pt-2">
-                    <label className="block text-sm font-medium text-blue-200 mb-3">Upload Model Files</label>
-                    <FileUploader onFilesSelected={handleUploadFilesSelected} />
-                    {uploadFields.files.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-sm text-blue-300">Selected files:</p>
-                        {uploadFields.files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-blue-900/30 p-2 rounded-md">
-                            <span className="text-sm text-white truncate max-w-[80%]">{file.name}</span>
-                            <span className="text-xs text-blue-300">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
-                <div className="pt-4">
+
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {uploadFields.tags.map((tag, index) => (
+                    <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                      {tag}
+                      <X
+                        size={12}
+                        className="cursor-pointer opacity-70 hover:opacity-100"
+                        onClick={() => removeUploadTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="pt-1">
+                  <FileUploader onFilesSelected={handleUploadFilesSelected} />
+                  {uploadFields.files.length > 0 && (
+                    <div className="mt-2">
+                      {uploadFields.files.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-blue-900/30 p-1.5 rounded-md text-xs">
+                          <span className="text-white truncate max-w-[80%]">{file.name}</span>
+                          <span className="text-blue-300">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
                   <Button
                     ref={uploadBtnRef}
                     type="submit"
@@ -332,122 +307,101 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                 </div>
               </form>
             </TabsContent>
-            <TabsContent value="url" className="mt-6">
-              <form className="space-y-4" action={handleUrlAction}>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="huggingface-url" className="block text-sm font-medium text-blue-200 mb-1">
-                      Hugging Face Model URL
-                    </label>
-                    <div className="flex items-center">
-                      <div className="bg-blue-900/50 text-blue-300 px-3 py-2 rounded-l-md border border-blue-800 border-r-0">
-                        https://huggingface.co/
-                      </div>
-                      <div className="flex-1 flex">
-                        <Input
-                          id="organization-name"
-                          value={urlFields.organizationName}
-                          onChange={(e) => handleUrlChange("organizationName", e.target.value)}
-                          placeholder="organization"
-                          className="rounded-none bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 border-r-0"
-                        />
-                        <div className="bg-blue-900/50 text-blue-300 px-2 py-2 border border-blue-800 border-r-0 border-l-0">
-                          /
-                        </div>
-                        <Input
-                          id="model-name"
-                          value={urlFields.modelName}
-                          onChange={(e) => handleUrlChange("modelName", e.target.value)}
-                          placeholder="model-name"
-                          className="rounded-none rounded-r-md bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
-                        />
-                      </div>
-                    </div>
-                    {urlFields.organizationName && urlFields.modelName && (
-                      <p className="text-xs text-blue-300 mt-1">
-                        Full URL: https://huggingface.co/{urlFields.organizationName}/{urlFields.modelName}
-                      </p>
-                    )}
+
+            <TabsContent value="url">
+              <form className="space-y-3" action={handleUrlAction}>
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-900/50 text-blue-300 px-2 py-1.5 rounded-l-md border border-blue-800 border-r-0 text-sm">
+                    huggingface.co/
                   </div>
-                  <div>
-                    <label htmlFor="url-model-type" className="block text-sm font-medium text-blue-200 mb-1">
-                      Model Type
-                    </label>
-                    <Select value={urlFields.modelType} onValueChange={(v) => handleUrlChange("modelType", v)}>
-                      <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                        <SelectValue placeholder="Select model type" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                        <SelectItem value="text-classification">Text Classification</SelectItem>
-                        <SelectItem value="token-classification">Token Classification</SelectItem>
-                        <SelectItem value="question-answering">Question Answering</SelectItem>
-                        <SelectItem value="translation">Translation</SelectItem>
-                        <SelectItem value="summarization">Summarization</SelectItem>
-                        <SelectItem value="text-generation">Text Generation</SelectItem>
-                        <SelectItem value="image-classification">Image Classification</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label htmlFor="url-license" className="block text-sm font-medium text-blue-200 mb-1">
-                      License
-                    </label>
-                    <Select value={urlFields.license} onValueChange={(v) => handleUrlChange("license", v)}>
-                      <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                        <SelectValue placeholder="Select license" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                        <SelectItem value="mit">MIT</SelectItem>
-                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
-                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
-                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
-                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
-                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label htmlFor="model-description" className="block text-sm font-medium text-blue-200 mb-1">
-                      Description
-                    </label>
-                    <Textarea
-                      id="model-description"
-                      value={urlFields.description}
-                      onChange={(e) => handleUrlChange("description", e.target.value)}
-                      placeholder="Why are you using this model? What will you use it for?"
-                      className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[80px]"
+                  <div className="flex-1 flex">
+                    <Input
+                      id="organization-name"
+                      value={urlFields.organizationName}
+                      onChange={(e) => handleUrlChange("organizationName", e.target.value)}
+                      placeholder="organization"
+                      className="rounded-none bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 border-r-0 text-sm"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-blue-200 mb-1">Tags</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {urlFields.tags.map((tag, index) => (
-                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1">
-                          {tag}
-                          <X
-                            size={14}
-                            className="cursor-pointer opacity-70 hover:opacity-100"
-                            onClick={() => removeUrlTag(tag)}
-                          />
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-blue-300 mb-2">
-                      <Info size={14} />
-                      <p>To add custom tags, type your tag in the box below and press Enter.</p>
+                    <div className="bg-blue-900/50 text-blue-300 px-2 py-1.5 border border-blue-800 border-r-0 border-l-0 text-sm">
+                      /
                     </div>
                     <Input
-                      value={urlFields.tagInput}
-                      onChange={(e) => handleUrlChange("tagInput", e.target.value)}
-                      onKeyDown={handleUrlTagInputKeyDown}
-                      placeholder="Add a new tag"
-                      className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
+                      id="model-name"
+                      value={urlFields.modelName}
+                      onChange={(e) => handleUrlChange("modelName", e.target.value)}
+                      placeholder="model-name"
+                      className="rounded-none rounded-r-md bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 text-sm"
                     />
                   </div>
                 </div>
-                <div className="pt-4">
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Select value={urlFields.modelType} onValueChange={(v) => handleUrlChange("modelType", v)}>
+                    <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
+                      <SelectValue placeholder="Model Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-blue-950 border-blue-800 text-white">
+                      <SelectItem value="text-classification">Text Classification</SelectItem>
+                      <SelectItem value="token-classification">Token Classification</SelectItem>
+                      <SelectItem value="question-answering">Question Answering</SelectItem>
+                      <SelectItem value="translation">Translation</SelectItem>
+                      <SelectItem value="summarization">Summarization</SelectItem>
+                      <SelectItem value="text-generation">Text Generation</SelectItem>
+                      <SelectItem value="image-classification">Image Classification</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={urlFields.license} onValueChange={(v) => handleUrlChange("license", v)}>
+                    <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
+                      <SelectValue placeholder="License" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-blue-950 border-blue-800 text-white">
+                      <SelectItem value="mit">MIT</SelectItem>
+                      <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
+                      <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
+                      <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
+                      <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
+                      <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Textarea
+                    id="model-description"
+                    value={urlFields.description}
+                    onChange={(e) => handleUrlChange("description", e.target.value)}
+                    placeholder="Why are you using this model? What will you use it for?"
+                    className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[60px] resize-none"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Input
+                    value={urlFields.tagInput}
+                    onChange={(e) => handleUrlChange("tagInput", e.target.value)}
+                    onKeyDown={handleUrlTagInputKeyDown}
+                    placeholder="Add tags (press Enter)"
+                    className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {urlFields.tags.map((tag, index) => (
+                    <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                      {tag}
+                      <X
+                        size={12}
+                        className="cursor-pointer opacity-70 hover:opacity-100"
+                        onClick={() => removeUrlTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="pt-2">
                   <Button
                     ref={uploadBtnRef}
                     type="submit"
