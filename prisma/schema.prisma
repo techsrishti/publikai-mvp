@@ -45,20 +45,13 @@ model Creator {
 
 model Model {
   id          String     @id @default(cuid())
-  name        String
+  name        String     @unique
   description String
   modelType   String
   license     String
   sourceType  SourceType
   url         String?    // Optional URL for Hugging Face models
+  tags        String[]   // Tags as array of strings
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  tags        Tag[]
-}
-
-model Tag {
-  id      String @id @default(cuid())
-  tag     String
-  modelId String
-  model   Model  @relation(fields: [modelId], references: [id])
 }
