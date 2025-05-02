@@ -21,11 +21,17 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   const [files, setFiles] = useState<File[]>([])
   const [organizationName, setOrganizationName] = useState("")
   const [modelName, setModelName] = useState("")
+  const [description, setDescription] = useState("")
+  const [modelType, setModelType] = useState("")
+  const [license, setLicense] = useState("")
   const [tags, setTags] = useState<string[]>(["transformer", "nlp", "bert"])
   const [tagInput, setTagInput] = useState("")
+  const [url, setUrl] = useState("")
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(false)
+  const [loadingUpload, setLoadingUpload] = useState(false)
+  const [loadingUrl, setLoadingUrl] = useState(false)
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles(selectedFiles)
@@ -56,16 +62,68 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    addNotification("success", "Model information saved successfully")
+    setLoadingUpload(true)
+    try {
+      const formData = new FormData()
+      formData.append("name", modelName)
+      formData.append("description", description)
+      formData.append("modelType", modelType)
+      formData.append("license", license)
+      formData.append("tags", tags.join(","))
+      formData.append("sourceType", "UPLOAD")
+      if (files.length > 0) {
+        formData.append("file", files[0])
+      }
+      const res = await fetch("/api/models/update", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (res.ok) {
+        addNotification("success", "Model uploaded successfully!")
+      } else {
+        addNotification("error", data.error || "Failed to upload model.")
+      }
+    } catch (err) {
+      addNotification("error", "Network error.")
+    } finally {
+      setLoadingUpload(false)
+    }
+  }
+
+  const handleUrlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoadingUrl(true)
+    try {
+      const formData = new FormData()
+      const fullUrl = url || (organizationName && modelName ? `https://huggingface.co/${organizationName}/${modelName}` : "")
+      formData.append("url", fullUrl)
+      formData.append("description", description)
+      formData.append("tags", tags.join(","))
+      formData.append("sourceType", "URL")
+      const res = await fetch("/api/models/update", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (res.ok) {
+        addNotification("success", "Model URL registered successfully!")
+      } else {
+        addNotification("error", data.error || "Failed to register model URL.")
+      }
+    } catch (err) {
+      addNotification("error", "Network error.")
+    } finally {
+      setLoadingUrl(false)
+    }
   }
 
   useEffect(() => {
     if (uploadBtnRef.current && isHovering) {
       const btnElement = uploadBtnRef.current
       const glowElement = btnElement.querySelector(".glow-effect") as HTMLElement
-
       if (glowElement) {
         glowElement.style.left = `${mousePosition.x}px`
         glowElement.style.top = `${mousePosition.y}px`
@@ -96,7 +154,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
             </TabsList>
 
             <TabsContent value="upload" className="mt-6">
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="space-y-4" onSubmit={handleUploadSubmit}>
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="model-name" className="block text-sm font-medium text-blue-200 mb-1">
@@ -104,6 +162,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     </label>
                     <Input
                       id="model-name"
+                      value={modelName}
+                      onChange={(e) => setModelName(e.target.value)}
                       placeholder="e.g., bert-base-uncased-finetuned-emotion"
                       className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
                     />
@@ -115,6 +175,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     </label>
                     <Textarea
                       id="model-description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your model, its architecture, and use cases..."
                       className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[80px]"
                     />
@@ -125,7 +187,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       <label htmlFor="model-type" className="block text-sm font-medium text-blue-200 mb-1">
                         Model Type
                       </label>
-                      <Select>
+                      <Select onValueChange={(value) => setModelType(value)}>
                         <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
                           <SelectValue placeholder="Select model type" />
                         </SelectTrigger>
@@ -146,7 +208,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       <label htmlFor="license" className="block text-sm font-medium text-blue-200 mb-1">
                         License
                       </label>
-                      <Select>
+                      <Select onValueChange={(value) => setLicense(value)}>
                         <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
                           <SelectValue placeholder="Select license" />
                         </SelectTrigger>
@@ -216,9 +278,10 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     onMouseMove={handleMouseMove}
                     onMouseEnter={() => setIsHovering(true)}
                     onMouseLeave={() => setIsHovering(false)}
+                    disabled={loadingUpload}
                   >
                     <span className="relative z-10">
-                      Upload Model <ArrowRight className="ml-2 h-4 w-4 inline" />
+                      {loadingUpload ? "Uploading..." : "Upload Model"} <ArrowRight className="ml-2 h-4 w-4 inline" />
                     </span>
                     <span
                       className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
@@ -237,7 +300,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
             </TabsContent>
 
             <TabsContent value="url" className="mt-6">
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="space-y-4" onSubmit={handleUrlSubmit}>
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="huggingface-url" className="block text-sm font-medium text-blue-200 mb-1">
@@ -280,6 +343,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     </label>
                     <Textarea
                       id="model-description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                       placeholder="Why are you using this model? What will you use it for?"
                       className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[80px]"
                     />
@@ -321,9 +386,10 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     onMouseMove={handleMouseMove}
                     onMouseEnter={() => setIsHovering(true)}
                     onMouseLeave={() => setIsHovering(false)}
+                    disabled={loadingUrl}
                   >
                     <span className="relative z-10">
-                      Use Model <ArrowRight className="ml-2 h-4 w-4 inline" />
+                      {loadingUrl ? "Registering..." : "Use Model"} <ArrowRight className="ml-2 h-4 w-4 inline" />
                     </span>
                     <span
                       className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
@@ -345,4 +411,4 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       </Card>
     </div>
   )
-} 
+}
