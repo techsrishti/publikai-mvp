@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
+import { createCreatorProfile } from "./actions";
 
 const EXPERIENCE_LEVELS = [
   { value: "BEGINNER", label: "Beginner (0-2 years)", description: "Just starting your AI journey" },
@@ -38,7 +39,6 @@ const MODEL_TYPES = [
 
 export default function CreatorQuestionnaire() {
   const router = useRouter();
-  const { userId } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     experienceLevel: '',
@@ -53,29 +53,14 @@ export default function CreatorQuestionnaire() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Check if user has already completed the questionnaire
-    async function checkQuestionnaireStatus() {
-      if (!userId) return;
-      
-      try {
-        const response = await fetch('/api/creator/questionnaire-status');
-        if (!response.ok) {
-          throw new Error('Failed to check questionnaire status');
-        }
-        
-        const data = await response.json();
-        
-        if (data.hasCompleted) {
-          router.replace('/creator-dashboard');
-        }
-      } catch (err) {
-        console.error('Error checking questionnaire status:', err);
-      }
-    }
+  const { user, isLoaded } = useUser();
+  const onboardingComplete = (user?.publicMetadata as { onboardingComplete: boolean })?.onboardingComplete
 
-    checkQuestionnaireStatus();
-  }, [userId, router]);
+  useEffect(() => {
+    if (isLoaded && onboardingComplete) {
+      router.replace('/creator-dashboard');
+    }
+  }, [isLoaded, onboardingComplete, router]);
 
   const totalSteps = 5;
 
@@ -140,19 +125,15 @@ export default function CreatorQuestionnaire() {
     setLoading(true);
 
     try {
-      // Create a FormData instance instead of sending JSON
       const form = new FormData();
       
-      // Add single values
       form.append('experienceLevel', formData.experienceLevel);
       form.append('developmentGoals', formData.developmentGoals);
       form.append('projectDescription', formData.projectDescription);
       
-      // Add optional fields if they have values
       if (formData.portfolioUrl) form.append('portfolioUrl', formData.portfolioUrl);
       if (formData.githubUrl) form.append('githubUrl', formData.githubUrl);
       
-      // Add array values (each value needs to be appended separately)
       formData.specialization.forEach(value => {
         form.append('specialization', value);
       });
@@ -165,18 +146,12 @@ export default function CreatorQuestionnaire() {
         form.append('modelTypes', value);
       });
 
-      const response = await fetch('/api/creator/sign-up', {
-        method: 'POST',
-        // No Content-Type header needed - browser sets it automatically with boundary
-        body: form,
-      });
+     const response = await createCreatorProfile(formData.experienceLevel, formData.specialization, formData.aiFrameworks, formData.modelTypes, formData.developmentGoals, formData.projectDescription, formData.portfolioUrl, formData.githubUrl);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit form');
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to submit form');
       }
 
-      // Redirect to creator dashboard after successful submission
       router.push('/creator-dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit form');

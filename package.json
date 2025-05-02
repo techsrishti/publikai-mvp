@@ -12,8 +12,10 @@
     "validate": "pnpm run type-check && pnpm run lint"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.30.4",
     "@clerk/elements": "^0.23.18",
     "@clerk/nextjs": "^6.18.0",
+    "@clerk/shared": "^3.7.8",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^7.0.2",
