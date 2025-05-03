@@ -26,9 +26,6 @@ jobs:
         version: 9.14.0
         run_install: false
     
-    - name: Prisma generate
-      run: pnpm prisma generate
-      
     - name: Get pnpm store directory
       shell: bash
       run: |
@@ -45,6 +42,9 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
     
+    - name: Prisma generate
+      run: pnpm prisma generate
+      
 
     - name: Build
       run: pnpm run build
