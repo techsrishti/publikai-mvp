@@ -5,13 +5,28 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowUpDown, MoreVertical, Pause, Play, RefreshCw, Trash2 } from "lucide-react"
+import { Loader2, Play, X, ChevronDown } from "lucide-react"
 
 interface ModelManagementProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
 }
 
 export function ModelManagement({ addNotification }: ModelManagementProps) {
+  const handlePauseResumeModel = (model: { name: string; isActive: boolean }) => {
+    const action = model.isActive ? "paused" : "resumed";
+    addNotification(
+      "info", 
+      `Model ${model.name} has been ${action}.`
+    );
+  };
+
+  const handleDeleteModel = (modelName: string) => {
+    addNotification(
+      "success", 
+      `Model ${modelName} has been deleted.`
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Actions Bar */}
@@ -29,7 +44,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" className="border-gray-700 text-gray-400 hover:text-gray-100">
-            <RefreshCw className="h-4 w-4" />
+            <Loader2 className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex-1 max-w-sm">
@@ -110,9 +125,10 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-gray-400 hover:text-gray-100"
+                    onClick={() => handlePauseResumeModel(model)}
                   >
                     {model.isActive ? (
-                      <Pause className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4" />
                     ) : (
                       <Play className="h-4 w-4" />
                     )}
@@ -121,8 +137,9 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-gray-400 hover:text-red-400"
+                    onClick={() => handleDeleteModel(model.name)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

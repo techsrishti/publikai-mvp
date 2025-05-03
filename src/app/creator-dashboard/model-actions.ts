@@ -3,6 +3,14 @@
 import { prisma } from '@/lib/prisma';
 import { SourceType } from '@prisma/client';
 
+// Define error interface for Prisma errors
+interface PrismaError {
+  code?: string;
+  meta?: {
+    target?: string[];
+  };
+}
+
 export async function uploadModelAction(formData: FormData) {
   try {
     const name = formData.get('name') as string | null;
@@ -59,7 +67,8 @@ export async function uploadModelAction(formData: FormData) {
     });
     return { success: true, model };
   } catch (error: unknown) {
-    if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('name')) {
+    const prismaError = error as PrismaError;
+    if (prismaError.code === 'P2002' && prismaError.meta?.target?.includes('name')) {
       return { success: false, error: 'Model name must be unique.' };
     }
     console.error('Error creating model:', error);

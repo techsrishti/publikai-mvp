@@ -1,7 +1,6 @@
 "use client"
 
-import { Box, Activity, Settings } from "lucide-react"
-import Link from "next/link"
+import { Layers, BarChart, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Tab = "overview" | "upload" | "deployment" | "management"
@@ -16,17 +15,17 @@ export function SidebarNav({ activeTab, setActiveTab }: SidebarNavProps) {
     {
       title: "Overview",
       value: "overview" as Tab,
-      icon: Box,
+      icon: Layers,
     },
     {
       title: "Upload",
       value: "upload" as Tab,
-      icon: Activity,
+      icon: BarChart,
     },
     {
       title: "Deployment",
       value: "deployment" as Tab,
-      icon: Activity,
+      icon: BarChart,
     },
     {
       title: "Management",

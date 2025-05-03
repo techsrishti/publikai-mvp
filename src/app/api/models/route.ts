@@ -3,11 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const models = await prisma.model.findMany({
-      include: {
-        tags: true,
-      },
-    });
+    const models = await prisma.model.findMany();
 
     return NextResponse.json({ models });
   } catch (error) {
@@ -17,4 +13,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { ActivityIcon, Box, Users } from "lucide-react"
+import { BarChart, Layers, Users } from "lucide-react"
 
 export function ModelOverview() {
   return (
@@ -11,7 +11,7 @@ export function ModelOverview() {
         <Card className="p-6 bg-gradient-to-br from-blue-600/10 to-blue-800/10 border-blue-800/50 hover:border-blue-700/50 transition-colors">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-500/10">
-              <Box className="w-6 h-6 text-blue-400" />
+              <Layers className="w-6 h-6 text-blue-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-blue-300">Total Models</p>
@@ -23,7 +23,7 @@ export function ModelOverview() {
         <Card className="p-6 bg-gradient-to-br from-green-600/10 to-green-800/10 border-green-800/50 hover:border-green-700/50 transition-colors">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-green-500/10">
-              <ActivityIcon className="w-6 h-6 text-green-400" />
+              <BarChart className="w-6 h-6 text-green-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-green-300">Active Deployments</p>
@@ -35,7 +35,7 @@ export function ModelOverview() {
         <Card className="p-6 bg-gradient-to-br from-purple-600/10 to-purple-800/10 border-purple-800/50 hover:border-purple-700/50 transition-colors">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-purple-500/10">
-              <ActivityIcon className="w-6 h-6 text-purple-400" />
+              <BarChart className="w-6 h-6 text-purple-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-purple-300">Total Requests</p>

@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Cloud, Server } from "lucide-react"
+import { Upload, Server } from "lucide-react"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -150,7 +150,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           onClick={handleDeploy}
           className="bg-purple-600 hover:bg-purple-700 text-white px-8"
         >
-          <Cloud className="mr-2 h-4 w-4" />
+          <Upload className="mr-2 h-4 w-4" />
           Deploy Model
         </Button>
       </div>
