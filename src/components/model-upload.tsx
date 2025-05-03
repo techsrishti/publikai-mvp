@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileUploader } from "@/components/file-uploader"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Upload, LinkIcon, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { uploadModelAction } from "../app/creator-dashboard/model-actions"
+import { uploadModelAction } from "@/app/creator-dashboard/model-actions"
+import { FileUploader } from "@/components/file-uploader"
 
 interface ModelUploadProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -67,9 +67,9 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   const removeUploadTag = (tagToRemove: string) => {
     setUploadFields((prev) => ({ ...prev, tags: prev.tags.filter((tag) => tag !== tagToRemove) }))
   }
-  const handleUploadFilesSelected = (selectedFiles: File[]) => {
-    setUploadFields((prev) => ({ ...prev, files: selectedFiles }))
-    addNotification("info", `${selectedFiles.length} file(s) selected`)
+
+  const handleUploadFilesSelected = (files: File[]) => {
+    setUploadFields((prev) => ({ ...prev, files }))
   }
 
   const handleUrlChange = (field: string, value: string) => {
@@ -269,6 +269,10 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                   </div>
                 </div>
                 <div className="pt-1">
+                  <div className="flex flex-col items-start mb-2">
+                    <p className="text-blue-200 text-xs mb-1">Model Files (Optional)</p>
+                    <p className="text-xs text-blue-300">Upload your model files or register without files and add them later.</p>
+                  </div>
                   <FileUploader onFilesSelected={handleUploadFilesSelected} />
                   {uploadFields.files.length > 0 && (
                     <div className="mt-2">

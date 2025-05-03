@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { toast } from 'react-hot-toast';
+import { uploadModelAction } from '@/app/creator-dashboard/model-actions';
 
 interface ModelFormProps {
   onSuccess?: () => void;
@@ -19,15 +20,10 @@ export default function ModelForm({ onSuccess }: ModelFormProps) {
       const formData = new FormData(e.currentTarget);
       formData.append('sourceType', sourceType);
 
-      const response = await fetch('/api/models/update', {
-        method: 'POST',
-        body: formData,
-      });
+      const result = await uploadModelAction(formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create model');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create model');
       }
 
       toast.success('Model created successfully!');
@@ -157,15 +153,17 @@ export default function ModelForm({ onSuccess }: ModelFormProps) {
       ) : (
         <div>
           <label htmlFor="file" className="block text-sm font-medium text-gray-700">
-            Model File
+            Model File (Optional)
           </label>
           <input
             type="file"
             id="file"
             name="file"
-            required
             className="mt-1 block w-full"
           />
+          <p className="mt-1 text-sm text-gray-500">
+            You can register a model without uploading a file now and add files later.
+          </p>
         </div>
       )}
 
@@ -180,4 +178,4 @@ export default function ModelForm({ onSuccess }: ModelFormProps) {
       </div>
     </form>
   );
-} 
+}
