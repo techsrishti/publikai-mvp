@@ -11,9 +11,20 @@ export async function uploadModelAction(formData: FormData) {
     const license = formData.get('license') as string | null;
     const sourceType = formData.get('sourceType') as string | null;
     const url = formData.get('url') as string | null;
-    const tags = (formData.get('tags') as string)?.split(',').map(tag => tag.trim()).filter(Boolean) || [];
+
+    // Always ensure tags is an array
+    const tagsRaw = formData.get('tags');
+    const tags = typeof tagsRaw === 'string'
+      ? tagsRaw.split(',').map(tag => tag.trim()).filter(Boolean)
+      : [];
+
     const modelName = formData.get('modelName') as string | null;
     const urlModelType = formData.get('urlModelType') as string | null;
+
+    // Debug log: print all received values
+    console.log('uploadModelAction received:', {
+      name, description, modelType, license, sourceType, url, tags, modelName, urlModelType
+    });
 
     if (!name || !description || !modelType || !license || !sourceType || tags.length === 0) {
       return { success: false, error: 'All fields except file/url are required.' };
@@ -26,6 +37,12 @@ export async function uploadModelAction(formData: FormData) {
     // For URL, url must be present
     if (normalizedSourceType === SourceType.URL && !url) {
       return { success: false, error: 'URL is required for URL source type.' };
+    }
+
+    // Check if a model with the same name already exists
+    const existing = await prisma.model.findUnique({ where: { name } });
+    if (existing) {
+      return { success: false, error: 'A model with this name already exists.' };
     }
 
     // Model name must be unique (Prisma will throw if not)
@@ -41,8 +58,8 @@ export async function uploadModelAction(formData: FormData) {
       },
     });
     return { success: true, model };
-  } catch (error: any) {
-    if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
+  } catch (error: unknown) {
+    if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('name')) {
       return { success: false, error: 'Model name must be unique.' };
     }
     console.error('Error creating model:', error);

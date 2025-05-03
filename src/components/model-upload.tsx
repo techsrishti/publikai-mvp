@@ -1,15 +1,15 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useTransition } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { FileUploader } from "@/components/file-uploader"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Info, Upload, LinkIcon, X } from "lucide-react"
+import { ArrowRight, Upload, LinkIcon, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { uploadModelAction } from "../app/creator-dashboard/model-actions"
 
@@ -29,9 +29,10 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   })
   const [urlFields, setUrlFields] = useState({
     organizationName: "",
-    modelName: "",
+    modelName: "", // Hugging Face model name
+    userModelName: "", // User's own model name
     description: "",
-    modelType: "",
+    modelType: "", // Not required for URL
     license: "",
     tags: ["transformer", "nlp", "bert"],
     tagInput: "",
@@ -41,7 +42,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   const [isHovering, setIsHovering] = useState(false)
   const [loadingUpload, setLoadingUpload] = useState(false)
   const [loadingUrl, setLoadingUrl] = useState(false)
-  const [isPending, startTransition] = useTransition()
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -51,7 +51,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     })
   }
 
-  const handleUploadChange = (field: string, value: any) => {
+  const handleUploadChange = (field: string, value: string) => {
     setUploadFields((prev) => ({ ...prev, [field]: value }))
   }
   const handleUploadTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -72,7 +72,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     addNotification("info", `${selectedFiles.length} file(s) selected`)
   }
 
-  const handleUrlChange = (field: string, value: any) => {
+  const handleUrlChange = (field: string, value: string) => {
     setUrlFields((prev) => ({ ...prev, [field]: value }))
   }
   const handleUrlTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -94,8 +94,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     return modelName && description && modelType && license
   }
   function validateUrlFields() {
-    const { organizationName, modelName, description, modelType, license } = urlFields
-    return organizationName && modelName && description && modelType && license
+    const { organizationName, modelName, userModelName, description, license } = urlFields
+    return organizationName && modelName && userModelName && description && license
   }
 
   async function handleUploadAction(formData: FormData) {
@@ -140,7 +140,9 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("url", fullUrl)
       formData.set("description", urlFields.description)
       formData.set("modelName", urlFields.modelName)
+      formData.set("name", urlFields.userModelName) // Ensure 'name' is set for backend compatibility
       formData.set("urlModelType", urlFields.modelType)
+      formData.set("modelType", urlFields.modelType) // Ensure 'modelType' is set for backend compatibility
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
       formData.set("sourceType", "URL")
@@ -170,10 +172,10 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg">
-        <CardContent className="p-4">
+      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg w-[75%] max-w-5xl mx-auto">
+        <CardContent className="p-6">
           <Tabs defaultValue="upload" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4 bg-blue-900/30 rounded-lg overflow-hidden">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-blue-900/30 rounded-lg overflow-hidden">
               <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Model
@@ -183,25 +185,26 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                 Use Model URL
               </TabsTrigger>
             </TabsList>
-
             <TabsContent value="upload">
-              <form className="space-y-3" action={handleUploadAction}>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
+              <form className="space-y-5" action={handleUploadAction}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="model-name" className="text-blue-200 text-xs mb-1">Model Name</label>
                     <Input
                       id="model-name"
                       value={uploadFields.modelName}
                       onChange={(e) => handleUploadChange("modelName", e.target.value)}
                       placeholder="Model Name"
-                      className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
+                      className="w-full max-w-full"
                     />
                   </div>
-                  <div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="model-type" className="text-blue-200 text-xs mb-1">Model Type</label>
                     <Select value={uploadFields.modelType} onValueChange={(v) => handleUploadChange("modelType", v)}>
-                      <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white w-full">
+                      <SelectTrigger className="w-full max-w-full">
                         <SelectValue placeholder="Model Type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-blue-950 border-blue-800 text-white">
+                      <SelectContent>
                         <SelectItem value="text-classification">Text Classification</SelectItem>
                         <SelectItem value="token-classification">Token Classification</SelectItem>
                         <SelectItem value="question-answering">Question Answering</SelectItem>
@@ -214,57 +217,57 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     </Select>
                   </div>
                 </div>
-
-                <div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="model-description" className="text-blue-200 text-xs mb-1">Description</label>
                   <Textarea
                     id="model-description"
                     value={uploadFields.description}
                     onChange={(e) => handleUploadChange("description", e.target.value)}
                     placeholder="Model description..."
-                    className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[60px] resize-none"
+                    className="w-full max-w-full"
                   />
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Select value={uploadFields.license} onValueChange={(v) => handleUploadChange("license", v)}>
-                    <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                      <SelectValue placeholder="License" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                      <SelectItem value="mit">MIT</SelectItem>
-                      <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
-                      <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
-                      <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
-                      <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
-                      <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <div className="flex gap-2">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="license" className="text-blue-200 text-xs mb-1">License</label>
+                    <Select value={uploadFields.license} onValueChange={(v) => handleUploadChange("license", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="License" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mit">MIT</SelectItem>
+                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
+                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
+                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
+                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
+                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label className="text-blue-200 text-xs mb-1">Tags</label>
                     <Input
                       value={uploadFields.tagInput}
                       onChange={(e) => handleUploadChange("tagInput", e.target.value)}
                       onKeyDown={handleUploadTagInputKeyDown}
                       placeholder="Add tags (press Enter)"
-                      className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
+                      className="w-full max-w-full"
                     />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {uploadFields.tags.map((tag, index) => (
+                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                          {tag}
+                          <X
+                            size={12}
+                            className="cursor-pointer opacity-70 hover:opacity-100"
+                            onClick={() => removeUploadTag(tag)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {uploadFields.tags.map((tag, index) => (
-                    <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
-                      {tag}
-                      <X
-                        size={12}
-                        className="cursor-pointer opacity-70 hover:opacity-100"
-                        onClick={() => removeUploadTag(tag)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-
                 <div className="pt-1">
                   <FileUploader onFilesSelected={handleUploadFilesSelected} />
                   {uploadFields.files.length > 0 && (
@@ -278,7 +281,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     </div>
                   )}
                 </div>
-
                 <div className="pt-2">
                   <Button
                     ref={uploadBtnRef}
@@ -287,7 +289,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     onMouseMove={handleMouseMove}
                     onMouseEnter={() => setIsHovering(true)}
                     onMouseLeave={() => setIsHovering(false)}
-                    disabled={loadingUpload || isPending}
+                    disabled={loadingUpload}
                   >
                     <span className="relative z-10">
                       {loadingUpload ? "Uploading..." : "Upload Model"} <ArrowRight className="ml-2 h-4 w-4 inline" />
@@ -295,136 +297,135 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     <span
                       className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
                       style={{
-                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%)",
+                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
                         transform: "translate(-50%, -50%)",
-                        left: mousePosition.x,
-                        top: mousePosition.y,
-                        opacity: isHovering ? 1 : 0,
-                        transition: "opacity 0.2s ease",
+                        pointerEvents: "none",
+                        left: `${mousePosition.x}px`,
+                        top: `${mousePosition.y}px`,
                       }}
                     />
                   </Button>
                 </div>
               </form>
             </TabsContent>
-
             <TabsContent value="url">
-              <form className="space-y-3" action={handleUrlAction}>
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-900/50 text-blue-300 px-2 py-1.5 rounded-l-md border border-blue-800 border-r-0 text-sm">
-                    huggingface.co/
-                  </div>
-                  <div className="flex-1 flex">
+              <form className="space-y-5" action={async (formData) => {
+                if (!formData.get("name")) {
+                  formData.set("name", formData.get("userModelName") || "")
+                }
+                await handleUrlAction(formData)
+              }}>
+                <input type="hidden" name="name" value={urlFields.userModelName} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="org-name" className="text-blue-200 text-xs mb-1">Organization Name</label>
                     <Input
-                      id="organization-name"
+                      id="org-name"
                       value={urlFields.organizationName}
                       onChange={(e) => handleUrlChange("organizationName", e.target.value)}
-                      placeholder="organization"
-                      className="rounded-none bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 border-r-0 text-sm"
+                      placeholder="Organization Name"
+                      className="w-full max-w-full"
                     />
-                    <div className="bg-blue-900/50 text-blue-300 px-2 py-1.5 border border-blue-800 border-r-0 border-l-0 text-sm">
-                      /
-                    </div>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-model-name" className="text-blue-200 text-xs mb-1">Hugging Face Model Name</label>
                     <Input
-                      id="model-name"
+                      id="url-model-name"
                       value={urlFields.modelName}
                       onChange={(e) => handleUrlChange("modelName", e.target.value)}
-                      placeholder="model-name"
-                      className="rounded-none rounded-r-md bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 text-sm"
+                      placeholder="Model Name from Hugging Face"
+                      className="w-full max-w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="user-model-name" className="text-blue-200 text-xs mb-1">Your Model Name</label>
+                    <Input
+                      id="user-model-name"
+                      value={urlFields.userModelName}
+                      onChange={(e) => handleUrlChange("userModelName", e.target.value)}
+                      placeholder="Your Model Name"
+                      className="w-full max-w-full"
                     />
                   </div>
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Select value={urlFields.modelType} onValueChange={(v) => handleUrlChange("modelType", v)}>
-                    <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                      <SelectValue placeholder="Model Type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                      <SelectItem value="text-classification">Text Classification</SelectItem>
-                      <SelectItem value="token-classification">Token Classification</SelectItem>
-                      <SelectItem value="question-answering">Question Answering</SelectItem>
-                      <SelectItem value="translation">Translation</SelectItem>
-                      <SelectItem value="summarization">Summarization</SelectItem>
-                      <SelectItem value="text-generation">Text Generation</SelectItem>
-                      <SelectItem value="image-classification">Image Classification</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={urlFields.license} onValueChange={(v) => handleUrlChange("license", v)}>
-                    <SelectTrigger className="bg-blue-950/70 border-blue-800 text-white">
-                      <SelectValue placeholder="License" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-blue-950 border-blue-800 text-white">
-                      <SelectItem value="mit">MIT</SelectItem>
-                      <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
-                      <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
-                      <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
-                      <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
-                      <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="url-model-description" className="text-blue-200 text-xs mb-1">Description</label>
                   <Textarea
-                    id="model-description"
+                    id="url-model-description"
                     value={urlFields.description}
                     onChange={(e) => handleUrlChange("description", e.target.value)}
-                    placeholder="Why are you using this model? What will you use it for?"
-                    className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70 min-h-[60px] resize-none"
+                    placeholder="Model description..."
+                    className="w-full max-w-full"
                   />
                 </div>
-
-                <div className="flex gap-2">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-model-type" className="text-blue-200 text-xs mb-1">Model Type</label>
+                    <Select value={urlFields.modelType} onValueChange={(v) => handleUrlChange("modelType", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="Model Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text-classification">Text Classification</SelectItem>
+                        <SelectItem value="token-classification">Token Classification</SelectItem>
+                        <SelectItem value="question-answering">Question Answering</SelectItem>
+                        <SelectItem value="translation">Translation</SelectItem>
+                        <SelectItem value="summarization">Summarization</SelectItem>
+                        <SelectItem value="text-generation">Text Generation</SelectItem>
+                        <SelectItem value="image-classification">Image Classification</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-license" className="text-blue-200 text-xs mb-1">License</label>
+                    <Select value={urlFields.license} onValueChange={(v) => handleUrlChange("license", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="License" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mit">MIT</SelectItem>
+                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
+                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
+                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
+                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
+                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-col items-start">
+                  <label className="text-blue-200 text-xs mb-1">Tags</label>
                   <Input
                     value={urlFields.tagInput}
                     onChange={(e) => handleUrlChange("tagInput", e.target.value)}
                     onKeyDown={handleUrlTagInputKeyDown}
                     placeholder="Add tags (press Enter)"
-                    className="bg-blue-950/70 border-blue-800 text-white placeholder:text-blue-400/70"
+                    className="w-full max-w-full"
                   />
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {urlFields.tags.map((tag, index) => (
+                      <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                        {tag}
+                        <X
+                          size={12}
+                          className="cursor-pointer opacity-70 hover:opacity-100"
+                          onClick={() => removeUrlTag(tag)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {urlFields.tags.map((tag, index) => (
-                    <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
-                      {tag}
-                      <X
-                        size={12}
-                        className="cursor-pointer opacity-70 hover:opacity-100"
-                        onClick={() => removeUrlTag(tag)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-
                 <div className="pt-2">
                   <Button
-                    ref={uploadBtnRef}
                     type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
-                    onMouseMove={handleMouseMove}
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
-                    disabled={loadingUrl || isPending}
+                    disabled={loadingUrl}
                   >
                     <span className="relative z-10">
-                      {loadingUrl ? "Registering..." : "Use Model"} <ArrowRight className="ml-2 h-4 w-4 inline" />
+                      {loadingUrl ? "Registering..." : "Register Model URL"} <ArrowRight className="ml-2 h-4 w-4 inline" />
                     </span>
-                    <span
-                      className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
-                      style={{
-                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%)",
-                        transform: "translate(-50%, -50%)",
-                        left: mousePosition.x,
-                        top: mousePosition.y,
-                        opacity: isHovering ? 1 : 0,
-                        transition: "opacity 0.2s ease",
-                      }}
-                    />
                   </Button>
                 </div>
               </form>
