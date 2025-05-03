@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { BarChart3, Heart, Star } from "lucide-react"
+import Image from "next/image"
 
 interface ModelCardProps {
   name: string
@@ -63,7 +64,7 @@ export function ModelCard({
       innerCardRef.current.style.transform = "rotateX(0deg) rotateY(0deg)"
       glowRef.current.style.opacity = "0"
     }
-  }, [mousePosition, disabled])
+  }, [mousePosition, disabled, isHovering])
 
   // Format numbers with K/M suffix
   const formatNumber = (num: number) => {
@@ -129,7 +130,13 @@ export function ModelCard({
               className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${getGradient()} p-[1px]`}
             >
               <div className="flex h-full w-full items-center justify-center rounded-lg bg-gray-900">
-                <img src={icon} alt={`${company} logo`} className="h-4 w-4" />
+                <Image 
+                  src={icon} 
+                  alt={`${company} logo`} 
+                  width={16} 
+                  height={16} 
+                  className="h-4 w-4"
+                />
               </div>
             </div>
             <div className="flex flex-col">

@@ -71,7 +71,7 @@ export function TiltCard({
       innerCardRef.current.style.transform = "rotateX(0deg) rotateY(0deg)"
       glowRef.current.style.opacity = "0"
     }
-  }, [mousePosition, disabled])
+  }, [mousePosition, disabled, isHovering])
 
   return (
     <div

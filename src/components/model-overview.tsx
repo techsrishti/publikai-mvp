@@ -1,118 +1,115 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Brain, Cpu, BarChart, Users } from "lucide-react"
+"use client"
+
+import { Card } from "@/components/ui/card"
+import { BarChart, Layers, Users } from "lucide-react"
 
 export function ModelOverview() {
-  // Mock data for demonstration
-  const models = [
-    {
-      id: "1",
-      name: "BERT-base-uncased",
-      type: "NLP",
-      status: "Deployed",
-      requests: 1245,
-      performance: 85,
-    },
-    {
-      id: "2",
-      name: "ResNet50",
-      type: "Computer Vision",
-      status: "Deployed",
-      requests: 876,
-      performance: 92,
-    },
-    {
-      id: "3",
-      name: "GPT-2-small",
-      type: "Text Generation",
-      status: "Pending",
-      requests: 0,
-      performance: 0,
-    },
-  ]
-
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">Model Overview</h2>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-bg border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Total Models</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <Brain className="h-6 w-6 text-blue-500" />
-              <div className="text-2xl font-bold text-white">3</div>
+    <div className="space-y-8">
+      {/* Stats Grid */}
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-6 bg-gradient-to-br from-blue-600/10 to-blue-800/10 border-blue-800/50 hover:border-blue-700/50 transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-blue-500/10">
+              <Layers className="w-6 h-6 text-blue-400" />
             </div>
-          </CardContent>
+            <div>
+              <p className="text-sm font-medium text-blue-300">Total Models</p>
+              <h3 className="text-2xl font-bold text-white mt-1">3</h3>
+            </div>
+          </div>
         </Card>
 
-        <Card className="card-bg border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Active Deployments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <Cpu className="h-6 w-6 text-green-500" />
-              <div className="text-2xl font-bold text-white">2</div>
+        <Card className="p-6 bg-gradient-to-br from-green-600/10 to-green-800/10 border-green-800/50 hover:border-green-700/50 transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-green-500/10">
+              <BarChart className="w-6 h-6 text-green-400" />
             </div>
-          </CardContent>
+            <div>
+              <p className="text-sm font-medium text-green-300">Active Deployments</p>
+              <h3 className="text-2xl font-bold text-white mt-1">2</h3>
+            </div>
+          </div>
         </Card>
 
-        <Card className="card-bg border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Total Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <BarChart className="h-6 w-6 text-purple-500" />
-              <div className="text-2xl font-bold text-white">2,121</div>
+        <Card className="p-6 bg-gradient-to-br from-purple-600/10 to-purple-800/10 border-purple-800/50 hover:border-purple-700/50 transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-purple-500/10">
+              <BarChart className="w-6 h-6 text-purple-400" />
             </div>
-          </CardContent>
+            <div>
+              <p className="text-sm font-medium text-purple-300">Total Requests</p>
+              <h3 className="text-2xl font-bold text-white mt-1">2,121</h3>
+            </div>
+          </div>
         </Card>
 
-        <Card className="card-bg border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Active Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <Users className="h-6 w-6 text-yellow-500" />
-              <div className="text-2xl font-bold text-white">42</div>
+        <Card className="p-6 bg-gradient-to-br from-amber-600/10 to-amber-800/10 border-amber-800/50 hover:border-amber-700/50 transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-amber-500/10">
+              <Users className="w-6 h-6 text-amber-400" />
             </div>
-          </CardContent>
+            <div>
+              <p className="text-sm font-medium text-amber-300">Active Users</p>
+              <h3 className="text-2xl font-bold text-white mt-1">42</h3>
+            </div>
+          </div>
         </Card>
       </div>
 
-      <Card className="card-bg border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Your Models</CardTitle>
-          <CardDescription>Overview of all your models and their status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {models.map((model) => (
-              <div key={model.id} className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div>
-                  <div className="font-medium text-white">{model.name}</div>
-                  <div className="text-sm text-slate-400">{model.type}</div>
+      {/* Models List */}
+      <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+        <h2 className="text-xl font-semibold text-white mb-6">Your Models</h2>
+        <div className="space-y-4">
+          {[
+            {
+              name: "BERT-base-uncased",
+              type: "NLP",
+              requests: "1245 requests",
+              status: "Deployed",
+              performance: 85,
+            },
+            {
+              name: "ResNet50",
+              type: "Computer Vision",
+              requests: "876 requests",
+              status: "Deployed",
+              performance: 92,
+            },
+            {
+              name: "GPT-2-small",
+              type: "Text Generation",
+              requests: "0 requests",
+              status: "Pending",
+              performance: 0,
+            },
+          ].map((model, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
+            >
+              <div className="space-y-1">
+                <h3 className="font-medium text-white">{model.name}</h3>
+                <p className="text-sm text-gray-400">{model.type}</p>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-300">{model.requests}</p>
+                  <p className="text-sm text-gray-500">{model.status}</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="font-medium text-white">{model.requests} requests</div>
-                    <div className="text-sm text-slate-400">{model.status}</div>
-                  </div>
-                  <div className="w-24">
-                    <div className="text-xs text-slate-400 mb-1">Performance</div>
-                    <Progress value={model.performance} className="h-2 bg-slate-700" />
+                <div className="w-24">
+                  <div className="h-2 rounded-full bg-gray-800">
+                    <div
+                      className="h-2 rounded-full bg-blue-500"
+                      style={{ width: `${model.performance}%` }}
+                    />
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
+            </div>
+          ))}
+        </div>
       </Card>
     </div>
   )
-} 
+}

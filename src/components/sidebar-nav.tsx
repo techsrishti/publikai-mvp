@@ -1,56 +1,68 @@
 "use client"
 
-import { Home, Upload, Play, Settings } from "lucide-react"
+import { Layers, BarChart, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type NavItemId = "overview" | "upload" | "deployment" | "management"
+type Tab = "overview" | "upload" | "deployment" | "management"
 
 interface SidebarNavProps {
-  activeTab: NavItemId
-  setActiveTab: (tab: NavItemId) => void
+  activeTab: Tab
+  setActiveTab: (tab: Tab) => void
 }
 
 export function SidebarNav({ activeTab, setActiveTab }: SidebarNavProps) {
   const navItems = [
     {
-      id: "overview" as const,
-      label: "Model Overview",
-      icon: Home,
+      title: "Overview",
+      value: "overview" as Tab,
+      icon: Layers,
     },
     {
-      id: "upload" as const,
-      label: "Model Upload",
-      icon: Upload,
+      title: "Upload",
+      value: "upload" as Tab,
+      icon: BarChart,
     },
     {
-      id: "deployment" as const,
-      label: "Model Deployment",
-      icon: Play,
+      title: "Deployment",
+      value: "deployment" as Tab,
+      icon: BarChart,
     },
     {
-      id: "management" as const,
-      label: "Model Management",
+      title: "Management",
+      value: "management" as Tab,
       icon: Settings,
     },
   ]
 
   return (
-    <nav className="w-64 border-r border-slate-800 p-4">
-      <div className="space-y-1">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={cn(
-              "flex w-full items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium",
-              activeTab === item.id ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white",
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span>{item.label}</span>
-          </button>
-        ))}
+    <div className="hidden md:block w-64 bg-gray-900/40 border-r border-gray-800/60 backdrop-blur-sm">
+      <div className="h-full px-3 py-4">
+        <nav className="space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.value}
+                onClick={() => setActiveTab(item.value)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                  activeTab === item.value
+                    ? "bg-purple-600/20 text-purple-200 border border-purple-800/50"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/40"
+                )}
+              >
+                <Icon className={cn(
+                  "h-5 w-5 transition-colors",
+                  activeTab === item.value
+                    ? "text-purple-400"
+                    : "text-gray-500 group-hover:text-gray-400"
+                )} />
+                {item.title}
+              </button>
+            )
+          })}
+        </nav>
       </div>
-    </nav>
+    </div>
   )
-} 
+}

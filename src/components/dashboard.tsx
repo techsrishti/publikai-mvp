@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserButton } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/clerk-react";
+import Image from "next/image"
 import { AnimatedGradientText } from "./animated-gradient-text"
 import { TrendingIcon } from "./icons/trending-icon"
 import { ModelCard } from "./model-card"
@@ -176,8 +177,8 @@ export default  function Dashboard() {
               <Button
                 variant="secondary"
                 className="mt-4 w-full"
-                onClick={() => router.push('/creator/questionnaire')}
-              >
+                onClick={() => router.push('/creator/questionnaire')
+              }>
                 Become a creator
               </Button>
             )}
@@ -305,7 +306,13 @@ export default  function Dashboard() {
                       <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-900/50">
-                            <img src={model.icon} alt={`${model.company} logo`} className="h-5 w-5" />
+                            <Image 
+                              src={model.icon} 
+                              alt={`${model.company} logo`} 
+                              width={20} 
+                              height={20} 
+                              className="h-5 w-5" 
+                            />
                           </div>
                           <div className="flex flex-col">
                             <span className="font-medium text-gray-200 transition-colors duration-300 group-hover:text-yellow-300">

@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { SidebarNav } from "@/components/sidebar-nav"
 import { ModelOverview } from "@/components/model-overview"
@@ -46,4 +45,4 @@ export function CreatorDashboard() {
       </div>
     </div>
   )
-} 
+}

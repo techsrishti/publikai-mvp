@@ -1,225 +1,159 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Loader2, Play, Server } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Upload, Server } from "lucide-react"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
 }
 
 export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
-  const [isDeploying, setIsDeploying] = useState(false)
-  const [selectedModel, setSelectedModel] = useState("")
-
-  const handleDeploy = async () => {
-    if (!selectedModel) {
-      addNotification("error", "Please select a model to deploy")
-      return
-    }
-
-    setIsDeploying(true)
-
-    try {
-      // In a real app, you would make an API call to deploy the model
-      await fetch("http://localhost:3000/deploy-model", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          modelId: selectedModel,
-          // Add other parameters as needed
-        }),
-      })
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      if (Math.random() > 0.2) {
-        // 80% success rate for demo
-        addNotification("success", `Model ${selectedModel} deployed successfully`)
-      } else {
-        throw new Error("Deployment failed")
-      }
-    } catch (error) {
-      addNotification("error", `Deployment failed: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsDeploying(false)
-    }
+  const handleDeploy = () => {
+    addNotification("info", "Starting deployment process...")
+    // Deployment logic here
   }
-
-  // Mock data for demonstration
-  const availableModels = [
-    { id: "bert-base", name: "BERT-base-uncased" },
-    { id: "resnet50", name: "ResNet50" },
-    { id: "gpt2-small", name: "GPT-2-small" },
-  ]
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">Model Deployment</h2>
-
-      <Card className="card-bg border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Deploy a Model</CardTitle>
-          <CardDescription>Configure and deploy your model to make it available for inference</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <label htmlFor="model-select" className="block text-sm font-medium text-slate-300 mb-1">
-              Select Model
-            </label>
-            <Select onValueChange={setSelectedModel} value={selectedModel}>
-              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue placeholder="Select a model to deploy" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                {availableModels.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label htmlFor="instance-type" className="block text-sm font-medium text-slate-300 mb-1">
-              Instance Type
-            </label>
-            <Select defaultValue="cpu-small">
-              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue placeholder="Select instance type" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                <SelectItem value="cpu-small">CPU - Small (1 vCPU, 2GB RAM)</SelectItem>
-                <SelectItem value="cpu-medium">CPU - Medium (2 vCPU, 4GB RAM)</SelectItem>
-                <SelectItem value="cpu-large">CPU - Large (4 vCPU, 8GB RAM)</SelectItem>
-                <SelectItem value="gpu-small">GPU - Small (1 GPU, 8GB VRAM)</SelectItem>
-                <SelectItem value="gpu-medium">GPU - Medium (1 GPU, 16GB VRAM)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label htmlFor="scaling" className="block text-sm font-medium text-slate-300 mb-1">
-              Scaling Configuration
-            </label>
-            <Select defaultValue="auto">
-              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue placeholder="Select scaling configuration" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                <SelectItem value="fixed">Fixed (1 instance)</SelectItem>
-                <SelectItem value="auto">Auto-scaling (1-3 instances)</SelectItem>
-                <SelectItem value="custom">Custom configuration</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-300">Advanced Options</label>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="cache" />
-              <Label htmlFor="cache" className="text-slate-300">
-                Enable response caching
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="monitoring" defaultChecked />
-              <Label htmlFor="monitoring" className="text-slate-300">
-                Enable performance monitoring
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="logging" defaultChecked />
-              <Label htmlFor="logging" className="text-slate-300">
-                Enable request logging
-              </Label>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="border-t border-slate-800 pt-6">
-          <Button
-            onClick={handleDeploy}
-            disabled={isDeploying || !selectedModel}
-            className="bg-blue-600 hover:bg-blue-700 ml-auto"
-          >
-            {isDeploying ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deploying...
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Deploy Model
-              </>
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card className="card-bg border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Deployment Status</CardTitle>
-          <CardDescription>Current status of your model deployments</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        {/* Deployment Configuration */}
+        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+          <h3 className="text-lg font-semibold text-white mb-4">Deployment Configuration</h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center">
-                <Server className="h-5 w-5 text-green-500 mr-2" />
-                <div>
-                  <div className="font-medium text-white">BERT-base-uncased</div>
-                  <div className="text-sm text-slate-400">CPU - Medium (2 vCPU, 4GB RAM)</div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
+              <Select>
+                <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
+                  <SelectValue placeholder="Choose a model" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border-gray-800">
+                  <SelectItem value="bert">BERT-base-uncased</SelectItem>
+                  <SelectItem value="resnet">ResNet50</SelectItem>
+                  <SelectItem value="gpt2">GPT-2-small</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Deployment Environment</label>
+              <Select>
+                <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
+                  <SelectValue placeholder="Select environment" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border-gray-800">
+                  <SelectItem value="dev">Development</SelectItem>
+                  <SelectItem value="staging">Staging</SelectItem>
+                  <SelectItem value="prod">Production</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Instance Type</label>
+              <Select>
+                <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
+                  <SelectValue placeholder="Select instance type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border-gray-800">
+                  <SelectItem value="small">Small (2 vCPU, 8GB RAM)</SelectItem>
+                  <SelectItem value="medium">Medium (4 vCPU, 16GB RAM)</SelectItem>
+                  <SelectItem value="large">Large (8 vCPU, 32GB RAM)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Number of Replicas</label>
+              <Input 
+                type="number" 
+                min="1" 
+                defaultValue="1"
+                className="bg-gray-900/50 border-gray-700 text-gray-200"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Deployment Status */}
+        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+          <h3 className="text-lg font-semibold text-white mb-4">Active Deployments</h3>
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <Server className="h-5 w-5 text-green-400" />
+                  <span className="font-medium text-gray-200">BERT-base-uncased</span>
                 </div>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                  Active
+                </span>
               </div>
-              <div className="flex items-center">
-                <div className="text-right mr-4">
-                  <div className="font-medium text-white">Active</div>
-                  <div className="text-sm text-slate-400">2 instances</div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-400">Environment</p>
+                  <p className="text-gray-200">Production</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                >
-                  Manage
-                </Button>
+                <div>
+                  <p className="text-gray-400">Replicas</p>
+                  <p className="text-gray-200">3/3</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Instance Type</p>
+                  <p className="text-gray-200">Medium</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Uptime</p>
+                  <p className="text-gray-200">5d 12h</p>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center">
-                <Server className="h-5 w-5 text-green-500 mr-2" />
-                <div>
-                  <div className="font-medium text-white">ResNet50</div>
-                  <div className="text-sm text-slate-400">GPU - Small (1 GPU, 8GB VRAM)</div>
+            <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <Server className="h-5 w-5 text-green-400" />
+                  <span className="font-medium text-gray-200">ResNet50</span>
                 </div>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                  Active
+                </span>
               </div>
-              <div className="flex items-center">
-                <div className="text-right mr-4">
-                  <div className="font-medium text-white">Active</div>
-                  <div className="text-sm text-slate-400">1 instance</div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-400">Environment</p>
+                  <p className="text-gray-200">Staging</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                >
-                  Manage
-                </Button>
+                <div>
+                  <p className="text-gray-400">Replicas</p>
+                  <p className="text-gray-200">2/2</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Instance Type</p>
+                  <p className="text-gray-200">Small</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Uptime</p>
+                  <p className="text-gray-200">2d 8h</p>
+                </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
+
+      {/* Deploy Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleDeploy}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          Deploy Model
+        </Button>
+      </div>
     </div>
   )
-} 
+}

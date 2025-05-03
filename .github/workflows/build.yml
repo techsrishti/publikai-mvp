@@ -26,18 +26,13 @@ jobs:
         version: 9.14.0
         run_install: false
     
-    - name: Get pnpm store directory
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
     - name: Setup pnpm cache
       uses: actions/cache@v3
       with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
         restore-keys: |
-          ${{ runner.os }}-pnpm-store-
+          ${{ runner.os }}-pnpm-
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -45,6 +40,5 @@ jobs:
     - name: Prisma generate
       run: pnpm prisma generate
       
-
     - name: Build
       run: pnpm run build
