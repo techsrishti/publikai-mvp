@@ -1,5 +1,5 @@
-import { Dashboard } from "@/components/dashboard"
+import { CreatorDashboard } from "@/components/creator-dashboard"
 
-export default function CreatorDashboard() {
-  return <Dashboard />
+export default function CreatorDashboardPage() {
+  return <CreatorDashboard />
 } 
