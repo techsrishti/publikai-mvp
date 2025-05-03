@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { CreditCard, Heart, Menu, Search, Settings, User, X } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { CreditCard, Heart, Menu, Search, Settings, User, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -9,32 +9,37 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserButton } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-
+import { useUser } from "@clerk/clerk-react";
 import { AnimatedGradientText } from "./animated-gradient-text"
 import { TrendingIcon } from "./icons/trending-icon"
 import { ModelCard } from "./model-card"
 import { ModelsButton } from "./models-button"
 import { SidebarNavItem } from "./sidebar-nav-item"
 import { TiltCard } from "./tilt-card"
-import { UserAvatar } from "./user-avatar"
 import { useMobile } from "@/app/hooks/use-mobile"
 
-export default function Dashboard() {
+export default  function Dashboard() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isMobile = useMobile()
   const router = useRouter()
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
-    }
+  const {  user, isLoaded } = useUser();
 
+  const onboardingComplete = (user?.publicMetadata as { onboardingComplete: boolean })?.onboardingComplete
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    // Using requestAnimationFrame to throttle updates
+    requestAnimationFrame(() => {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    })
+  }, [])
+
+  useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove)
     return () => {
       window.removeEventListener("mousemove", handleMouseMove)
     }
-  }, [])
+  }, [handleMouseMove])
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-gray-900 via-purple-950 to-blue-950">
@@ -69,13 +74,27 @@ export default function Dashboard() {
             <Search className="h-5 w-5" />
           </Button>
 
-          <Button
-            variant="secondary"
-            className="hidden sm:flex"
-            onClick={() => router.push('/creator/questionnaire')}
-          >
-            Become a creator
-          </Button>
+          {!isLoaded ? (
+            <Button variant="secondary" className="hidden sm:flex" disabled>
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          ) : onboardingComplete ? (
+            <Button
+              variant="secondary"
+              className="hidden sm:flex"
+              onClick={() => router.push('/creator-dashboard')}
+            >
+              Creator Dashboard
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              className="hidden sm:flex"
+              onClick={() => router.push('/creator/questionnaire')}
+            >
+              Become a creator
+            </Button>
+          )}
 
           <UserButton afterSignOutUrl="/" />
 
@@ -103,16 +122,22 @@ export default function Dashboard() {
               <div className="p-4">
                 <div className="mb-6 flex flex-col items-center">
                   <UserButton afterSignOutUrl="/" />
-                  <Button
-                    variant="secondary"
-                    className="mt-4 w-full"
-                    onClick={() => {
-                      setMobileMenuOpen(false)
-                      router.push('/creator/questionnaire')
-                    }}
-                  >
-                    Become a creator
-                  </Button>
+                  {!isLoaded ? (
+                    <Button variant="secondary" className="mt-4 w-full" disabled>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </Button>
+                  ) : !onboardingComplete && (
+                    <Button
+                      variant="secondary"
+                      className="mt-4 w-full"
+                      onClick={() => {
+                        setMobileMenuOpen(false)
+                        router.push('/creator/questionnaire')
+                      }}
+                    >
+                      Become a creator
+                    </Button>
+                  )}
                 </div>
 
                 <Separator className="my-4 bg-gray-700/50" />
@@ -143,13 +168,19 @@ export default function Dashboard() {
         <div className="hidden w-56 flex-col border-r border-gray-800 bg-gradient-to-b from-indigo-950 to-purple-950 p-4 md:flex">
           <div className="mb-6 flex flex-col items-center">
             <UserButton afterSignOutUrl="/" />
-            <Button
-              variant="secondary"
-              className="mt-4 w-full"
-              onClick={() => router.push('/creator/questionnaire')}
-            >
-              Become a creator
-            </Button>
+            {!isLoaded ? (
+              <Button variant="secondary" className="mt-4 w-full" disabled>
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </Button>
+            ) : !onboardingComplete && (
+              <Button
+                variant="secondary"
+                className="mt-4 w-full"
+                onClick={() => router.push('/creator/questionnaire')}
+              >
+                Become a creator
+              </Button>
+            )}
           </div>
 
           <Separator className="my-4 bg-gray-700/50" />

@@ -1,48 +1,32 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/creator/questionnaire(.*)',
-  '/creator/dashboard(.*)'
+  '/creator-dashboard(.*)'
 ])
 
 const isQuestionnaireRoute = createRouteMatcher([
   '/creator/questionnaire(.*)'
 ])
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) await auth.protect()
+export default clerkMiddleware(async (auth, req: NextRequest) => {
+  const { userId, sessionClaims, redirectToSignIn } = await auth()
 
-  // Check if user is trying to access questionnaire and has already completed it
-  if (isQuestionnaireRoute(req)) {
-    try {
-      // Use auth.protect to ensure the user is authenticated
-      await auth.protect();
-      
-      // Since the auth object doesn't expose userId directly, we can get it 
-      // from the request headers once auth is verified
-      const response = await fetch(`${new URL(req.url).origin}/api/creator/questionnaire-status`, {
-        headers: {
-          'Cookie': req.headers.get('cookie') || ''
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        // If user has a creator profile, redirect to dashboard
-        if (data.hasCompleted) {
-          const url = new URL('/dashboard', req.url);
-          return NextResponse.redirect(url);
-        }
-      }
-    } catch (error) {
-      console.error('Error checking user status in middleware:', error);
-      // If auth.protect() fails, it means user is not authenticated
-      // Just continue and let them access the page
-    }
+  //no session and protected route so block 
+  if (!userId && isProtectedRoute(req)){
+    console.log('User is not authenticated')
+    return redirectToSignIn()
   }
+
+  //visiting questionnaire route and already completed onboarding so redirect to creator dashboard
+  if (isQuestionnaireRoute(req) && (sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete) {
+    console.log('User has already completed the questionnaire')
+    return NextResponse.redirect(new URL('/creator-dashboard', req.url))
+  }
+
+  return NextResponse.next()
 })
 
 export const config = {

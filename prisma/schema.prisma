@@ -10,6 +10,7 @@ enum UserRole {
   USER
   CREATOR
   ADMIN
+  ELEVATED_USER
 }
 
 enum SourceType {

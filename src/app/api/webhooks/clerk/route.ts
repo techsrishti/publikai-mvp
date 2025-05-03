@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     }
 
     // Handle user creation or update
-    if (evt.type === 'user.created' || evt.type === 'user.updated') {
+    if (evt.type === 'user.created' ) {
       const { id: clerkId, email_addresses } = evt.data;
       const primaryEmail = email_addresses[0]?.email_address;
 
@@ -93,12 +93,7 @@ export async function POST(req: Request) {
           userId: user.id
         }, { status: 200 });
       } catch (dbError) {
-        console.error('Database operation failed:', dbError);
-        // Add more detailed error information
-        // const errorMessage = dbError instanceof Error 
-        //   ? `${dbError.message} (${(dbError as any).code || 'unknown'})` 
-        //   : 'Unknown database error';
-        
+        console.log('Database operation failed:', dbError);
         return NextResponse.json({ 
           error: 'Failed to process user', 
           details: "Database operation failed" 
