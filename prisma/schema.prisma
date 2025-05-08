@@ -18,6 +18,22 @@ enum SourceType {
   UPLOAD
 }
 
+enum CloudProvider {
+  AWS
+  GCP
+  AZURE
+}
+
+enum DeploymentStatus {
+  PENDING
+  NOTDEPLOYED
+  INITIATED
+  DEPLOYING
+  RUNNING
+  FAILED
+  STOPPED
+}
+
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
@@ -51,8 +67,26 @@ model Model {
   modelType   String
   license     String
   sourceType  SourceType
+  hfOrganizationName   String?
+  hfModelName String?
   url         String?    // Optional URL for Hugging Face models
   tags        String[]   // Tags as array of strings
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  deployment  Deployment?
+}
+
+model Deployment { 
+  id              String           @id @default(cuid())
+  modelId         String          @unique
+  model           Model           @relation(fields: [modelId], references: [id])
+  status          DeploymentStatus @default(PENDING)
+  instanceType    String?
+  instanceIP      String?
+  instancePort    Int?
+  middlewareAddr  String?
+  provider        CloudProvider?
+  error           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }

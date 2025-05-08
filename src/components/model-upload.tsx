@@ -138,6 +138,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
         ? `https://huggingface.co/${urlFields.organizationName}/${urlFields.modelName}`
         : ""
       formData.set("url", fullUrl)
+      formData.set("hfOrganizationName", urlFields.organizationName)
+      formData.set("hfModelName", urlFields.modelName)
       formData.set("description", urlFields.description)
       formData.set("modelName", urlFields.modelName)
       formData.set("name", urlFields.userModelName) // Ensure 'name' is set for backend compatibility
