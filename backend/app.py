@@ -32,3 +32,4 @@ def classify(request: RequestBody):
 def deploy():
     with modal.enable_output():
         app.deploy(client=client)
+        return {"endpoint_url": classify.web_url}
