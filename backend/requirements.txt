@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+modal
+python-multipart
+python-dotenv
+numpy
+transformers
+torch
