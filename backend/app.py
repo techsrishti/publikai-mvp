@@ -1,4 +1,5 @@
 import os
+import logging
 from dotenv import load_dotenv
 import modal
 import fastapi
@@ -8,6 +9,10 @@ from typing import List, Dict, Any
 
 # FastAPI for external deployment
 fastapp = fastapi.FastAPI()
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -29,7 +34,7 @@ DEFAULT_MODEL_NAME = "distilgpt2"
 # Request schema
 class InferenceRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
-    text: str
+    text: str | None = None
     context: str | None = None
     organization: str | None = None
     model_name: str | None = None
@@ -40,6 +45,8 @@ task_type = None
 
 # Load model once per container lifecycle
 def load_model(organization: str | None = DEFAULT_MODEL_ORG, model_name: str = DEFAULT_MODEL_NAME):
+    logger.info(f"Loading model: {model_name} from organization: {organization if organization else 'default'}")
+    
     from transformers import (
         pipeline, AutoConfig, AutoTokenizer, AutoFeatureExtractor, AutoProcessor,
         AutoModelForSequenceClassification, AutoModelForCausalLM, AutoModelForSeq2SeqLM,
@@ -97,9 +104,10 @@ def load_model(organization: str | None = DEFAULT_MODEL_ORG, model_name: str = D
 
 # Modal startup function: loads model once
 @app.function(image=image, scaledown_window=300, volumes={"/root/model": volume})
-def startup():
+def startup(organization: str | None = DEFAULT_MODEL_ORG, model_name: str = DEFAULT_MODEL_NAME):
     global model_pipeline, task_type
-    model_pipeline, task_type = load_model()
+    logger.info(f"Preloading model: {model_name} from organization: {organization if organization else 'default'}")
+    model_pipeline, task_type = load_model(organization, model_name)
 
 # Inference endpoint
 @app.function(image=image, scaledown_window=300, volumes={"/root/model": volume})
@@ -107,7 +115,9 @@ def startup():
 def inference(request: InferenceRequest):
     global model_pipeline, task_type
 
-    if model_pipeline is None:
+    # Dynamically reload model based on request parameters
+    if model_pipeline is None or request.organization != DEFAULT_MODEL_ORG or request.model_name != DEFAULT_MODEL_NAME:
+        logger.info(f"Reloading model based on request: {request.model_name} from organization: {request.organization}")
         model_pipeline, task_type = load_model(request.organization, request.model_name or DEFAULT_MODEL_NAME)
 
     try:
@@ -156,8 +166,11 @@ def format_response(result: List[Dict[str, Any]], task: str):
 
 # Deployment trigger from FastAPI
 @fastapp.post("/deploy")
-def deploy():
+def deploy(request: InferenceRequest):
+    organization = request.organization or DEFAULT_MODEL_ORG
+    model_name = request.model_name or DEFAULT_MODEL_NAME
+
     with modal.enable_output():
         app.deploy(client=client)
-        startup.remote()  # preload model into container
+        startup.remote(organization, model_name)  # preload selected model into container
         return {"endpoint_url": inference.get_web_url()}
