@@ -1,176 +1,86 @@
 import os
-import logging
-from dotenv import load_dotenv
+import time
+import torch
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+from typing import List
+from transformers import AutoTokenizer, AutoModelForCausalLM
 import modal
-import fastapi
-from pydantic import BaseModel, ConfigDict
-from fastapi import HTTPException
-from typing import List, Dict, Any
 
-# FastAPI for external deployment
-fastapp = fastapi.FastAPI()
+# Modal app definition
+app = modal.App("transformers-chat")
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Config
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt2")
+MODEL_REVISION = os.environ.get("MODEL_REVISION", "main")
 
-# Load environment variables
-load_dotenv()
-MODAL_TOKEN_ID = os.getenv("MODAL_TOKEN_ID")
-MODAL_TOKEN_SECRET = os.getenv("MODAL_TOKEN_SECRET")
+# Shared volume for Hugging Face model cache
+hf_cache_vol = modal.Volume.from_name("huggingface-cache", create_if_missing=True)
 
-client = modal.Client.from_credentials(MODAL_TOKEN_ID, MODAL_TOKEN_SECRET)
+# Base image with dependencies
+image = (
+    modal.Image.debian_slim(python_version="3.10")
+    .pip_install("transformers", "torch", "fastapi", "uvicorn", "pydantic")
+)
 
-# Modal setup
-app = modal.App("hf-model-fastapi")
-image = modal.Image.debian_slim().pip_install_from_requirements("requirements.txt")
+@app.cls(
+    image=image,
+    gpu="A10G:1",
+    volumes={"/root/.cache/huggingface": hf_cache_vol},
+    scaledown_window=900
+)
+class ModelWorker:
+    @modal.enter()
+    def load_model(self):
+        start = time.time()
+        print("🔧 Starting model and tokenizer load...")
 
-volume = modal.Volume.from_name("model-storage", create_if_missing=True)
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, revision=MODEL_REVISION)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME, revision=MODEL_REVISION
+        ).to(self.device).eval()
 
-# Defaults
-DEFAULT_MODEL_ORG = None
-DEFAULT_MODEL_NAME = "distilgpt2"
+        # Ensure the tokenizer has a padding token
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token  # Use eos_token as pad_token
 
-# Request schema
-class InferenceRequest(BaseModel):
-    model_config = ConfigDict(protected_namespaces=())
-    text: str | None = None
-    context: str | None = None
-    organization: str | None = None
-    model_name: str | None = None
+        duration = time.time() - start
+        print(f"✅ Model loaded in {duration:.2f} seconds")
 
-# Globals to persist model across requests
-model_pipeline = None
-task_type = None
+    # Replaces @modal.web_server
+    @modal.asgi_app()
+    def fastapi_app(self):
+        web_app = FastAPI()
 
-# Load model once per container lifecycle
-def load_model(organization: str | None = DEFAULT_MODEL_ORG, model_name: str = DEFAULT_MODEL_NAME):
-    logger.info(f"Loading model: {model_name} from organization: {organization if organization else 'default'}")
-    
-    from transformers import (
-        pipeline, AutoConfig, AutoTokenizer, AutoFeatureExtractor, AutoProcessor,
-        AutoModelForSequenceClassification, AutoModelForCausalLM, AutoModelForSeq2SeqLM,
-        AutoModelForTokenClassification, AutoModelForQuestionAnswering,
-        AutoModelForMaskedLM, AutoModelForMultipleChoice, AutoModelForNextSentencePrediction,
-        AutoModelForImageClassification, AutoModelForObjectDetection,
-        AutoModelForImageSegmentation, AutoModelForAudioClassification,
-        AutoModelForCTC, AutoModelForSpeechSeq2Seq, AutoModelForTextToSpectrogram,
-        AutoModelForTextToWaveform
-    )
+        @web_app.get("/health")
+        def health():
+            return {"status": "ok"}
 
-    model_id = f"{organization}/{model_name}" if organization else model_name
-    config = AutoConfig.from_pretrained(model_id)
+        @web_app.post("/generate")
+        async def generate(request: Request):
+            body = await request.json()
+            # Get the content of the user message
+            messages = body.get("messages", [])
+            
+            if not messages or "content" not in messages[0]:
+                return {"error": "Message content is required."}
+            
+            input_text = messages[0]["content"]
 
-    model_task_map = {
-        "BertForSequenceClassification": (AutoModelForSequenceClassification, "text-classification"),
-        "RobertaForSequenceClassification": (AutoModelForSequenceClassification, "text-classification"),
-        "DistilBertForSequenceClassification": (AutoModelForSequenceClassification, "text-classification"),
-        "GPT2LMHeadModel": (AutoModelForCausalLM, "text-generation"),
-        "T5ForConditionalGeneration": (AutoModelForSeq2SeqLM, "text2text-generation"),
-        "BertForTokenClassification": (AutoModelForTokenClassification, "token-classification"),
-        "RobertaForTokenClassification": (AutoModelForTokenClassification, "token-classification"),
-        "BertForQuestionAnswering": (AutoModelForQuestionAnswering, "question-answering"),
-        "RobertaForQuestionAnswering": (AutoModelForQuestionAnswering, "question-answering"),
-        "BertForMaskedLM": (AutoModelForMaskedLM, "fill-mask"),
-        "RobertaForMaskedLM": (AutoModelForMaskedLM, "fill-mask"),
-        "BertForMultipleChoice": (AutoModelForMultipleChoice, "multiple-choice"),
-        "RobertaForMultipleChoice": (AutoModelForMultipleChoice, "multiple-choice"),
-        "BertForNextSentencePrediction": (AutoModelForNextSentencePrediction, "next-sentence-prediction"),
-        "ViTForImageClassification": (AutoModelForImageClassification, "image-classification"),
-        "DetrForObjectDetection": (AutoModelForObjectDetection, "object-detection"),
-        "SegformerForImageSegmentation": (AutoModelForImageSegmentation, "image-segmentation"),
-        "Wav2Vec2ForCTC": (AutoModelForCTC, "automatic-speech-recognition"),
-        "WhisperForConditionalGeneration": (AutoModelForSpeechSeq2Seq, "automatic-speech-recognition"),
-        "Wav2Vec2ForSequenceClassification": (AutoModelForAudioClassification, "audio-classification"),
-        "Speech2TextForConditionalGeneration": (AutoModelForSpeechSeq2Seq, "automatic-speech-recognition"),
-        "SpeechT5ForTextToSpeech": (AutoModelForTextToSpectrogram, "text-to-speech"),
-        "VitsModel": (AutoModelForTextToWaveform, "text-to-speech"),
-    }
+            # Tokenize and generate model output
+            inputs = self.tokenizer(input_text, return_tensors="pt", padding=True, truncation=True).to(self.device)
 
-    model_class, task = model_task_map.get(config.architectures[0], (AutoModelForCausalLM, "text-generation"))
-    model = model_class.from_pretrained(model_id)
+            # Ensure attention mask is set
+            inputs["attention_mask"] = inputs.get("attention_mask", torch.ones_like(inputs["input_ids"]))
+            inputs["pad_token_id"] = self.tokenizer.pad_token_id
 
-    if task in ["image-classification", "object-detection", "image-segmentation"]:
-        processor = AutoFeatureExtractor.from_pretrained(model_id)
-        pipe = pipeline(task, model=model, feature_extractor=processor)
-    elif task in ["automatic-speech-recognition", "audio-classification", "text-to-speech"]:
-        processor = AutoProcessor.from_pretrained(model_id)
-        pipe = pipeline(task, model=model, processor=processor)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
-        pipe = pipeline(task, model=model, tokenizer=tokenizer)
+            print(f"Input tensor: {inputs['input_ids']}")  # Debugging: Check input tensor
 
-    return pipe, task
+            with torch.no_grad():
+                outputs = self.model.generate(inputs["input_ids"], max_length=50)
 
-# Modal startup function: loads model once
-@app.function(image=image, scaledown_window=300, volumes={"/root/model": volume})
-def startup(organization: str | None = DEFAULT_MODEL_ORG, model_name: str = DEFAULT_MODEL_NAME):
-    global model_pipeline, task_type
-    logger.info(f"Preloading model: {model_name} from organization: {organization if organization else 'default'}")
-    model_pipeline, task_type = load_model(organization, model_name)
+            output_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return {"generated_text": output_text}
 
-# Inference endpoint
-@app.function(image=image, scaledown_window=300, volumes={"/root/model": volume})
-@modal.fastapi_endpoint(method="POST")
-def inference(request: InferenceRequest):
-    global model_pipeline, task_type
-
-    # Dynamically reload model based on request parameters
-    if model_pipeline is None or request.organization != DEFAULT_MODEL_ORG or request.model_name != DEFAULT_MODEL_NAME:
-        logger.info(f"Reloading model based on request: {request.model_name} from organization: {request.organization}")
-        model_pipeline, task_type = load_model(request.organization, request.model_name or DEFAULT_MODEL_NAME)
-
-    try:
-        if task_type == "question-answering":
-            if not request.context:
-                raise HTTPException(status_code=400, detail="Context is required for question-answering tasks.")
-            result = model_pipeline(question=request.text, context=request.context)
-            return {
-                "answer": result["answer"],
-                "confidence": round(result["score"] * 100, 2),
-                "response": f"The answer is: {result['answer']}"
-            }
-        else:
-            result = model_pipeline(request.text, max_length=100, num_return_sequences=1)
-            return format_response(result, task_type)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
-
-# Format responses
-def format_response(result: List[Dict[str, Any]], task: str):
-    if task == "text-classification":
-        label = result[0]["label"].lower()
-        score = result[0]["score"]
-        label_map = {
-            "label_0": "negative",
-            "label_1": "positive"
-        }
-        friendly = label_map.get(label, label)
-        return {
-            "sentiment": friendly,
-            "confidence": round(score * 100, 2),
-            "response": f"The text expresses a {friendly} sentiment",
-            "raw_score": score
-        }
-    elif task == "text-generation":
-        return {
-            "generated_text": result[0]["generated_text"],
-            "response": "Here's the generated answer"
-        }
-    else:
-        return {
-            "label": result[0]["label"],
-            "confidence": round(result[0]["score"] * 100, 2),
-            "response": f"The text is classified as: {result[0]['label']}"
-        }
-
-# Deployment trigger from FastAPI
-@fastapp.post("/deploy")
-def deploy(request: InferenceRequest):
-    organization = request.organization or DEFAULT_MODEL_ORG
-    model_name = request.model_name or DEFAULT_MODEL_NAME
-
-    with modal.enable_output():
-        app.deploy(client=client)
-        startup.remote(organization, model_name)  # preload selected model into container
-        return {"endpoint_url": inference.get_web_url()}
+        return web_app
