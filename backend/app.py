@@ -19,6 +19,22 @@ def check_if_model_exists(model_name: str, model_revision: str = "main") -> bool
     except Exception as e:
         print(f"Error checking model: {e}")
         return False
+    
+def get_gpu_type(param_count: int) -> str:
+    if param_count < 100_000_000:
+        return "T4"
+    elif param_count < 500_000_000:
+        return "L4"
+    elif param_count < 2_000_000_000:
+        return "A10G"
+    elif param_count < 7_000_000_000:
+        return "A100-40GB"
+    elif param_count < 20_000_000_000:
+        return "A100-80GB"
+    elif param_count < 50_000_000_000:
+        return "L40S"
+    else:
+        return "H100"
 
 # Shared HF cache
 hf_cache_vol = modal.Volume.from_name("huggingface-cache", create_if_missing=True)
@@ -26,17 +42,17 @@ hf_cache_vol = modal.Volume.from_name("huggingface-cache", create_if_missing=Tru
 # Base image
 base_image = (
     modal.Image.debian_slim(python_version="3.10")
-    .pip_install("transformers", "torch", "fastapi", "uvicorn", "pydantic", "huggingface_hub")
+    .pip_install("transformers", "torch", "fastapi", "uvicorn", "pydantic", "huggingface_hub", "optimum", "compressed-tensors", "accelerate", "auto-gptq")
 )
 
 # ✅ Modal App Builder
-def create_app(model_name: str, model_revision: str = "main", label: str = "web") -> modal.App:
-    app_name = f"{model_name.replace('/', '-')}-transformers-chat"
+def create_app(model_name: str, model_revision: str = "main", label: str = "web", gpu_type: str = "A10G:1") -> modal.App:
+    app_name = f"{label}-transformers-chat"
     app = modal.App(app_name)
 
     @app.cls(
         image=base_image,
-        gpu="A10G:1",
+        gpu=gpu_type,
         volumes={"/root/.cache/huggingface": hf_cache_vol},
         scaledown_window=900,
         serialized=True
@@ -158,6 +174,8 @@ async def deploy_model(request: Request):
         model = body.get("model_name")
         revision = body.get("model_revision", "main")
         label = body.get("model_unique_name", "web")
+        param_count = body.get("param_count")
+        gpu_type = get_gpu_type(param_count)  + ":1"
 
         if not org or not model:
             raise HTTPException(status_code=400, detail="org_name and model_name are required")
@@ -166,8 +184,8 @@ async def deploy_model(request: Request):
         if not check_if_model_exists(model_id, revision):
             raise HTTPException(status_code=400, detail="Model does not exist on Hugging Face")
 
-        app = create_app(model_id, revision, label)
-        deployment_name = f"{org}-{model.replace('/', '-')}-transformers-chat"
+        app = create_app(model_id, revision, label, gpu_type)
+        deployment_name = f"{label}-transformers-chat"
 
         with modal.enable_output():
             app.deploy(name=deployment_name)
