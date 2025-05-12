@@ -26,6 +26,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tags: ["transformer", "nlp", "bert"],
     tagInput: "",
     files: [] as File[],
+    parameters: "",
   })
   const [urlFields, setUrlFields] = useState({
     organizationName: "",
@@ -36,6 +37,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     license: "",
     tags: ["transformer", "nlp", "bert"],
     tagInput: "",
+    revision: "",
+    parameters: "",
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -90,12 +93,12 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   }
 
   function validateUploadFields() {
-    const { modelName, description, modelType, license } = uploadFields
-    return modelName && description && modelType && license
+    const { modelName, description, modelType, license, parameters } = uploadFields
+    return modelName && description && modelType && license && parameters
   }
   function validateUrlFields() {
-    const { organizationName, modelName, userModelName, description, license } = urlFields
-    return organizationName && modelName && userModelName && description && license
+    const { organizationName, modelName, userModelName, description, license, parameters } = urlFields
+    return organizationName && modelName && userModelName && description && license && parameters
   }
 
   async function handleUploadAction(formData: FormData) {
@@ -110,6 +113,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("modelType", uploadFields.modelType)
       formData.set("license", uploadFields.license)
       formData.set("tags", uploadFields.tags.join(","))
+      formData.set("parameters", uploadFields.parameters)
       if (uploadFields.files.length > 0) {
         formData.set("file", uploadFields.files[0])
       }
@@ -132,6 +136,27 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       addNotification("error", "Please fill all required fields.")
       return
     }
+    // Check if model exists on backend before pushing to DB
+    const checkPayload = {
+      model_name: urlFields.modelName,
+      org_name: urlFields.organizationName,
+      model_revision: urlFields.revision || "main",
+    };
+    try {
+      const checkRes = await fetch("http://127.0.0.1:8000/check_if_model_exists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(checkPayload),
+      });
+      const exists = await checkRes.json();
+      if (!exists) {
+        addNotification("error", "Model does not exist on Hugging Face with the given details.");
+        return;
+      }
+    } catch (err) {
+      addNotification("error", "Failed to check model existence.");
+      return;
+    }
     setLoadingUrl(true)
     try {
       const fullUrl = urlFields.organizationName && urlFields.modelName
@@ -145,7 +170,9 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("modelType", urlFields.modelType) // Ensure 'modelType' is set for backend compatibility
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
+      formData.set("parameters", urlFields.parameters)
       formData.set("sourceType", "URL")
+      formData.set("revision", urlFields.revision || "main")
       const result = await uploadModelAction(formData)
       if (result.success) {
         addNotification("success", "Model URL registered successfully!")
@@ -224,6 +251,16 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     value={uploadFields.description}
                     onChange={(e) => handleUploadChange("description", e.target.value)}
                     placeholder="Model description..."
+                    className="w-full max-w-full"
+                  />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="upload-parameters" className="text-blue-200 text-xs mb-1">Parameters <span className="text-red-400">*</span></label>
+                  <Textarea
+                    id="upload-parameters"
+                    value={uploadFields.parameters}
+                    onChange={(e) => handleUploadChange("parameters", e.target.value)}
+                    placeholder="Model parameters (required)"
                     className="w-full max-w-full"
                   />
                 </div>
@@ -342,15 +379,40 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     />
                   </div>
                   <div className="flex flex-col items-start">
-                    <label htmlFor="user-model-name" className="text-blue-200 text-xs mb-1">Your Model Name</label>
+                    <label htmlFor="user-model-name" className="text-blue-200 text-xs mb-1">Unique Model Name</label>
                     <Input
                       id="user-model-name"
                       value={urlFields.userModelName}
                       onChange={(e) => handleUrlChange("userModelName", e.target.value)}
-                      placeholder="Your Model Name"
+                      placeholder="Unique Model Name"
                       className="w-full max-w-full"
                     />
                   </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-parameters" className="text-blue-200 text-xs mb-1">Parameters (in billions) <span className="text-red-400">*</span></label>
+                    <Input
+                      id="url-parameters"
+                      type="number"
+                      value={urlFields.parameters}
+                      onChange={(e) => handleUrlChange("parameters", e.target.value.replace(/[^0-9.]/g, ""))}
+                      placeholder="e.g., 1 for 1B, 0.1 for 100M, 1.7 for 1.7B"
+                      className="w-full max-w-full"
+                      min="0"
+                      step="any"
+                      required
+                    />
+                    <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to 'main')</span></label>
+                  <Input
+                    id="url-revision"
+                    value={urlFields.revision}
+                    onChange={(e) => handleUrlChange("revision", e.target.value)}
+                    placeholder="main"
+                    className="w-full max-w-full"
+                  />
                 </div>
                 <div className="flex flex-col items-start">
                   <label htmlFor="url-model-description" className="text-blue-200 text-xs mb-1">Description</label>

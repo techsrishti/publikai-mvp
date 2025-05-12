@@ -23,6 +23,8 @@ export async function uploadModelAction(formData: FormData) {
     const file = formData.get('file') as File | null;
     const modelName = formData.get('modelName') as string | null; // Used in creator-dashboard
     const urlModelType = formData.get('urlModelType') as string | null; // Used in creator-dashboard
+    const parametersRaw = formData.get('parameters');
+    const revision = formData.get('revision') as string | null;
 
     // Always ensure tags is an array
     const tagsRaw = formData.get('tags');
@@ -32,12 +34,17 @@ export async function uploadModelAction(formData: FormData) {
 
     // Debug log for creator-dashboard version
     console.log('Creator Dashboard uploadModelAction received:', {
-      name, description, modelType, license, sourceType, url, tags, modelName, urlModelType
+      name, description, modelType, license, sourceType, url, tags, modelName, urlModelType,
+      parametersRaw, revision
     });
 
     // Validate required fields
-    if (!name || !description || !modelType || !license || !sourceType) {
-      return { success: false, error: 'All required fields must be provided.' };
+    if (!name || !description || !modelType || !license || !sourceType || parametersRaw === null || parametersRaw === undefined || parametersRaw === '') {
+      return { success: false, error: 'All required fields must be provided, including parameters.' };
+    }
+    const parameters = parseFloat(parametersRaw as string);
+    if (isNaN(parameters)) {
+      return { success: false, error: 'Parameters must be a valid number.' };
     }
     
     // Optional validation for tags (specific to creator-dashboard)
@@ -87,6 +94,8 @@ export async function uploadModelAction(formData: FormData) {
         sourceType: normalizedSourceType,
         url: fileUrl,
         tags,
+        parameters,
+        revision,
       },
     });
     

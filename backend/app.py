@@ -7,18 +7,7 @@ from transformers import AutoTokenizer, AutoConfig
 import modal
 from huggingface_hub import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
-
-# ✅ Check model existence on Hugging Face Hub
-def check_if_model_exists(model_name: str, model_revision: str = "main") -> bool:
-    try:
-        api = HfApi()
-        api.model_info(model_name, revision=model_revision)
-        return True
-    except RepositoryNotFoundError:
-        return False
-    except Exception as e:
-        print(f"Error checking model: {e}")
-        return False
+from fastapi.middleware.cors import CORSMiddleware
     
 def get_gpu_type(param_count: int) -> str:
     if param_count < 100_000_000:
@@ -42,7 +31,19 @@ hf_cache_vol = modal.Volume.from_name("huggingface-cache", create_if_missing=Tru
 # Base image
 base_image = (
     modal.Image.debian_slim(python_version="3.10")
-    .pip_install("transformers", "torch", "fastapi", "uvicorn", "pydantic", "huggingface_hub", "optimum", "compressed-tensors", "accelerate", "auto-gptq")
+    .pip_install(
+        "torch>=2.1.0",  # Use latest compatible version
+        "transformers",
+        "fastapi",
+        "uvicorn",
+        "pydantic",
+        "huggingface_hub",
+        "optimum",
+        "compressed-tensors",
+        "accelerate",
+        "auto-gptq",
+        "bitsandbytes"  # For quantization support
+    )
 )
 
 # ✅ Modal App Builder
@@ -52,7 +53,7 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
 
     @app.cls(
         image=base_image,
-        gpu=gpu_type,
+        gpu="gpu_type",
         volumes={"/root/.cache/huggingface": hf_cache_vol},
         scaledown_window=900,
         serialized=True
@@ -101,12 +102,41 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
                 raise ValueError("Model name must be provided")
 
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, revision=self.model_revision)
-            ModelClass = self.get_correct_model_class(self.model_name)
-            self.model = ModelClass.from_pretrained(self.model_name, revision=self.model_revision).to(self.device).eval()
+            print(f"Using device: {self.device}")
 
+            # Load tokenizer with proper padding token
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                revision=self.model_revision,
+                padding_side="left",  # Ensure padding is on the left
+                use_fast=True  # Use fast tokenizer
+            )
+            
+            # Set padding token if not set
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+
+            # Load model with proper configuration
+            ModelClass = self.get_correct_model_class(self.model_name)
+            self.model = ModelClass.from_pretrained(
+                self.model_name,
+                revision=self.model_revision,
+                device_map="auto",
+                torch_dtype=torch.bfloat16,
+                trust_remote_code=True,
+                use_cache=True,
+                low_cpu_mem_usage=True,
+                offload_folder=None  # Enable model offloading
+            ).eval()
+
+            # Enable model optimizations
+            if hasattr(self.model, "enable_input_require_grads"):
+                self.model.enable_input_require_grads()
+            if hasattr(self.model, "enable_gradient_checkpointing"):
+                self.model.enable_gradient_checkpointing()
+            if hasattr(self.model, "enable_model_cpu_offload"):
+                self.model.enable_model_cpu_offload()
 
             print(f"✅ Model {ModelClass.__name__} loaded successfully")
 
@@ -127,24 +157,45 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
                     return {"error": "Message content is required."}
 
                 input_text = messages[0]["content"]
+
+                # Tokenize with proper attention mask
                 inputs = self.tokenizer(
                     input_text,
                     return_tensors="pt",
                     padding=True,
                     truncation=True,
-                    max_length=512
-                ).to(self.device)
+                    max_length=512,
+                    add_special_tokens=True
+                )
+
+                # Ensure attention mask is set
+                if "attention_mask" not in inputs:
+                    inputs["attention_mask"] = torch.ones_like(inputs["input_ids"])
+
+                # Move to device
+                inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
                 try:
                     if not hasattr(self.model, "generate"):
                         return {"error": "This model does not support text generation."}
 
-                    with torch.no_grad():
+                    with torch.no_grad(), torch.cuda.amp.autocast():  # Enable automatic mixed precision
                         outputs = self.model.generate(
                             inputs["input_ids"],
+                            attention_mask=inputs["attention_mask"],
                             max_length=50,
+                            min_length=1,
+                            num_return_sequences=1,
                             pad_token_id=self.tokenizer.pad_token_id,
-                            eos_token_id=self.tokenizer.eos_token_id
+                            eos_token_id=self.tokenizer.eos_token_id,
+                            do_sample=True,
+                            temperature=0.7,
+                            top_p=0.9,
+                            top_k=50,
+                            repetition_penalty=1.2,
+                            no_repeat_ngram_size=3,
+                            early_stopping=True,
+                            use_cache=True  # Enable KV cache
                         )
 
                     output_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -160,11 +211,33 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
 
 # ✅ Deployment entrypoint
 deploy_app = FastAPI()
-
+deploy_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend's URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Or ["POST"] if you want to be strict
+    allow_headers=["*"],
+)
 class DeploymentRequest(BaseModel):
     org_name: str
     model_name: str
     model_revision: str = "main"
+
+@deploy_app.post("/check_if_model_exists")
+async def check_if_model_exists(request: Request) -> bool:
+    try:
+        body = await request.json()
+        org = body.get("org_name")
+        model_name = org + "/" + body.get("model_name")
+        model_revision = body.get("model_revision", "main")
+        api = HfApi()
+        api.model_info(model_name, revision=model_revision)
+        return True
+    except RepositoryNotFoundError:
+        return False
+    except Exception as e:
+        print(f"Error checking model: {e}")
+        return False
 
 @deploy_app.post("/deploy")
 async def deploy_model(request: Request):
@@ -181,8 +254,6 @@ async def deploy_model(request: Request):
             raise HTTPException(status_code=400, detail="org_name and model_name are required")
 
         model_id = f"{org}/{model}"
-        if not check_if_model_exists(model_id, revision):
-            raise HTTPException(status_code=400, detail="Model does not exist on Hugging Face")
 
         app = create_app(model_id, revision, label, gpu_type)
         deployment_name = f"{label}-transformers-chat"

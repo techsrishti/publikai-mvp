@@ -53,6 +53,8 @@ model Model {
   sourceType  SourceType
   url         String?    // Optional URL for Hugging Face models
   tags        String[]   // Tags as array of strings
+  revision    String?    // Optional model revision (e.g., 'main')
+  parameters  Float      // Number of parameters in billions
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
