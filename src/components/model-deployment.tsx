@@ -5,15 +5,118 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Upload, Server } from "lucide-react"
+import { useEffect, useState } from "react"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
 }
 
+interface Model {
+  id: string
+  name: string
+  description: string
+  modelType: string
+  license: string
+  sourceType: string
+  url: string | null
+  tags: string[]
+  revision?: string | null
+  parameters: number
+  createdAt: string
+  modelName?: string
+  organizationName?: string
+  userModelName?: string
+}
+
+interface Deployment {
+  id: string
+  modelId: string
+  status: string
+  deploymentUrl?: string | null
+  apiKey?: string | null
+  createdAt: string
+  updatedAt: string
+  model: Model
+}
+
 export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
-  const handleDeploy = () => {
+  const [models, setModels] = useState<Model[]>([])
+  const [deployments, setDeployments] = useState<Deployment[]>([])
+  const [selectedModelId, setSelectedModelId] = useState<string>("")
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    // Fetch models
+    fetch("/api/models")
+      .then(res => res.json())
+      .then(data => setModels(data.models || []))
+    // Fetch deployments
+    fetch("/api/deployment")
+      .then(res => res.json())
+      .then(data => setDeployments(data.deployments || []))
+  }, [])
+
+  const handleDeploy = async () => {
+    if (!selectedModelId) {
+      addNotification("error", "Please select a model to deploy.")
+      return
+    }
+    const model = models.find(m => m.id === selectedModelId)
+    if (!model) {
+      addNotification("error", "Model not found.")
+      return
+    }
+    setLoading(true)
     addNotification("info", "Starting deployment process...")
-    // Deployment logic here
+    try {
+      // Prepare payload for backend deploy
+      const deployPayload = {
+        model_name: model.url ? model.url.split("/")[4] : "",
+        model_revision: model.revision || "main",
+        org_name: model.organizationName || (model.url ? model.url.split("/")[3] : ""),
+        model_unique_name: model.userModelName || model.name,
+        param_count: model.parameters,
+      }
+      console.log("Noice")
+      console.log("Deploy payload:", deployPayload)
+      if (!deployPayload.model_name || !deployPayload.model_unique_name || !deployPayload.org_name || !deployPayload.param_count) {
+        addNotification("error", "Model details are incomplete for deployment.")
+        setLoading(false)
+        return
+      }
+      const res = await fetch("http://127.0.0.1:8000/deploy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(deployPayload),
+      })
+      const data = await res.json()
+      if (data.status === "success") {
+        // POST to /api/deployment
+        const depRes = await fetch("/api/deployment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            modelId: model.id,
+            status: data.status,
+            deploymentUrl: data.deployment_url,
+            modelUniqueName: deployPayload.model_unique_name,
+          }),
+        })
+        const depData = await depRes.json()
+        if (depData.success) {
+          addNotification("success", "Model deployed successfully!")
+          setDeployments([depData.deployment, ...deployments])
+        } else {
+          addNotification("error", depData.error || "Failed to save deployment.")
+        }
+      } else {
+        addNotification("error", data.message || "Deployment failed.")
+      }
+    } catch (err) {
+      addNotification("error", "Deployment failed.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -25,54 +128,16 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
-              <Select>
-                <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
-                  <SelectValue placeholder="Choose a model" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-800">
-                  <SelectItem value="bert">BERT-base-uncased</SelectItem>
-                  <SelectItem value="resnet">ResNet50</SelectItem>
-                  <SelectItem value="gpt2">GPT-2-small</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Deployment Environment</label>
-              <Select>
-                <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
-                  <SelectValue placeholder="Select environment" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-800">
-                  <SelectItem value="dev">Development</SelectItem>
-                  <SelectItem value="staging">Staging</SelectItem>
-                  <SelectItem value="prod">Production</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Instance Type</label>
-              <Select>
-                <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
-                  <SelectValue placeholder="Select instance type" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-800">
-                  <SelectItem value="small">Small (2 vCPU, 8GB RAM)</SelectItem>
-                  <SelectItem value="medium">Medium (4 vCPU, 16GB RAM)</SelectItem>
-                  <SelectItem value="large">Large (8 vCPU, 32GB RAM)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Number of Replicas</label>
-              <Input 
-                type="number" 
-                min="1" 
-                defaultValue="1"
-                className="bg-gray-900/50 border-gray-700 text-gray-200"
-              />
+              <select
+                className="w-full bg-gray-900/50 border-gray-700 text-gray-200 rounded-md p-2"
+                value={selectedModelId}
+                onChange={e => setSelectedModelId(e.target.value)}
+              >
+                <option value="">Choose a model</option>
+                {models.map(model => (
+                  <option key={model.id} value={model.id}>{model.name}</option>
+                ))}
+              </select>
             </div>
           </div>
         </Card>
@@ -81,65 +146,34 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
           <h3 className="text-lg font-semibold text-white mb-4">Active Deployments</h3>
           <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Server className="h-5 w-5 text-green-400" />
-                  <span className="font-medium text-gray-200">BERT-base-uncased</span>
+            {deployments.length === 0 && <div className="text-gray-400">No deployments yet.</div>}
+            {deployments.map(dep => (
+              <div key={dep.id} className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Server className="h-5 w-5 text-green-400" />
+                    <span className="font-medium text-gray-200">{dep.model?.name || 'Unknown Model'}</span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                    {dep.status}
+                  </span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
-                  Active
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-400">Environment</p>
-                  <p className="text-gray-200">Production</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Replicas</p>
-                  <p className="text-gray-200">3/3</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Instance Type</p>
-                  <p className="text-gray-200">Medium</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Uptime</p>
-                  <p className="text-gray-200">5d 12h</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Server className="h-5 w-5 text-green-400" />
-                  <span className="font-medium text-gray-200">ResNet50</span>
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
-                  Active
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-400">Environment</p>
-                  <p className="text-gray-200">Staging</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Replicas</p>
-                  <p className="text-gray-200">2/2</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Instance Type</p>
-                  <p className="text-gray-200">Small</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Uptime</p>
-                  <p className="text-gray-200">2d 8h</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">Deployment URL</p>
+                    <p className="text-gray-200 break-all">{dep.deploymentUrl ? <a href={dep.deploymentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">{dep.deploymentUrl}</a> : "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">API Key</p>
+                    <p className="text-gray-200 break-all">{dep.apiKey || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Created</p>
+                    <p className="text-gray-200">{new Date(dep.createdAt).toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -149,9 +183,10 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         <Button
           onClick={handleDeploy}
           className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+          disabled={loading}
         >
           <Upload className="mr-2 h-4 w-4" />
-          Deploy Model
+          {loading ? "Deploying..." : "Deploy Model"}
         </Button>
       </div>
     </div>

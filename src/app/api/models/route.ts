@@ -14,6 +14,8 @@ export async function GET() {
         url: true,
         tags: true,
         createdAt: true,
+        parameters: true,
+        revision: true,
       }
     });
 

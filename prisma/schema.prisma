@@ -1,11 +1,12 @@
 generator client {
   provider = "prisma-client-js"
- }
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 enum UserRole {
   USER
   CREATOR
@@ -29,32 +30,44 @@ model User {
 }
 
 model Creator {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id])
-  experienceLevel   String
-  specialization    String[]
-  aiFrameworks      String[]
-  modelTypes        String[]
-  developmentGoals  String
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  experienceLevel    String
+  specialization     String[]
+  aiFrameworks       String[]
+  modelTypes         String[]
+  developmentGoals   String
   projectDescription String
-  portfolioUrl      String?
-  githubUrl         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  portfolioUrl       String?
+  githubUrl          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Model {
-  id          String     @id @default(cuid())
-  name        String     @unique
+  id          String       @id @default(cuid())
+  name        String       @unique
   description String
   modelType   String
   license     String
   sourceType  SourceType
-  url         String?    // Optional URL for Hugging Face models
-  tags        String[]   // Tags as array of strings
-  revision    String?    // Optional model revision (e.g., 'main')
-  parameters  Float      // Number of parameters in billions
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  url         String? // Optional URL for Hugging Face models
+  tags        String[] // Tags as array of strings
+  revision    String? // Optional model revision (e.g., 'main')
+  parameters  Float // Number of parameters in billions
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  Deployment  Deployment[]
+}
+
+model Deployment {
+  id            String   @id @default(cuid())
+  modelId       String
+  model         Model    @relation(fields: [modelId], references: [id])
+  status        String
+  deploymentUrl String?
+  apiKey        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

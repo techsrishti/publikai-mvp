@@ -53,7 +53,7 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
 
     @app.cls(
         image=base_image,
-        gpu="gpu_type",
+        gpu=gpu_type,
         volumes={"/root/.cache/huggingface": hf_cache_vol},
         scaledown_window=900,
         serialized=True
@@ -241,6 +241,7 @@ async def check_if_model_exists(request: Request) -> bool:
 
 @deploy_app.post("/deploy")
 async def deploy_model(request: Request):
+    print(await request.json())
     try:
         body = await request.json()
         org = body.get("org_name")
