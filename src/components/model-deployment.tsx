@@ -42,9 +42,27 @@ interface Deployment {
 export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [models, setModels] = useState<Model[]>([])
   const [deployments, setDeployments] = useState<Deployment[]>([])
-  const [selectedModelId, setSelectedModelId] = useState<string>("")
-  const [loading, setLoading] = useState(false)
+  const [isDeploying, setIsDeploying] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<string>("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingModels, setLoadingModels] = useState(true)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      const response = await fetch("/api/deployment")
+      if (!response.ok) {
+        throw new Error("Failed to fetch deployments")
+      }
+      const data = await response.json()
+      setDeployments(data.deployments || [])
+    } catch (error) {
+      console.error("Error refreshing deployments:", error)
+      addNotification("error", "Failed to refresh deployments")
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     // Fetch models (request only summary fields for faster response)
@@ -57,19 +75,23 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
     fetch("/api/deployment")
       .then(res => res.json())
       .then(data => setDeployments(data.deployments || []))
+      .catch(error => {
+        console.error("Error fetching deployments:", error)
+        setDeployments([])
+      })
   }, [])
 
   const handleDeploy = async () => {
-    if (!selectedModelId) {
+    if (!selectedModel) {
       addNotification("error", "Please select a model to deploy.")
       return
     }
-    const model = models.find((m: Model) => m.id === selectedModelId)
+    const model = models.find((m: Model) => m.id === selectedModel)
     if (!model) {
       addNotification("error", "Model not found.")
       return
     }
-    setLoading(true)
+    setIsDeploying(true)
     addNotification("info", "Starting deployment process...")
     try {
       // Prepare payload for backend deploy
@@ -83,7 +105,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       console.log("Deploy payload:", deployPayload)
       if (!deployPayload.model_name || !deployPayload.model_unique_name || !deployPayload.org_name || !deployPayload.param_count) {
         addNotification("error", "Model details are incomplete for deployment.")
-        setLoading(false)
+        setIsDeploying(false)
         return
       }
       const res = await fetch("http://127.0.0.1:8000/deploy", {
@@ -120,7 +142,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
     } catch (err) {
       addNotification("error", "Deployment failed.")
     } finally {
-      setLoading(false)
+      setIsDeploying(false)
     }
   }
 
@@ -140,8 +162,8 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
               ) : (
                 <select
                   className="w-full bg-black border-gray-700 text-gray-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  value={selectedModelId}
-                  onChange={e => setSelectedModelId(e.target.value)}
+                  value={selectedModel}
+                  onChange={e => setSelectedModel(e.target.value)}
                 >
                   <option value="" className="bg-black text-gray-200">Choose a model</option>
                   {models.map((model: Model) => (
@@ -215,10 +237,10 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         <Button
           onClick={handleDeploy}
           className="bg-purple-600 hover:bg-purple-700 text-white px-8"
-          disabled={loading}
+          disabled={isDeploying}
         >
           <Upload className="mr-2 h-4 w-4" />
-          {loading ? "Deploying..." : "Deploy Model"}
+          {isDeploying ? "Deploying..." : "Deploy Model"}
         </Button>
       </div>
     </div>
