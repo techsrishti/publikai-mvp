@@ -19,6 +19,22 @@ enum SourceType {
   UPLOAD
 }
 
+enum CloudProvider {
+  AWS
+  GCP
+  AZURE
+}
+
+enum DeploymentStatus {
+  PENDING
+  NOTDEPLOYED
+  INITIATED
+  DEPLOYING
+  RUNNING
+  FAILED
+  STOPPED
+}
+
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique

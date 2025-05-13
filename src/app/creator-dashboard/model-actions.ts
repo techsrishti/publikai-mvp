@@ -1,7 +1,8 @@
 "use server"
 
 import { prisma } from '@/lib/prisma';
-import { SourceType } from '@prisma/client';
+import { auth } from '@clerk/nextjs/server';
+import { SourceType, DeploymentStatus } from '@prisma/client';
 
 // Define error interface for Prisma errors
 interface PrismaError {
@@ -21,6 +22,8 @@ export async function uploadModelAction(formData: FormData) {
     const sourceType = formData.get('sourceType') as string | null;
     const url = formData.get('url') as string | null;
     const file = formData.get('file') as File | null;
+    const hfOrganizationName = formData.get('hfOrganizationName') as string | null;
+    const hfModelName = formData.get('hfModelName') as string | null;
     const modelName = formData.get('modelName') as string | null; // Used in creator-dashboard
     const urlModelType = formData.get('urlModelType') as string | null; // Used in creator-dashboard
     const parametersRaw = formData.get('parameters');
@@ -63,7 +66,6 @@ export async function uploadModelAction(formData: FormData) {
       return { success: false, error: 'URL is required for URL source type.' };
     }
 
-    // File validation removed - files are now optional
     
     // Check if a model with the same name already exists
     const existing = await prisma.model.findUnique({ where: { name } });
@@ -107,5 +109,139 @@ export async function uploadModelAction(formData: FormData) {
     }
     console.error('Error creating model in creator dashboard:', error);
     return { success: false, error: 'Failed to create model' };
+  }
+}
+
+
+export async function getAllModels() { 
+  try { 
+    const { userId: clerkId } = await auth();
+    console.log(clerkId + "requested models")
+
+    const models = await prisma.model.findMany({
+      select: {
+        id: true,
+        name: true,
+        modelType: true,
+      },
+    });
+
+    return { success: true, models };
+  } catch (error) { 
+    console.error('Error fetching models:', error);
+    return { success: false, error: 'Failed to fetch models' };
+  }
+}
+
+export async function startDeployment(modelName: string) { 
+  try { 
+    const { userId: clerkId } = await auth();
+    console.log(clerkId + "requested models")
+
+    if (!clerkId) { 
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const model = await prisma.model.findUnique({
+      where: { 
+        name: modelName,
+      },
+    });
+
+    if (!model) { 
+      return { success: false, error: 'Model not found' };
+    }
+
+    const deployment = await prisma.deployment.findUnique({
+      where: {
+        modelId: model.id,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!deployment) { 
+      return { success: false, error: 'Deployment not found' };
+    }
+
+    if (deployment.status !== DeploymentStatus.NOTDEPLOYED) { 
+      return { success: false, error: 'Deployment already in progress' };
+    }
+
+    //send request to deploy model. 
+    const deploymentApiIP = process.env.DEPLOYMENT_API_IP;
+    const deploymentApiPort = process.env.DEPLOYMENT_API_PORT;
+
+    const response = await fetch(`http://${deploymentApiIP}:${deploymentApiPort}/launch-model`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+          model_type: "AutoModelForCausalLM",
+          model_name: model.hfOrganizationName + "/" + model.hfModelName,
+          user_id: clerkId,
+          model_internal_name: model.name,
+        }),
+    });
+
+    console.log(response)
+    if (response.status == 200) { 
+      //Update deployment status to DEPLOYING
+      await prisma.deployment.update({
+        where: { id: deployment.id },
+        data: { status: DeploymentStatus.DEPLOYING },
+      });
+      return { success: true, message: 'Deployment initiated' };
+    }
+    else { 
+      return { success: false, error: 'Failed to deploy model' };
+    }
+  }
+  catch (error) { 
+    console.error('Error deploying model:', error);
+    return { success: false, error: 'Failed to deploy model' };
+  }
+}
+
+export async function getActiveDeployments() {
+  try {
+    const { userId: clerkId } = await auth();
+    
+    if (!clerkId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const deployments = await prisma.deployment.findMany({
+      where: {
+        OR: [
+          { status: DeploymentStatus.DEPLOYING },
+          { status: DeploymentStatus.RUNNING },
+          { status: DeploymentStatus.FAILED }
+        ]
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        instanceIP: true,
+        instancePort: true,
+        model: {
+          select: {
+            name: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return { success: true, deployments };
+  } catch (error) {
+    console.error('Error fetching deployments:', error);
+    return { success: false, error: 'Failed to fetch deployments' };
   }
 }

@@ -161,7 +161,22 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
 
         {/* Deployment Status */}
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
-          <h3 className="text-lg font-semibold text-white mb-4">Active Deployments</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-white">Active Deployments</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="text-gray-400 hover:text-white"
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Loader2 className="h-4 w-4 hover:animate-spin" />
+              )}
+            </Button>
+          </div>
           <div className="space-y-4">
             {deployments.length === 0 && <div className="text-gray-400">No deployments yet.</div>}
             {deployments.map((dep: Deployment) => (
