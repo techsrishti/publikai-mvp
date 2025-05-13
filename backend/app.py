@@ -10,6 +10,7 @@ from huggingface_hub.utils import RepositoryNotFoundError
 from fastapi.middleware.cors import CORSMiddleware
     
 def get_gpu_type(param_count: int) -> str:
+    param_count = param_count * 1000000000
     if param_count < 100_000_000:
         return "T4"
     elif param_count < 500_000_000:
