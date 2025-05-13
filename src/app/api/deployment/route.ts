@@ -16,25 +16,50 @@ export async function POST(req: Request) {
     if (!finalApiKey && modelUniqueName) {
       finalApiKey = generateApiKey(modelUniqueName);
     }
-    const deployment = await prisma.deployment.create({
-      data: {
-        modelId,
-        status,
-        deploymentUrl,
-        apiKey: finalApiKey,
-      },
+
+    // First, find if a deployment exists for this model
+    const existingDeployment = await prisma.deployment.findFirst({
+      where: { modelId }
     });
+
+    let deployment;
+    if (existingDeployment) {
+      // Update existing deployment
+      deployment = await prisma.deployment.update({
+        where: { id: existingDeployment.id },
+        data: {
+          status,
+          deploymentUrl,
+          apiKey: finalApiKey,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Create new deployment
+      deployment = await prisma.deployment.create({
+        data: {
+          modelId,
+          status,
+          deploymentUrl,
+          apiKey: finalApiKey,
+        },
+      });
+    }
+
     return NextResponse.json({ success: true, deployment });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error?.toString() });
+    console.error('Deployment error:', error);
+    return NextResponse.json({ success: false, error: error?.toString() }, { status: 500 });
   }
 }
 
 export async function GET() {
   try {
+    // Return only the latest deployment per model
     const deployments = await prisma.deployment.findMany({
+      distinct: ['modelId'],
+      orderBy: { updatedAt: 'desc' },
       include: { model: true },
-      orderBy: { createdAt: 'desc' },
     });
     console.log(deployments)
     return NextResponse.json({ deployments });

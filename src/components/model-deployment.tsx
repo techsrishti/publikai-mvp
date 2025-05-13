@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Upload, Server } from "lucide-react"
+import { Upload, Server, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface ModelDeploymentProps {
@@ -44,13 +44,16 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [deployments, setDeployments] = useState<Deployment[]>([])
   const [selectedModelId, setSelectedModelId] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const [loadingModels, setLoadingModels] = useState(true)
 
   useEffect(() => {
-    // Fetch models
-    fetch("/api/models")
+    // Fetch models (request only summary fields for faster response)
+    fetch("/api/models?summary=1")
       .then(res => res.json())
       .then(data => setModels(data.models || []))
-    // Fetch deployments
+      .finally(() => setLoadingModels(false))
+
+    // Fetch deployments in parallel
     fetch("/api/deployment")
       .then(res => res.json())
       .then(data => setDeployments(data.deployments || []))
@@ -61,7 +64,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       addNotification("error", "Please select a model to deploy.")
       return
     }
-    const model = models.find(m => m.id === selectedModelId)
+    const model = models.find((m: Model) => m.id === selectedModelId)
     if (!model) {
       addNotification("error", "Model not found.")
       return
@@ -77,7 +80,6 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         model_unique_name: model.userModelName || model.name,
         param_count: model.parameters,
       }
-      console.log("Noice")
       console.log("Deploy payload:", deployPayload)
       if (!deployPayload.model_name || !deployPayload.model_unique_name || !deployPayload.org_name || !deployPayload.param_count) {
         addNotification("error", "Model details are incomplete for deployment.")
@@ -105,7 +107,10 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         const depData = await depRes.json()
         if (depData.success) {
           addNotification("success", "Model deployed successfully!")
-          setDeployments([depData.deployment, ...deployments])
+          // Update deployments by fetching the latest data
+          const updatedDeploymentsRes = await fetch("/api/deployment")
+          const updatedDeploymentsData = await updatedDeploymentsRes.json()
+          setDeployments(updatedDeploymentsData.deployments || [])
         } else {
           addNotification("error", depData.error || "Failed to save deployment.")
         }
@@ -128,16 +133,28 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
-              <select
-                className="w-full bg-gray-900/50 border-gray-700 text-gray-200 rounded-md p-2"
-                value={selectedModelId}
-                onChange={e => setSelectedModelId(e.target.value)}
-              >
-                <option value="">Choose a model</option>
-                {models.map(model => (
-                  <option key={model.id} value={model.id}>{model.name}</option>
-                ))}
-              </select>
+              {loadingModels ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              ) : (
+                <select
+                  className="w-full bg-black border-gray-700 text-gray-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  value={selectedModelId}
+                  onChange={e => setSelectedModelId(e.target.value)}
+                >
+                  <option value="" className="bg-black text-gray-200">Choose a model</option>
+                  {models.map((model: Model) => (
+                    <option 
+                      key={model.id} 
+                      value={model.id}
+                      className="bg-black text-gray-200 hover:bg-gray-800"
+                    >
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         </Card>
@@ -147,7 +164,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           <h3 className="text-lg font-semibold text-white mb-4">Active Deployments</h3>
           <div className="space-y-4">
             {deployments.length === 0 && <div className="text-gray-400">No deployments yet.</div>}
-            {deployments.map(dep => (
+            {deployments.map((dep: Deployment) => (
               <div key={dep.id} className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
