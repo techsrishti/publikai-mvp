@@ -6,14 +6,14 @@ import { cn } from "@/lib/utils"
 interface AnimatedGradientTextProps {
   text: string
   className?: string
-  mousePosition: { x: number; y: number }
+  mousePosition?: { x: number; y: number }
 }
 
-export function AnimatedGradientText({ text, className, mousePosition }: AnimatedGradientTextProps) {
+export function AnimatedGradientText({ text, className, mousePosition = { x: 0, y: 0 } }: AnimatedGradientTextProps) {
   const textRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !textRef.current) return;
+    if (typeof window === 'undefined' || !textRef.current || !mousePosition) return;
 
     const rect = textRef.current.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
