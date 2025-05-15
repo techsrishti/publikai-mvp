@@ -13,15 +13,17 @@ export function AnimatedGradientText({ text, className, mousePosition }: Animate
   const textRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!textRef.current) return
+    if (typeof window === 'undefined' || !textRef.current) return;
 
     const rect = textRef.current.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
     const centerY = rect.top + rect.height / 2
 
     // Calculate distance from mouse to center of text (normalized)
-    const dx = (mousePosition.x - centerX) / window.innerWidth
-    const dy = (mousePosition.y - centerY) / window.innerHeight
+    const windowWidth = window?.innerWidth || 1;
+    const windowHeight = window?.innerHeight || 1;
+    const dx = (mousePosition.x - centerX) / windowWidth
+    const dy = (mousePosition.y - centerY) / windowHeight
 
     // Update gradient position based on mouse movement
     const gradientX = 50 + dx * 20 // Move gradient by up to 20%

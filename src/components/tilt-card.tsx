@@ -37,17 +37,17 @@ export function TiltCard({
   const gradient = GRADIENTS[gradientIndex % GRADIENTS.length]
 
   useEffect(() => {
-    if (!cardRef.current || !innerCardRef.current || !glowRef.current || disabled) return
+    if (typeof window === 'undefined' || !cardRef.current || !innerCardRef.current || !glowRef.current || disabled) return;
 
     const rect = cardRef.current.getBoundingClientRect()
-    const mouseOver =
+    const mouseOver = mousePosition && (
       mousePosition.x >= rect.left &&
       mousePosition.x <= rect.right &&
       mousePosition.y >= rect.top &&
       mousePosition.y <= rect.bottom
+    );
 
-    console.log(isHovering)
-    setIsHovering(mouseOver)
+    setIsHovering(mouseOver || false);
 
     if (mouseOver) {
       // Calculate position within card (normalized from -1 to 1)
