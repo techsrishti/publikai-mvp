@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface TiltCardProps {
@@ -31,7 +31,6 @@ export function TiltCard({
   const cardRef = useRef<HTMLDivElement>(null)
   const innerCardRef = useRef<HTMLDivElement>(null)
   const glowRef = useRef<HTMLDivElement>(null)
-  const [isHovering, setIsHovering] = useState(false)
   
   // Use the provided gradientIndex to select gradient with safety check
   const safeGradientIndex = typeof gradientIndex === 'number' ? gradientIndex : 0;
@@ -47,8 +46,6 @@ export function TiltCard({
       mousePosition.y >= rect.top &&
       mousePosition.y <= rect.bottom
     );
-
-    setIsHovering(mouseOver || false);
 
     if (mouseOver) {
       // Calculate position within card (normalized from -1 to 1)
