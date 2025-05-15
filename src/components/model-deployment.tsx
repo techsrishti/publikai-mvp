@@ -26,6 +26,7 @@ interface Model {
   modelName?: string
   organizationName?: string
   userModelName?: string
+  customScript?: string | null
 }
 
 interface Deployment {
@@ -101,6 +102,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         org_name: model.organizationName || (model.url ? model.url.split("/")[3] : ""),
         model_unique_name: model.userModelName || model.name,
         param_count: model.parameters,
+        custom_script: model.customScript || null,
       }
       console.log("Deploy payload:", deployPayload)
       if (!deployPayload.model_name || !deployPayload.model_unique_name || !deployPayload.org_name || !deployPayload.param_count) {
@@ -148,9 +150,9 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
         {/* Deployment Configuration */}
-        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 self-start">
           <h3 className="text-lg font-semibold text-white mb-4">Deployment Configuration</h3>
           <div className="space-y-4">
             <div>
@@ -182,7 +184,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         </Card>
 
         {/* Deployment Status */}
-        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 max-h-[70vh] overflow-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-white">Active Deployments</h3>
             <Button
@@ -245,4 +247,18 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       </div>
     </div>
   )
+}
+
+async function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64String = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:text/plain;base64,")
+      const base64Content = base64String.split(',')[1];
+      resolve(base64Content);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

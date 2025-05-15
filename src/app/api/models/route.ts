@@ -18,6 +18,8 @@ export async function GET(req: Request) {
             url: true,
             revision: true,
             parameters: true,
+            // @ts-ignore - customScript field exists in database but not in types
+            customScript: true,
           }
         : {
             id: true,
@@ -31,6 +33,8 @@ export async function GET(req: Request) {
             createdAt: true,
             parameters: true,
             revision: true,
+            // @ts-ignore - customScript field exists in database but not in types
+            customScript: true,
           },
     })
 
@@ -38,5 +42,45 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error('Error fetching models:', error)
     return NextResponse.json({ error: 'Failed to fetch models' }, { status: 500 })
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const formData = await req.formData()
+    const name = formData.get("name") as string
+    const description = formData.get("description") as string
+    const modelType = formData.get("modelType") as string
+    const license = formData.get("license") as string
+    const sourceType = formData.get("sourceType") as "URL" | "UPLOAD"
+    const url = formData.get("url") as string | null
+    const tags = (formData.get("tags") as string).split(",")
+    const revision = formData.get("revision") as string | null
+    const parameters = parseFloat(formData.get("parameters") as string)
+    const customScript = formData.get("customScript") as string | null
+
+    const model = await prisma.model.create({
+      data: {
+        name,
+        description,
+        modelType,
+        license,
+        sourceType,
+        url,
+        tags,
+        revision,
+        parameters,
+        // @ts-ignore - customScript field exists in database but not in types
+        customScript,
+      },
+    })
+
+    return NextResponse.json({ success: true, model })
+  } catch (error) {
+    console.error("Error creating model:", error)
+    return NextResponse.json(
+      { success: false, error: "Failed to create model" },
+      { status: 500 }
+    )
   }
 }

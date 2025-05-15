@@ -1,14 +1,19 @@
 import os
 import torch
 from fastapi import FastAPI, Request, HTTPException
-from pydantic import BaseModel, ValidationError
-from typing import List
-from transformers import AutoTokenizer, AutoConfig, AutoModelForMaskedLM
+from pydantic import BaseModel
+from typing import Optional
 import modal
 from huggingface_hub import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import tempfile
+import importlib.util
+import sys
+import base64
+import ast
+import inspect
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +43,7 @@ hf_cache_vol = modal.Volume.from_name("huggingface-cache", create_if_missing=Tru
 base_image = (
     modal.Image.debian_slim(python_version="3.10")
     .pip_install(
-        "torch>=2.1.0",  # Use latest compatible version
+        "torch>=2.1.0",
         "transformers",
         "fastapi",
         "uvicorn",
@@ -48,12 +53,12 @@ base_image = (
         "compressed-tensors",
         "accelerate",
         "auto-gptq",
-        "bitsandbytes"  # For quantization support
+        "bitsandbytes"
     )
 )
 
 # ✅ Modal App Builder
-def create_app(model_name: str, model_revision: str = "main", label: str = "web", gpu_type: str = "A10G:1") -> modal.App:
+def create_app(model_name: str, model_revision: str = "main", label: str = "web", gpu_type: str = "A10G:1", custom_script: str = None) -> modal.App:
     app_name = f"{label}-transformers-chat"
     app = modal.App(app_name)
 
@@ -69,86 +74,84 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
             self.model_name = model_name
             self.model_revision = model_revision
             self.label = label
+            self.custom_script = custom_script
+            self.model = None
+            self.tokenizer = None  # Add tokenizer storage
 
-        def get_correct_model_class(self, model_id_or_path: str):
-            config = AutoConfig.from_pretrained(model_id_or_path)
-            arch = " ".join(config.architectures or []).lower()
+        def validate_python_syntax(self, script_content: str) -> bool:
+            try:
+                ast.parse(script_content)
+                return True
+            except SyntaxError as e:
+                logger.error(f"Syntax error in custom script: {str(e)}")
+                raise ValueError(f"Invalid Python syntax in custom script: {str(e)}")
 
-            if config.model_type in ["gpt2", "gpt_neo", "gpt_neox", "opt", "bloom", "mpt"]:
-                from transformers import AutoModelForCausalLM
-                return AutoModelForCausalLM
+        def load_custom_script(self, script_content: str):
+            # Validate Python syntax first
+            self.validate_python_syntax(script_content)
 
-            if "causallm" in arch:
-                from transformers import AutoModelForCausalLM
-                return AutoModelForCausalLM
-            elif "maskedlm" in arch:
-                from transformers import AutoModelForMaskedLM
-                return AutoModelForMaskedLM
-            elif "seq2seqlm" in arch or config.is_encoder_decoder:
-                from transformers import AutoModelForSeq2SeqLM
-                return AutoModelForSeq2SeqLM
-            elif "questionanswering" in arch:
-                from transformers import AutoModelForQuestionAnswering
-                return AutoModelForQuestionAnswering
-            elif "tokenclassification" in arch:
-                from transformers import AutoModelForTokenClassification
-                return AutoModelForTokenClassification
-            elif "sequenceclassification" in arch and not config.is_encoder_decoder:
-                from transformers import AutoModelForSequenceClassification
-                return AutoModelForSequenceClassification
-            else:
-                from transformers import AutoModel
-                return AutoModel
+            # Create a temporary file to store the script
+            with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as temp_file:
+                temp_file.write(script_content.encode())
+                temp_file_path = temp_file.name
+
+            try:
+                # Load the script as a module
+                spec = importlib.util.spec_from_file_location("custom_script", temp_file_path)
+                custom_module = importlib.util.module_from_spec(spec)
+                sys.modules["custom_script"] = custom_module
+                spec.loader.exec_module(custom_module)
+                
+                # Check if required functions exist
+                if not hasattr(custom_module, 'load_model'):
+                    raise ValueError("Custom script must contain a 'load_model' function")
+                if not hasattr(custom_module, 'generate'):
+                    raise ValueError("Custom script must contain a 'generate' function")
+                
+                # Validate function signatures
+                load_model_sig = inspect.signature(custom_module.load_model)
+                generate_sig = inspect.signature(custom_module.generate)
+                
+                if len(load_model_sig.parameters) != 2:
+                    raise ValueError("load_model function must accept exactly two parameters: model_name and model_revision")
+                if len(generate_sig.parameters) != 2:
+                    raise ValueError("generate function must accept exactly two parameters: model and input_text")
+                
+                self.custom_script = custom_module
+                return True
+            except Exception as e:
+                logger.error(f"Error loading custom script: {str(e)}")
+                raise e
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
 
         @modal.enter()
-        def load_model(self):
-            logger.info(f"🔧 Loading model: {self.model_name} [{self.model_revision}]")
+        def load_model(self, custom_script: str, model_name: str, model_revision: str = "main"):
+            model_name = self.model_name
+            model_revision = self.model_revision
+            custom_script = self.custom_script
+            logger.info(f"🔧 Loading model: {model_name} [{model_revision}]")
 
-            if not self.model_name:
+            if not model_name:
                 raise ValueError("Model name must be provided")
+            
+            if not custom_script:
+                raise ValueError("Custom script is required for model loading")
 
+            self.model_name = model_name
+            self.model_revision = model_revision
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
             logger.info(f"Using device: {self.device}")
 
-            # Load tokenizer with proper padding token
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                revision=self.model_revision,
-                padding_side="left",  # Ensure padding is on the left
-                use_fast=True  # Use fast tokenizer
-            )
-            
-            # Set padding token if not set
-            if self.tokenizer.pad_token is None:
-                self.tokenizer.pad_token = self.tokenizer.eos_token
-                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+            # Decode base64 script content
+            script_content = base64.b64decode(custom_script).decode('utf-8')
+            self.load_custom_script(script_content)
+            # Use the custom load_model function and store both model and tokenizer
+            self.model, self.tokenizer = self.custom_script.load_model(model_name, model_revision)
 
-            # Load model with proper configuration
-            ModelClass = self.get_correct_model_class(self.model_name)
-            self.model = ModelClass.from_pretrained(
-                self.model_name,
-                revision=self.model_revision,
-                device_map="auto",
-                torch_dtype=torch.float16,  # Use FP16 for faster inference
-                trust_remote_code=True,
-                use_cache=True,
-                low_cpu_mem_usage=True,
-                offload_folder=None  # Enable model offloading
-            ).eval()
-
-            # Compile the model for optimized execution (PyTorch 2.0+)
-            if hasattr(torch, "compile"):
-                self.model = torch.compile(self.model)
-
-            # Enable model optimizations
-            if hasattr(self.model, "enable_input_require_grads"):
-                self.model.enable_input_require_grads()
-            if hasattr(self.model, "enable_gradient_checkpointing"):
-                self.model.enable_gradient_checkpointing()
-            if hasattr(self.model, "enable_model_cpu_offload"):
-                self.model.enable_model_cpu_offload()
-
-            logger.info(f"✅ Model {ModelClass.__name__} loaded successfully")
+            logger.info(f"✅ Model loaded successfully")
 
         @modal.asgi_app(label=label)
         def fastapi_app(self):
@@ -169,121 +172,13 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
                     if not input_text:
                         raise HTTPException(status_code=400, detail="Message content is required.")
 
-                    # Tokenize with proper attention mask
-                    inputs = self.tokenizer(
-                        input_text,
-                        return_tensors="pt",
-                        padding=True,
-                        truncation=True,
-                        max_length=512,
-                        add_special_tokens=True
-                    )
+                    # Use the custom generate function with both model and tokenizer
+                    output_text = self.custom_script.generate((self.model, self.tokenizer), input_text)
+                    return {"generated_text": output_text}
 
-                    # Ensure attention mask is set
-                    if "attention_mask" not in inputs:
-                        inputs["attention_mask"] = torch.ones_like(inputs["input_ids"])
-
-                    # Move to device
-                    inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-                    try:
-                        # Handle text generation models
-                        if hasattr(self.model, "generate"):
-                            with torch.no_grad(), torch.cuda.amp.autocast():
-                                outputs = self.model.generate(
-                                    inputs["input_ids"],
-                                    attention_mask=inputs["attention_mask"],
-                                    max_length=20,  # Reduce max_length for faster generation
-                                    min_length=1,
-                                    num_return_sequences=1,
-                                    pad_token_id=self.tokenizer.pad_token_id,
-                                    eos_token_id=self.tokenizer.eos_token_id,
-                                    do_sample=False,  # Use greedy decoding for speed
-                                    temperature=0.7,
-                                    top_p=0.9,
-                                    top_k=50,
-                                    repetition_penalty=1.2,
-                                    no_repeat_ngram_size=3,
-                                    early_stopping=True,
-                                    use_cache=True  # Ensure KV cache is enabled
-                                )
-                            output_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-                            return {"generated_text": output_text}
-
-                        # Handle masked language modeling (BertForMaskedLM)
-                        elif isinstance(self.model, AutoModelForMaskedLM):
-                            with torch.no_grad():
-                                outputs = self.model(**inputs)
-                                logits = outputs.logits
-
-                            # Find the index of the [MASK] token
-                            mask_token_index = (inputs["input_ids"] == self.tokenizer.mask_token_id).nonzero(as_tuple=True)[1]
-                            predicted_token_id = logits[0, mask_token_index, :].argmax(dim=-1).item()
-                            predicted_token = self.tokenizer.decode([predicted_token_id])
-
-                            return {"predicted_token": predicted_token}
-
-                        # Handle text embedding models
-                        elif isinstance(self.model, AutoModel):
-                            with torch.no_grad():
-                                outputs = self.model(**inputs)
-                                embeddings = outputs.last_hidden_state.mean(dim=1).cpu().tolist()
-                            return {"embeddings": embeddings}
-
-                        # Handle conversational models
-                        elif hasattr(self.model, "generate") and "conversation" in self.model.config.architectures[0].lower():
-                            with torch.no_grad():
-                                outputs = self.model.generate(
-                                    inputs["input_ids"],
-                                    attention_mask=inputs["attention_mask"],
-                                    max_length=50,
-                                    do_sample=True,
-                                    temperature=0.7,
-                                    top_p=0.9
-                                )
-                            response_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-                            return {"response": response_text}
-
-                        # Handle sequence classification models
-                        elif hasattr(self.model, "forward") and "logits" in self.model.forward.__annotations__:
-                            with torch.no_grad():
-                                outputs = self.model(**inputs)
-                                logits = outputs.logits
-                                predicted_class = torch.argmax(logits, dim=-1).item()
-                            return {"predicted_class": predicted_class}
-
-                        # Handle question answering models
-                        elif hasattr(self.model, "forward") and "start_logits" in self.model.forward.__annotations__:
-                            with torch.no_grad():
-                                outputs = self.model(**inputs)
-                                start_logits = outputs.start_logits
-                                end_logits = outputs.end_logits
-                                start_idx = torch.argmax(start_logits, dim=-1).item()
-                                end_idx = torch.argmax(end_logits, dim=-1).item()
-                                answer = self.tokenizer.decode(inputs["input_ids"][0][start_idx:end_idx + 1])
-                            return {"answer": answer}
-
-                        # Handle token classification models
-                        elif hasattr(self.model, "forward") and "logits" in self.model.forward.__annotations__:
-                            with torch.no_grad():
-                                outputs = self.model(**inputs)
-                                logits = outputs.logits
-                                predictions = torch.argmax(logits, dim=-1).squeeze().tolist()
-                                tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"].squeeze().tolist())
-                                classified_tokens = [{"token": token, "label": pred} for token, pred in zip(tokens, predictions)]
-                            return {"classified_tokens": classified_tokens}
-
-                        else:
-                            return {"error": "This model does not support the requested operation."}
-
-                    except Exception as e:
-                        logger.error(f"❌ Error processing request: {e}")
-                        return {"error": "Request processing failed"}
-                except ValidationError as ve:
-                    raise HTTPException(status_code=400, detail=str(ve))
                 except Exception as e:
                     logger.error(f"❌ Error processing request: {e}")
-                    return {"error": "Request processing failed"}
+                    return {"error": str(e)}
 
             return web_app
 
@@ -293,15 +188,17 @@ def create_app(model_name: str, model_revision: str = "main", label: str = "web"
 deploy_app = FastAPI()
 deploy_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or specify your frontend's URL
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Or ["POST"] if you want to be strict
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
 class DeploymentRequest(BaseModel):
     org_name: str
     model_name: str
     model_revision: str = "main"
+    custom_script: str  # Base64 encoded script content
 
 @deploy_app.post("/check_if_model_exists")
 async def check_if_model_exists(request: Request) -> bool:
@@ -325,15 +222,21 @@ async def deploy_model(request: Request):
         revision = body.get("model_revision", "main")
         label = body.get("model_unique_name", "web")
         param_count = body.get("param_count")
+        custom_script = body.get("custom_script")  # Get base64 encoded script
+
+        print(org, model)
 
         if not org or not model:
             raise HTTPException(status_code=400, detail="org_name and model_name are required")
+        
+        if not custom_script:
+            raise HTTPException(status_code=400, detail="custom_script is required")
 
         gpu_type = get_gpu_type(param_count) + ":1"
         model_id = f"{org}/{model}"
         deployment_name = f"{label}-transformers-chat"
 
-        app = create_app(model_id, revision, label, gpu_type)
+        app = create_app(model_id, revision, label, gpu_type, custom_script)
 
         with modal.enable_output():
             app.deploy(name=deployment_name)

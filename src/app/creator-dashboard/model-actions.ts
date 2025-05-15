@@ -28,6 +28,7 @@ export async function uploadModelAction(formData: FormData) {
     const urlModelType = formData.get('urlModelType') as string | null; // Used in creator-dashboard
     const parametersRaw = formData.get('parameters');
     const revision = formData.get('revision') as string | null;
+    const customScript = formData.get('customScript') as string | null;
 
     // Always ensure tags is an array
     const tagsRaw = formData.get('tags');
@@ -38,7 +39,7 @@ export async function uploadModelAction(formData: FormData) {
     // Debug log for creator-dashboard version
     console.log('Creator Dashboard uploadModelAction received:', {
       name, description, modelType, license, sourceType, url, tags, modelName, urlModelType,
-      parametersRaw, revision
+      parametersRaw, revision, customScript
     });
 
     // Validate required fields
@@ -98,6 +99,8 @@ export async function uploadModelAction(formData: FormData) {
         tags,
         parameters,
         revision,
+        // @ts-ignore - customScript field exists in database but not in types
+        customScript,
       },
     });
     

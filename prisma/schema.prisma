@@ -72,6 +72,7 @@ model Model {
   tags        String[] // Tags as array of strings
   revision    String? // Optional model revision (e.g., 'main')
   parameters  Float // Number of parameters in billions
+  customScript String? // Base64 encoded custom script
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   Deployment  Deployment[]

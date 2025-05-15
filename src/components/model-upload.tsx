@@ -39,8 +39,11 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tagInput: "",
     revision: "",
     parameters: "",
+    customScript: null as File | null, // Add custom script field
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
+  const uploadFormRef = useRef<HTMLFormElement>(null)
+  const urlFormRef = useRef<HTMLFormElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(false)
   const [loadingUpload, setLoadingUpload] = useState(false)
@@ -101,6 +104,21 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     return organizationName && modelName && userModelName && description && license && parameters
   }
 
+  // Add function to convert file to base64
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:text/plain;base64,")
+        const base64Content = base64String.split(',')[1];
+        resolve(base64Content);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   async function handleUploadAction(formData: FormData) {
     if (!validateUploadFields()) {
       addNotification("error", "Please fill all required fields.")
@@ -121,6 +139,18 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       const result = await uploadModelAction(formData)
       if (result.success) {
         addNotification("success", "Model uploaded successfully!")
+        // Reset form and state
+        uploadFormRef.current?.reset()
+        setUploadFields({
+          modelName: "",
+          description: "",
+          modelType: "",
+          license: "",
+          tags: ["transformer", "nlp", "bert"],
+          tagInput: "",
+          files: [],
+          parameters: "",
+        })
       } else {
         addNotification("error", result.error || "Failed to upload model.")
       }
@@ -175,9 +205,31 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("parameters", urlFields.parameters)
       formData.set("sourceType", "URL")
       formData.set("revision", urlFields.revision || "main")
+      
+      // Add custom script if present
+      if (urlFields.customScript) {
+        const base64Script = await readFileAsBase64(urlFields.customScript);
+        formData.set("customScript", base64Script);
+      }
+      
       const result = await uploadModelAction(formData)
       if (result.success) {
         addNotification("success", "Model URL registered successfully!")
+        // Reset form and state
+        urlFormRef.current?.reset()
+        setUrlFields({
+          organizationName: "",
+          modelName: "",
+          userModelName: "",
+          description: "",
+          modelType: "",
+          license: "",
+          tags: ["transformer", "nlp", "bert"],
+          tagInput: "",
+          revision: "",
+          parameters: "",
+          customScript: null,
+        })
       } else {
         addNotification("error", result.error || "Failed to register model URL.")
       }
@@ -215,7 +267,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="upload">
-              <form className="space-y-5" action={handleUploadAction}>
+              <form ref={uploadFormRef} className="space-y-5" action={handleUploadAction}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
                     <label htmlFor="model-name" className="text-blue-200 text-xs mb-1">Model Name</label>
@@ -240,7 +292,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                         <SelectItem value="translation">Translation</SelectItem>
                         <SelectItem value="summarization">Summarization</SelectItem>
                         <SelectItem value="text-generation">Text Generation</SelectItem>
-                        <SelectItem value="image-classification">Image Classification</SelectItem>
+                        <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -352,7 +404,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
               </form>
             </TabsContent>
             <TabsContent value="url">
-              <form className="space-y-5" action={async (formData) => {
+              <form ref={urlFormRef} className="space-y-5" action={async (formData) => {
                 if (!formData.get("name")) {
                   formData.set("name", formData.get("userModelName") || "")
                 }
@@ -440,7 +492,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                         <SelectItem value="translation">Translation</SelectItem>
                         <SelectItem value="summarization">Summarization</SelectItem>
                         <SelectItem value="text-generation">Text Generation</SelectItem>
-                        <SelectItem value="image-classification">Image Classification</SelectItem>
+                        <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -484,6 +536,33 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       </Badge>
                     ))}
                   </div>
+                </div>
+                <div className="flex flex-col items-start w-full">
+                  <label className="text-blue-200 text-xs mb-1">Custom Script</label>
+                  <p className="text-xs text-blue-300 mb-2">Upload a Python script to customize model loading and inference.</p>
+                  <div className="w-full">
+                    <FileUploader 
+                      onFilesSelected={(files) => {
+                        if (files.length > 0) {
+                          const file = files[0];
+                          if (!file.name.endsWith('.py')) {
+                            addNotification("error", "Only Python (.py) files are allowed for custom scripts.");
+                            return;
+                          }
+                          setUrlFields(prev => ({ ...prev, customScript: file }));
+                        }
+                      }} 
+                      accept=".py"
+                    />
+                  </div>
+                  {urlFields.customScript && (
+                    <div className="mt-2 w-full">
+                      <div className="flex items-center justify-between bg-blue-900/30 p-1.5 rounded-md text-xs">
+                        <span className="text-white truncate max-w-[80%]">{urlFields.customScript.name}</span>
+                        <span className="text-blue-300">{(urlFields.customScript.size / 1024).toFixed(2)} KB</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="pt-2">
                   <Button
