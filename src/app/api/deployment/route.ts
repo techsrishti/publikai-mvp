@@ -66,4 +66,45 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch deployments' }, { status: 500 });
   }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'Deployment ID is required' }, { status: 400 });
+    }
+
+    // First check if the deployment exists
+    const existingDeployment = await prisma.deployment.findUnique({
+      where: { id },
+    });
+
+    if (!existingDeployment) {
+      return NextResponse.json(
+        { success: false, message: 'Deployment not found' },
+        { status: 404 }
+      );
+    }
+
+    const deployment = await prisma.deployment.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, deployment });
+  } catch (error: any) {
+    console.error('Delete deployment error:', error);
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { success: false, message: 'Deployment not found' },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete deployment' },
+      { status: 500 }
+    );
+  }
 } 

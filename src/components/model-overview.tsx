@@ -75,7 +75,7 @@ export function ModelOverview() {
             </div>
             <div>
               <p className="text-sm font-medium text-blue-300 font-cabinet-grotesk">Total Models</p>
-              <h3 className="text-2xl font-bold text-white mt-1 font-cabinet-grotesk">3</h3>
+              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">3</h3>
               <p className="text-xs text-blue-400 mt-1">2 Active, 1 Pending</p>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function ModelOverview() {
             </div>
             <div>
               <p className="text-sm font-medium text-green-300 font-cabinet-grotesk">Total Earnings</p>
-              <h3 className="text-2xl font-bold text-white mt-1 font-cabinet-grotesk">₹2,45,000</h3>
+              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">₹2,45,000</h3>
               <p className="text-xs text-green-400 mt-1">+₹32,000 this month</p>
             </div>
           </div>
@@ -101,7 +101,7 @@ export function ModelOverview() {
             </div>
             <div>
               <p className="text-sm font-medium text-purple-300 font-cabinet-grotesk">Paid Users</p>
-              <h3 className="text-2xl font-bold text-white mt-1 font-cabinet-grotesk">42</h3>
+              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">42</h3>
               <p className="text-xs text-purple-400 mt-1">+5 this week</p>
             </div>
           </div>
@@ -114,7 +114,7 @@ export function ModelOverview() {
             </div>
             <div>
               <p className="text-sm font-medium text-amber-300 font-cabinet-grotesk">Next Settlement</p>
-              <h3 className="text-2xl font-bold text-white mt-1 font-cabinet-grotesk">{formatDate(getNextSettlementDate())}</h3>
+              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">{formatDate(getNextSettlementDate())}</h3>
               <p className="text-xs text-amber-400 mt-1">24th of every month</p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export function ModelOverview() {
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold text-white">Earnings by Model</h2>
+              <h2 className="text-xl font-medium text-white">Earnings by Model</h2>
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -182,7 +182,7 @@ export function ModelOverview() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-semibold text-white">{model.earnings}</p>
+                  <p className="text-lg font-medium text-white">{model.earnings}</p>
                 </div>
               </div>
             ))}
@@ -190,7 +190,7 @@ export function ModelOverview() {
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
-          <h2 className="text-xl font-semibold text-white mb-6">Payout Information</h2>
+          <h2 className="text-xl font-medium text-white mb-6">Payout Information</h2>
           <div className="space-y-6">
             <div className="p-4 rounded-xl bg-gray-900/50 border border-gray-800/50">
               <div className="flex items-center justify-between mb-4">
@@ -208,7 +208,7 @@ export function ModelOverview() {
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-white">₹1,85,000</p>
+                <p className="text-2xl font-medium text-white">₹1,85,000</p>
                 <TooltipProvider delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -359,7 +359,7 @@ export function ModelOverview() {
 
       {/* Models List */}
       <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
-        <h2 className="text-xl font-semibold text-white mb-6">Model Performance</h2>
+        <h2 className="text-xl font-medium text-white mb-6">Model Performance</h2>
         <div className="space-y-4">
           {[
             {
@@ -428,7 +428,7 @@ export function ModelOverview() {
           {/* Bottom 75% section */}
           <div className="absolute bottom-0 left-0 w-full h-3/4 flex items-center justify-center">
             <div className="text-center">
-              <p className="text-4xl font-bold text-white">₹4,85,000</p>
+              <p className="text-4xl font-medium text-white">₹4,85,000</p>
               <p className="text-sm text-blue-200 mt-2">Last updated: {formatDate(new Date())}</p>
             </div>
           </div>

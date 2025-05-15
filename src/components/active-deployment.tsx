@@ -7,18 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Play, X, ChevronDown, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 
-interface ModelManagementProps {
+interface ActiveDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
 }
 
@@ -33,18 +23,15 @@ interface Deployment {
     modelType: string
     userModelName: string
     name: string
-    id: string
   }
 }
 
-export function ModelManagement({ addNotification }: ModelManagementProps) {
+export function ActiveDeployment({ addNotification }: ActiveDeploymentProps) {
   const [deployments, setDeployments] = useState<Deployment[]>([])
   const [filter, setFilter] = useState<string>("all")
   const [search, setSearch] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
-  const [deploymentToDelete, setDeploymentToDelete] = useState<Deployment | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch deployments from backend
   const fetchDeployments = async () => {
@@ -66,32 +53,6 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
     fetchDeployments()
   }, [])
 
-  // Delete deployment
-  const handleDeleteDeployment = async (id: string) => {
-    setIsDeleting(true)
-    try {
-      const res = await fetch(`/api/deployment?id=${id}`, { 
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      const data = await res.json()
-      if (data.success) {
-        addNotification("success", "Deployment deleted.")
-        setDeployments(deployments.filter(dep => dep.id !== id))
-        setDeploymentToDelete(null)
-      } else {
-        addNotification("error", data.message || data.error || "Failed to delete deployment.")
-      }
-    } catch (error) {
-      console.error("Delete deployment error:", error)
-      addNotification("error", "Failed to delete deployment.")
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   // Filter and search
   const filteredDeployments = deployments.filter(dep => {
     const matchesStatus = filter === "all" || dep.status.toLowerCase() === filter
@@ -106,38 +67,6 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
 
   return (
     <div className="space-y-6">
-      <AlertDialog open={!!deploymentToDelete} onOpenChange={(open) => !open && setDeploymentToDelete(null)}>
-        <AlertDialogContent className="bg-gray-900 border-gray-800">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Deployment</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              {deploymentToDelete && (
-                <>
-                  Are you sure you want to delete the deployment for model "{deploymentToDelete.model?.userModelName || deploymentToDelete.model?.name || deploymentToDelete.modelName}"? This action cannot be undone.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 text-gray-200 hover:bg-gray-700">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deploymentToDelete && handleDeleteDeployment(deploymentToDelete.id)}
-              className="bg-red-600 text-white hover:bg-red-700"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Actions Bar */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
@@ -156,7 +85,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             size="icon"
             onClick={fetchDeployments}
             disabled={isRefreshing}
-            className="text-gray-400 hover:text-white"
+            className="text-gray-400 hover:text-white h-8 w-8"
           >
             {isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -180,10 +109,10 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
         <div className="p-6">
           <div className="space-y-4">
             {/* Header */}
-            <div className="grid grid-cols-[1fr_8rem_6rem] pb-4 text-sm font-medium text-gray-400 border-b border-gray-800">
-              <div>Model Details</div>
-              <div>Status</div>
-              <div className="text-center">Actions</div>
+            <div className="flex items-center gap-4 pb-4 text-sm font-medium text-gray-400 border-b border-gray-800">
+              <div className="flex-1">Model Details</div>
+              <div className="w-24 text-center">Status</div>
+              <div className="w-24 text-center">Actions</div>
             </div>
             {/* Deployment Items */}
             {loading ? (
@@ -195,9 +124,9 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             ) : filteredDeployments.map((dep) => (
               <div
                 key={dep.id}
-                className="grid grid-cols-[1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
+                className="flex items-center gap-4 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
               >
-                <div className="min-w-[200px]">
+                <div className="flex-1">
                   <div className="space-y-1">
                     <h4 className="font-medium text-gray-200">
                       {dep.model?.userModelName?.toUpperCase() || 
@@ -210,7 +139,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                     </p>
                   </div>
                 </div>
-                <div>
+                <div className="w-24 text-center">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       dep.status === "success"
@@ -218,15 +147,14 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                         : "bg-red-500/10 text-red-400"
                     }`}
                   >
-                    {dep.status.toUpperCase()}
+                    {dep.status}
                   </span>
                 </div>
-                <div className="flex justify-center gap-1">
+                <div className="w-24 flex justify-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-red-400 ml-6"
-                    onClick={() => setDeploymentToDelete(dep)}
+                    className="h-8 w-8 text-gray-400 hover:text-red-400"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -238,4 +166,4 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
       </Card>
     </div>
   )
-}
+} 

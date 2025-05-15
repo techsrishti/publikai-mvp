@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Upload, LinkIcon, X } from "lucide-react"
+import { ArrowRight, Upload, LinkIcon, X, Link2, FileUp, Globe, FileUp2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { uploadModelAction } from "@/app/creator-dashboard/model-actions"
 import { FileUploader } from "@/components/file-uploader"
@@ -255,154 +255,17 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     <div className="space-y-4">
       <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg w-[75%] max-w-5xl mx-auto">
         <CardContent className="p-6">
-          <Tabs defaultValue="upload" className="w-full">
+          <Tabs defaultValue="url" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-blue-900/30 rounded-lg overflow-hidden">
-              <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Model
-              </TabsTrigger>
               <TabsTrigger value="url" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
-                <LinkIcon className="mr-2 h-4 w-4" />
+                <Globe className="mr-2 h-4 w-4" />
                 Use Model URL
               </TabsTrigger>
+              <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
+                <FileUp className="mr-2 h-4 w-4" />
+                Upload Model
+              </TabsTrigger>
             </TabsList>
-            <TabsContent value="upload">
-              <form ref={uploadFormRef} className="space-y-5" action={handleUploadAction}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="model-name" className="text-blue-200 text-xs mb-1">Model Name</label>
-                    <Input
-                      id="model-name"
-                      value={uploadFields.modelName}
-                      onChange={(e) => handleUploadChange("modelName", e.target.value)}
-                      placeholder="Model Name"
-                      className="w-full max-w-full"
-                    />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="model-type" className="text-blue-200 text-xs mb-1">Model Type</label>
-                    <Select value={uploadFields.modelType} onValueChange={(v) => handleUploadChange("modelType", v)}>
-                      <SelectTrigger className="w-full max-w-full">
-                        <SelectValue placeholder="Model Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="text-classification">Text Classification</SelectItem>
-                        <SelectItem value="token-classification">Token Classification</SelectItem>
-                        <SelectItem value="question-answering">Question Answering</SelectItem>
-                        <SelectItem value="translation">Translation</SelectItem>
-                        <SelectItem value="summarization">Summarization</SelectItem>
-                        <SelectItem value="text-generation">Text Generation</SelectItem>
-                        <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex flex-col items-start">
-                  <label htmlFor="model-description" className="text-blue-200 text-xs mb-1">Description</label>
-                  <Textarea
-                    id="model-description"
-                    value={uploadFields.description}
-                    onChange={(e) => handleUploadChange("description", e.target.value)}
-                    placeholder="Model description..."
-                    className="w-full max-w-full"
-                  />
-                </div>
-                <div className="flex flex-col items-start">
-                  <label htmlFor="upload-parameters" className="text-blue-200 text-xs mb-1">Parameters <span className="text-red-400">*</span></label>
-                  <Textarea
-                    id="upload-parameters"
-                    value={uploadFields.parameters}
-                    onChange={(e) => handleUploadChange("parameters", e.target.value)}
-                    placeholder="Model parameters (required)"
-                    className="w-full max-w-full"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="license" className="text-blue-200 text-xs mb-1">License</label>
-                    <Select value={uploadFields.license} onValueChange={(v) => handleUploadChange("license", v)}>
-                      <SelectTrigger className="w-full max-w-full">
-                        <SelectValue placeholder="License" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mit">MIT</SelectItem>
-                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
-                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
-                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
-                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
-                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <label className="text-blue-200 text-xs mb-1">Tags</label>
-                    <Input
-                      value={uploadFields.tagInput}
-                      onChange={(e) => handleUploadChange("tagInput", e.target.value)}
-                      onKeyDown={handleUploadTagInputKeyDown}
-                      placeholder="Add tags (press Enter)"
-                      className="w-full max-w-full"
-                    />
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {uploadFields.tags.map((tag, index) => (
-                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
-                          {tag}
-                          <X
-                            size={12}
-                            className="cursor-pointer opacity-70 hover:opacity-100"
-                            onClick={() => removeUploadTag(tag)}
-                          />
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="pt-1">
-                  <div className="flex flex-col items-start mb-2">
-                    <p className="text-blue-200 text-xs mb-1">Model Files (Optional)</p>
-                    <p className="text-xs text-blue-300">Upload your model files or register without files and add them later.</p>
-                  </div>
-                  <FileUploader onFilesSelected={handleUploadFilesSelected} />
-                  {uploadFields.files.length > 0 && (
-                    <div className="mt-2">
-                      {uploadFields.files.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between bg-blue-900/30 p-1.5 rounded-md text-xs">
-                          <span className="text-white truncate max-w-[80%]">{file.name}</span>
-                          <span className="text-blue-300">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="pt-2">
-                  <Button
-                    ref={uploadBtnRef}
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
-                    onMouseMove={handleMouseMove}
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
-                    disabled={loadingUpload}
-                  >
-                    <span className="relative z-10">
-                      {loadingUpload ? "Uploading..." : "Upload Model"} <ArrowRight className="ml-2 h-4 w-4 inline" />
-                    </span>
-                    <span
-                      className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
-                      style={{
-                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
-                        transform: "translate(-50%, -50%)",
-                        pointerEvents: "none",
-                        left: `${mousePosition.x}px`,
-                        top: `${mousePosition.y}px`,
-                      }}
-                    />
-                  </Button>
-                </div>
-              </form>
-            </TabsContent>
             <TabsContent value="url">
               <form ref={urlFormRef} className="space-y-5" action={async (formData) => {
                 if (!formData.get("name")) {
@@ -413,22 +276,16 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                 <input type="hidden" name="name" value={urlFields.userModelName} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
-                    <label htmlFor="org-name" className="text-blue-200 text-xs mb-1">Organization Name</label>
+                    <label htmlFor="model-url" className="text-blue-200 text-xs mb-1">Hugging Face Model URL</label>
                     <Input
-                      id="org-name"
-                      value={urlFields.organizationName}
-                      onChange={(e) => handleUrlChange("organizationName", e.target.value)}
-                      placeholder="Organization Name"
-                      className="w-full max-w-full"
-                    />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="url-model-name" className="text-blue-200 text-xs mb-1">Hugging Face Model Name</label>
-                    <Input
-                      id="url-model-name"
-                      value={urlFields.modelName}
-                      onChange={(e) => handleUrlChange("modelName", e.target.value)}
-                      placeholder="Model Name from Hugging Face"
+                      id="model-url"
+                      value={urlFields.organizationName + "/" + urlFields.modelName}
+                      onChange={(e) => {
+                        const parts = e.target.value.split("/")
+                        handleUrlChange("organizationName", parts[0] || "")
+                        handleUrlChange("modelName", parts[1] || "")
+                      }}
+                      placeholder="orgname/modelname"
                       className="w-full max-w-full"
                     />
                   </div>
@@ -457,16 +314,16 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     />
                     <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
                   </div>
-                </div>
-                <div className="flex flex-col items-start">
-                  <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to 'main')</span></label>
-                  <Input
-                    id="url-revision"
-                    value={urlFields.revision}
-                    onChange={(e) => handleUrlChange("revision", e.target.value)}
-                    placeholder="main"
-                    className="w-full max-w-full"
-                  />
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to 'main')</span></label>
+                    <Input
+                      id="url-revision"
+                      value={urlFields.revision}
+                      onChange={(e) => handleUrlChange("revision", e.target.value)}
+                      placeholder="main"
+                      className="w-full max-w-full"
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col items-start">
                   <label htmlFor="url-model-description" className="text-blue-200 text-xs mb-1">Description</label>
@@ -573,6 +430,148 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     <span className="relative z-10">
                       {loadingUrl ? "Registering..." : "Register Model URL"} <ArrowRight className="ml-2 h-4 w-4 inline" />
                     </span>
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+            <TabsContent value="upload">
+              <form ref={uploadFormRef} className="space-y-5" action={handleUploadAction}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="model-name" className="text-blue-200 text-xs mb-1">Model Name</label>
+                    <Input
+                      id="model-name"
+                      value={uploadFields.modelName}
+                      onChange={(e) => handleUploadChange("modelName", e.target.value)}
+                      placeholder="Model Name"
+                      className="w-full max-w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="model-type" className="text-blue-200 text-xs mb-1">Model Type</label>
+                    <Select value={uploadFields.modelType} onValueChange={(v) => handleUploadChange("modelType", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="Model Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text-classification">Text Classification</SelectItem>
+                        <SelectItem value="token-classification">Token Classification</SelectItem>
+                        <SelectItem value="question-answering">Question Answering</SelectItem>
+                        <SelectItem value="translation">Translation</SelectItem>
+                        <SelectItem value="summarization">Summarization</SelectItem>
+                        <SelectItem value="text-generation">Text Generation</SelectItem>
+                        <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="model-description" className="text-blue-200 text-xs mb-1">Description</label>
+                  <Textarea
+                    id="model-description"
+                    value={uploadFields.description}
+                    onChange={(e) => handleUploadChange("description", e.target.value)}
+                    placeholder="Model description..."
+                    className="w-full max-w-full"
+                  />
+                </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="upload-parameters" className="text-blue-200 text-xs mb-1">Parameters (in billions) <span className="text-red-400">*</span></label>
+                  <Input
+                    id="upload-parameters"
+                    type="number"
+                    value={uploadFields.parameters}
+                    onChange={(e) => handleUploadChange("parameters", e.target.value.replace(/[^0-9.]/g, ""))}
+                    placeholder="e.g., 1 for 1B, 0.1 for 100M, 1.7 for 1.7B"
+                    className="w-full max-w-full"
+                    min="0"
+                    step="any"
+                    required
+                  />
+                  <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="license" className="text-blue-200 text-xs mb-1">License</label>
+                    <Select value={uploadFields.license} onValueChange={(v) => handleUploadChange("license", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="License" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mit">MIT</SelectItem>
+                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
+                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
+                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
+                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
+                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label className="text-blue-200 text-xs mb-1">Tags</label>
+                    <Input
+                      value={uploadFields.tagInput}
+                      onChange={(e) => handleUploadChange("tagInput", e.target.value)}
+                      onKeyDown={handleUploadTagInputKeyDown}
+                      placeholder="Add tags (press Enter)"
+                      className="w-full max-w-full"
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {uploadFields.tags.map((tag, index) => (
+                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                          {tag}
+                          <X
+                            size={12}
+                            className="cursor-pointer opacity-70 hover:opacity-100"
+                            onClick={() => removeUploadTag(tag)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-1">
+                  <div className="flex flex-col items-start mb-2">
+                    <p className="text-blue-200 text-xs mb-1">Model Files (Optional)</p>
+                    <p className="text-xs text-blue-300">Upload your model files or register without files and add them later.</p>
+                  </div>
+                  <FileUploader onFilesSelected={handleUploadFilesSelected} />
+                  {uploadFields.files.length > 0 && (
+                    <div className="mt-2">
+                      {uploadFields.files.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-blue-900/30 p-1.5 rounded-md text-xs">
+                          <span className="text-white truncate max-w-[80%]">{file.name}</span>
+                          <span className="text-blue-300">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="pt-2">
+                  <Button
+                    ref={uploadBtnRef}
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
+                    onMouseMove={handleMouseMove}
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                    disabled={loadingUpload}
+                  >
+                    <span className="relative z-10">
+                      {loadingUpload ? "Uploading..." : "Upload Model"} <ArrowRight className="ml-2 h-4 w-4 inline" />
+                    </span>
+                    <span
+                      className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
+                      style={{
+                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
+                        transform: "translate(-50%, -50%)",
+                        pointerEvents: "none",
+                        left: `${mousePosition.x}px`,
+                        top: `${mousePosition.y}px`,
+                      }}
+                    />
                   </Button>
                 </div>
               </form>

@@ -4,8 +4,9 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Upload, Server, Loader2 } from "lucide-react"
+import { Upload, Server, Loader2, CopyIcon, Check, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
+import { formatRelativeTime } from "@/lib/utils"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -47,6 +48,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [selectedModel, setSelectedModel] = useState<string>("")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingModels, setLoadingModels] = useState(true)
+  const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -148,12 +150,24 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
     }
   }
 
+  const handleCopy = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedStates(prev => ({ ...prev, [id]: true }))
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [id]: false }))
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to copy text:', err)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
         {/* Deployment Configuration */}
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 self-start">
-          <h3 className="text-lg font-semibold text-white mb-4">Deployment Configuration</h3>
+          <h3 className="text-lg font-medium text-white mb-4">Deployment Configuration</h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
@@ -174,19 +188,29 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                       value={model.id}
                       className="bg-black text-gray-200 hover:bg-gray-800"
                     >
-                      {model.name}
+                      {model.name.toUpperCase()}
                     </option>
                   ))}
                 </select>
               )}
             </div>
+            <div className="pt-2">
+              <Button
+                onClick={handleDeploy}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={isDeploying}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {isDeploying ? "Deploying..." : "Deploy Model"}
+              </Button>
+            </div>
           </div>
         </Card>
 
         {/* Deployment Status */}
-        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 max-h-[70vh] overflow-auto">
+        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 h-[calc(100vh-12rem)] overflow-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-white">Active Deployments</h3>
+            <h3 className="text-lg font-medium text-white">Active Deployments</h3>
             <Button
               variant="ghost"
               size="icon"
@@ -197,7 +221,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
               {isRefreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Loader2 className="h-4 w-4 hover:animate-spin" />
+                <RefreshCw className="h-4 w-4" />
               )}
             </Button>
           </div>
@@ -208,42 +232,62 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <Server className="h-5 w-5 text-green-400" />
-                    <span className="font-medium text-gray-200">{dep.model?.name || 'Unknown Model'}</span>
+                    <span className="font-medium text-gray-200">{dep.model?.name?.toUpperCase() || 'UNKNOWN MODEL'}</span>
                   </div>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
-                    {dep.status}
+                    {dep.status.toUpperCase()}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-400">Deployment URL</p>
-                    <p className="text-gray-200 break-all">{dep.deploymentUrl ? <a href={dep.deploymentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">{dep.deploymentUrl}</a> : "-"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-gray-200 break-all flex-1">{dep.deploymentUrl || "-"}</p>
+                      {dep.deploymentUrl && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-gray-400 hover:text-gray-200"
+                          onClick={() => handleCopy(dep.deploymentUrl!, `url-${dep.id}`)}
+                        >
+                          {copiedStates[`url-${dep.id}`] ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <CopyIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <p className="text-gray-400">API Key</p>
-                    <p className="text-gray-200 break-all">{dep.apiKey || "-"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-gray-200 break-all flex-1">{dep.apiKey || "-"}</p>
+                      {dep.apiKey && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-gray-400 hover:text-gray-200"
+                          onClick={() => handleCopy(dep.apiKey!, `key-${dep.id}`)}
+                        >
+                          {copiedStates[`key-${dep.id}`] ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <CopyIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <p className="text-gray-400">Created</p>
-                    <p className="text-gray-200">{new Date(dep.createdAt).toLocaleString()}</p>
+                    <p className="text-gray-400">Updated</p>
+                    <p className="text-gray-200">{formatRelativeTime(dep.updatedAt)}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </Card>
-      </div>
-
-      {/* Deploy Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={handleDeploy}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-8"
-          disabled={isDeploying}
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          {isDeploying ? "Deploying..." : "Deploy Model"}
-        </Button>
       </div>
     </div>
   )
