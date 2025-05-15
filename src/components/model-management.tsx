@@ -34,6 +34,7 @@ interface Deployment {
     userModelName: string
     name: string
     id: string
+    organizationName?: string
   }
 }
 
@@ -131,7 +132,37 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                   Deleting...
                 </>
               ) : (
-                "Delete"
+                "Delete Deployment"
+              )}
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deploymentToDelete) return;
+                setIsDeleting(true);
+                try {
+                  // Delete deployment first
+                  await fetch(`/api/deployment?id=${deploymentToDelete.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
+                  // Delete model
+                  await fetch(`/api/models?id=${deploymentToDelete.model?.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
+                  addNotification("success", "Deployment and model deleted.");
+                  setDeployments(deployments.filter(dep => dep.id !== deploymentToDelete.id));
+                  setDeploymentToDelete(null);
+                } catch (err) {
+                  addNotification("error", "Failed to delete model and deployment.");
+                } finally {
+                  setIsDeleting(false);
+                }
+              }}
+              className="bg-red-800 text-white hover:bg-red-900"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Model"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -180,8 +211,9 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
         <div className="p-6">
           <div className="space-y-4">
             {/* Header */}
-            <div className="grid grid-cols-[1fr_8rem_6rem] pb-4 text-sm font-medium text-gray-400 border-b border-gray-800">
-              <div>Model Details</div>
+            <div className="grid grid-cols-[1.5fr_1.5fr_8rem_6rem] pb-4 text-sm font-medium text-gray-400 border-b border-gray-800">
+              <div>Model Name</div>
+              <div>Model Type</div>
               <div>Status</div>
               <div className="text-center">Actions</div>
             </div>
@@ -195,21 +227,10 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             ) : filteredDeployments.map((dep) => (
               <div
                 key={dep.id}
-                className="grid grid-cols-[1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
+                className="grid grid-cols-[1.5fr_1.5fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
               >
-                <div className="min-w-[200px]">
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-gray-200">
-                      {dep.model?.userModelName?.toUpperCase() || 
-                       dep.model?.name?.toUpperCase() || 
-                       dep.modelName?.toUpperCase() || 
-                       'UNKNOWN'}
-                    </h4>
-                    <p className="text-sm text-gray-400">
-                      <span className="text-gray-500">Type:</span> {dep.model?.modelType || 'Unknown'}
-                    </p>
-                  </div>
-                </div>
+                <div className="truncate min-w-0 font-medium text-gray-200">{dep.model?.name?.toUpperCase() || dep.modelName?.toUpperCase() || 'UNKNOWN'}</div>
+                <div className="truncate min-w-0">{dep.model?.modelType || 'Unknown'}</div>
                 <div>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

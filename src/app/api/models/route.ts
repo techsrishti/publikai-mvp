@@ -84,3 +84,39 @@ export async function POST(req: Request) {
     )
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'Model ID is required' }, { status: 400 });
+    }
+
+    // First check if the model exists
+    const existingModel = await prisma.model.findUnique({
+      where: { id },
+    });
+
+    if (!existingModel) {
+      return NextResponse.json(
+        { success: false, message: 'Model not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete the model
+    const model = await prisma.model.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, model });
+  } catch (error: any) {
+    console.error('Delete model error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete model' },
+      { status: 500 }
+    );
+  }
+}
