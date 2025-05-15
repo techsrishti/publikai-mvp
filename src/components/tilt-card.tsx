@@ -2,11 +2,11 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface TiltCardProps {
-  mousePosition: { x: number; y: number }
+  mousePosition?: { x: number; y: number }
   className?: string
   children: React.ReactNode
   disabled?: boolean
@@ -22,7 +22,7 @@ const GRADIENTS = [
 ] as const
 
 export function TiltCard({ 
-  mousePosition, 
+  mousePosition = { x: 0, y: 0 }, 
   className, 
   children, 
   disabled = false,
@@ -31,23 +31,21 @@ export function TiltCard({
   const cardRef = useRef<HTMLDivElement>(null)
   const innerCardRef = useRef<HTMLDivElement>(null)
   const glowRef = useRef<HTMLDivElement>(null)
-  const [isHovering, setIsHovering] = useState(false)
   
-  // Use the provided gradientIndex to select gradient
-  const gradient = GRADIENTS[gradientIndex % GRADIENTS.length]
+  // Use the provided gradientIndex to select gradient with safety check
+  const safeGradientIndex = typeof gradientIndex === 'number' ? gradientIndex : 0;
+  const gradient = GRADIENTS[safeGradientIndex % GRADIENTS.length] || GRADIENTS[0];
 
   useEffect(() => {
-    if (!cardRef.current || !innerCardRef.current || !glowRef.current || disabled) return
+    if (typeof window === 'undefined' || !cardRef.current || !innerCardRef.current || !glowRef.current || !mousePosition || disabled) return;
 
     const rect = cardRef.current.getBoundingClientRect()
-    const mouseOver =
+    const mouseOver = (
       mousePosition.x >= rect.left &&
       mousePosition.x <= rect.right &&
       mousePosition.y >= rect.top &&
       mousePosition.y <= rect.bottom
-
-    console.log(isHovering)
-    setIsHovering(mouseOver)
+    );
 
     if (mouseOver) {
       // Calculate position within card (normalized from -1 to 1)
@@ -57,21 +55,18 @@ export function TiltCard({
       // Apply 3D tilt effect to the entire card
       cardRef.current.style.transform = `perspective(1000px) rotateX(${y * 5}deg) rotateY(${-x * 5}deg)`
 
-      // Keep inner content level by counter-balancing the tilt
-      innerCardRef.current.style.transform = `rotateX(${-y * 5}deg) rotateY(${x * 5}deg)`
+      // Move inner content slightly to enhance depth effect
+      innerCardRef.current.style.transform = `translate(${x * 10}px, ${y * 10}px)`
 
-      // Position glow exactly at cursor position
-      const cursorX = mousePosition.x - rect.left - 10
-      const cursorY = mousePosition.y - rect.top - 10
-      glowRef.current.style.left = `${cursorX}px`
-      glowRef.current.style.top = `${cursorY}px`
-      glowRef.current.style.opacity = "0.6"
+      // Move glow to follow mouse
+      glowRef.current.style.transform = `translate(${x * 50}%, ${y * 50}%)`
     } else {
-      cardRef.current.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)"
-      innerCardRef.current.style.transform = "rotateX(0deg) rotateY(0deg)"
-      glowRef.current.style.opacity = "0"
+      // Reset transforms when not hovering
+      cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)'
+      innerCardRef.current.style.transform = 'translate(0px, 0px)'
+      glowRef.current.style.transform = 'translate(50%, 50%)'
     }
-  }, [mousePosition, disabled, isHovering])
+  }, [mousePosition, disabled])
 
   return (
     <div

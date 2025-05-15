@@ -20,7 +20,7 @@ const config = {
       },
       extend: {
         fontFamily: {
-          sans: ["Inter", "sans-serif"],
+          sans: ["var(--font-inter)", "system-ui", "sans-serif"],
           "cabinet-grotesk": ["Cabinet Grotesk", "sans-serif"],
         },
         colors: {
