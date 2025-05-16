@@ -29,6 +29,7 @@ interface Deployment {
   userModelName: string
   status: string
   createdAt: string
+  gpuType?: string
   model: {
     modelType: string
     userModelName: string
@@ -211,9 +212,10 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
         <div className="p-6">
           <div className="space-y-4">
             {/* Header */}
-            <div className="grid grid-cols-[1.5fr_1.5fr_8rem_6rem] pb-4 text-sm font-medium text-gray-400 border-b border-gray-800">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_8rem_6rem] pb-4 text-sm font-medium text-gray-400 border-b border-gray-800">
               <div>Model Name</div>
               <div>Model Type</div>
+              <div>GPU Type</div>
               <div>Status</div>
               <div className="text-center">Actions</div>
             </div>
@@ -227,10 +229,15 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             ) : filteredDeployments.map((dep) => (
               <div
                 key={dep.id}
-                className="grid grid-cols-[1.5fr_1.5fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
+                className="grid grid-cols-[1.5fr_1fr_1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
               >
                 <div className="truncate min-w-0 font-medium text-gray-200">{dep.model?.name?.toUpperCase() || dep.modelName?.toUpperCase() || 'UNKNOWN'}</div>
                 <div className="truncate min-w-0">{dep.model?.modelType || 'Unknown'}</div>
+                <div className="truncate min-w-0">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">
+                    {dep.gpuType || 'Not specified'}
+                  </span>
+                </div>
                 <div>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

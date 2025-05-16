@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Upload, Server, Loader2, CopyIcon, Check, RefreshCw } from "lucide-react"
+import { Upload, Server, Loader2, ClipboardCopy, Check, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import { formatRelativeTime } from "@/lib/utils"
 
@@ -36,6 +36,10 @@ interface Deployment {
   status: string
   deploymentUrl?: string | null
   apiKey?: string | null
+  gpuType?: string | null
+  deploymentName?: string | null
+  modelName?: string | null
+  modelRevision?: string | null
   createdAt: string
   updatedAt: string
   model: Model
@@ -128,6 +132,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
             status: data.status,
             deploymentUrl: data.deployment_url,
             modelUniqueName: deployPayload.model_unique_name,
+            gpuType: data.gpu_type,
           }),
         })
         const depData = await depRes.json()
@@ -253,7 +258,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                           {copiedStates[`url-${dep.id}`] ? (
                             <Check className="h-4 w-4" />
                           ) : (
-                            <CopyIcon className="h-4 w-4" />
+                            <ClipboardCopy className="h-4 w-4" />
                           )}
                         </Button>
                       )}
@@ -273,7 +278,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                           {copiedStates[`key-${dep.id}`] ? (
                             <Check className="h-4 w-4" />
                           ) : (
-                            <CopyIcon className="h-4 w-4" />
+                            <ClipboardCopy className="h-4 w-4" />
                           )}
                         </Button>
                       )}

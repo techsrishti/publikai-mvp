@@ -11,7 +11,7 @@ function generateApiKey(modelUniqueName: string): string {
 
 export async function POST(req: Request) {
   try {
-    const { modelId, status, deploymentUrl, apiKey, modelUniqueName } = await req.json();
+    const { modelId, status, deploymentUrl, apiKey, modelUniqueName, gpuType } = await req.json();
     let finalApiKey = apiKey;
     if (!finalApiKey && modelUniqueName) {
       finalApiKey = generateApiKey(modelUniqueName);
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
           status,
           deploymentUrl,
           apiKey: finalApiKey,
+          gpuType,
           updatedAt: new Date(),
         },
       });
@@ -42,14 +43,15 @@ export async function POST(req: Request) {
           status,
           deploymentUrl,
           apiKey: finalApiKey,
+          gpuType,
         },
       });
     }
 
     return NextResponse.json({ success: true, deployment });
-  } catch (error) {
-    console.error('Deployment error:', error);
-    return NextResponse.json({ success: false, error: error?.toString() }, { status: 500 });
+  } catch (e) {
+    console.error('Error creating deployment:', e);
+    return NextResponse.json({ error: 'Failed to create deployment' }, { status: 500 });
   }
 }
 
@@ -63,8 +65,9 @@ export async function GET() {
     });
     console.log(deployments)
     return NextResponse.json({ deployments });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch deployments' }, { status: 500 });
+  } catch (e: unknown) {
+    console.error('Error getting deployment:', e);
+    return NextResponse.json({ error: 'Failed to get deployment' }, { status: 500 });
   }
 }
 

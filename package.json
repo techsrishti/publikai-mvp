@@ -61,8 +61,8 @@
     "react-day-picker": "^9.6.7",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.1",
-    "react-resizable-panels": "^3.0.0",
     "react-hot-toast": "^2.5.2",
+    "react-resizable-panels": "^3.0.0",
     "recharts": "^2.15.3",
     "server": "link:@clerk/nextjs/server",
     "sonner": "^2.0.3",
@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@prisma/client": "6.7.0",
+    "@prisma/client": "6.8.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
