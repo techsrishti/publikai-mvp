@@ -39,6 +39,18 @@ interface Deployment {
   }
 }
 
+// Utility to format model type
+function formatModelType(type?: string) {
+  if (!type) return 'Unknown';
+  // Replace underscores and spaces with dashes, split camelCase, then capitalize
+  return type
+    .replace(/([a-z])([A-Z])/g, '$1-$2') // camelCase to dash
+    .replace(/[_\s]+/g, '-') // underscores/spaces to dash
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join('-');
+}
+
 export function ModelManagement({ addNotification }: ModelManagementProps) {
   const [deployments, setDeployments] = useState<Deployment[]>([])
   const [filter, setFilter] = useState<string>("all")
@@ -232,7 +244,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                 className="grid grid-cols-[1.5fr_1fr_1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
               >
                 <div className="truncate min-w-0 font-medium text-gray-200">{dep.model?.name?.toUpperCase() || dep.modelName?.toUpperCase() || 'UNKNOWN'}</div>
-                <div className="truncate min-w-0">{dep.model?.modelType || 'Unknown'}</div>
+                <div className="truncate min-w-0">{formatModelType(dep.model?.modelType)}</div>
                 <div className="truncate min-w-0">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">
                     {dep.gpuType || 'Not specified'}
