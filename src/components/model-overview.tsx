@@ -21,17 +21,37 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+interface ModelEarning {
+  name: string;
+  earnings: string;
+  percentage: number;
+  trend: string;
+}
+
+interface ModelPerformance {
+  name: string;
+  type: string;
+  requests: string;
+  status: string;
+  performance: number;
+  earnings: string;
+}
+
 interface ModelMetrics {
   totalModels: number;
   activeModels: number;
   pendingModels: number;
+  modelEarnings: ModelEarning[];
+  modelPerformance: ModelPerformance[];
 }
 
 export function ModelOverview() {
   const [metrics, setMetrics] = useState<ModelMetrics>({
     totalModels: 0,
     activeModels: 0,
-    pendingModels: 0
+    pendingModels: 0,
+    modelEarnings: [],
+    modelPerformance: []
   });
 
   const [bankDetails, setBankDetails] = useState({
@@ -177,33 +197,14 @@ export function ModelOverview() {
             </div>
           </div>
           <div className="space-y-4">
-            {[
-              {
-                name: "BERT-base-uncased",
-                earnings: "₹1,24,500",
-                percentage: 85,
-                trend: "+12%",
-              },
-              {
-                name: "ResNet50",
-                earnings: "₹87,600",
-                percentage: 65,
-                trend: "+8%",
-              },
-              {
-                name: "GPT-2-small",
-                earnings: "₹32,900",
-                percentage: 45,
-                trend: "+5%",
-              },
-            ].map((model, index) => (
+            {metrics.modelEarnings.map((model, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
               >
                 <div className="flex items-center gap-4">
                   <div className="space-y-1">
-                    <h3 className="font-medium text-white">{model.name}</h3>
+                    <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
                     <p className="text-sm text-gray-400">{model.trend}</p>
                   </div>
                 </div>
@@ -387,38 +388,13 @@ export function ModelOverview() {
       <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
         <h2 className="text-xl font-medium text-white mb-6">Model Performance</h2>
         <div className="space-y-4">
-          {[
-            {
-              name: "BERT-base-uncased",
-              type: "NLP",
-              requests: "1245 requests",
-              status: "Deployed",
-              performance: 85,
-              earnings: "₹1,24,500",
-            },
-            {
-              name: "ResNet50",
-              type: "Computer Vision",
-              requests: "876 requests",
-              status: "Deployed",
-              performance: 92,
-              earnings: "₹87,600",
-            },
-            {
-              name: "GPT-2-small",
-              type: "Text Generation",
-              requests: "0 requests",
-              status: "Pending",
-              performance: 0,
-              earnings: "₹0",
-            },
-          ].map((model, index) => (
+          {metrics.modelPerformance.map((model, index) => (
             <div
               key={index}
               className="flex items-center justify-between p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
             >
               <div className="space-y-1">
-                <h3 className="font-medium text-white">{model.name}</h3>
+                <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
                 <p className="text-sm text-gray-400">{model.type}</p>
               </div>
               <div className="flex items-center gap-6">

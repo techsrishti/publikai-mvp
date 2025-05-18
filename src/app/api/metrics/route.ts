@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
+import { Model, Deployment } from '@prisma/client';
+
+interface ModelWithDeployments extends Model {
+  Deployment: Deployment[];
+}
 
 export async function GET() {
   try {
@@ -47,7 +52,7 @@ export async function GET() {
       include: {
         Deployment: true
       }
-    });
+    }) as ModelWithDeployments[];
 
     // Calculate total, active, and pending models
     const totalModels = models.length;
@@ -67,7 +72,7 @@ export async function GET() {
     // Prepare model performance data
     const modelPerformance = models.map(model => ({
       name: model.name,
-      type: model.modelType,
+      type: model.modelType || 'Unknown',
       requests: "0 requests",
       status: model.Deployment.some(d => d.status === 'success') ? 'Deployed' : 'Pending',
       performance: 0,
