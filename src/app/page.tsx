@@ -96,7 +96,7 @@ export default function Home() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex-shrink-0">
               <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400">
-                PublikAI
+                FritoAI
               </h1>
             </div>
             <div className="flex items-center space-x-4">
@@ -402,7 +402,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-lg font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">
-                PublikAI
+                FritoAI
               </h3>
               <p className="text-white/60">
                 India&apos;s platform for AI model creators and users.
@@ -451,7 +451,7 @@ export default function Home() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Contact</h3>
               <ul className="space-y-2">
-                <li className="text-white/60">support@publikai.com</li>
+                <li className="text-white/60">support@FritoAI.com</li>
                 <li className="flex space-x-4 mt-4">
                   <Link href="#" className="text-white/60 hover:text-white transition-colors">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -473,7 +473,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-white/10 text-center text-white/40 text-sm">
-            © {new Date().getFullYear()} PublikAI. All rights reserved.
+            © {new Date().getFullYear()} FritoAI. All rights reserved.
           </div>
         </div>
       </footer>

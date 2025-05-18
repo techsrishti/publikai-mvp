@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Upload, Server, Loader2, ClipboardCopy, Check, RefreshCw } from "lucide-react"
+import { Upload, Server, Loader2, Check, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import { formatRelativeTime } from "@/lib/utils"
 
@@ -243,7 +243,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                     {dep.status.toUpperCase()}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2 text-sm">
                   <div>
                     <p className="text-gray-400">Deployment URL</p>
                     <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                           {copiedStates[`url-${dep.id}`] ? (
                             <Check className="h-4 w-4" />
                           ) : (
-                            <ClipboardCopy className="h-4 w-4" />
+                            <span>Copy</span>
                           )}
                         </Button>
                       )}
@@ -278,7 +278,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                           {copiedStates[`key-${dep.id}`] ? (
                             <Check className="h-4 w-4" />
                           ) : (
-                            <ClipboardCopy className="h-4 w-4" />
+                            <span>Copy</span>
                           )}
                         </Button>
                       )}

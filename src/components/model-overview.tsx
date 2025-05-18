@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Tooltip,
   TooltipContent,
@@ -21,7 +21,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+interface ModelMetrics {
+  totalModels: number;
+  activeModels: number;
+  pendingModels: number;
+}
+
 export function ModelOverview() {
+  const [metrics, setMetrics] = useState<ModelMetrics>({
+    totalModels: 0,
+    activeModels: 0,
+    pendingModels: 0
+  });
+
   const [bankDetails, setBankDetails] = useState({
     accountHolderName: "John Doe",
     accountNumber: "4567",
@@ -31,6 +43,20 @@ export function ModelOverview() {
   })
 
   const [isVPA, setIsVPA] = useState(false)
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch('/api/metrics');
+        const data = await response.json();
+        setMetrics(data);
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   const handleBankDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,8 +101,8 @@ export function ModelOverview() {
             </div>
             <div>
               <p className="text-sm font-medium text-blue-300 font-cabinet-grotesk">Total Models</p>
-              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">3</h3>
-              <p className="text-xs text-blue-400 mt-1">2 Active, 1 Pending</p>
+              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">{metrics.totalModels}</h3>
+              <p className="text-xs text-blue-400 mt-1">{metrics.activeModels} Active, {metrics.pendingModels} Pending</p>
             </div>
           </div>
         </Card>

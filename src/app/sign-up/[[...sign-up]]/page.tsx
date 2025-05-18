@@ -12,7 +12,7 @@ export default function SignUpPage() {
         <div className="w-full max-w-md backdrop-blur-lg bg-white/5 shadow-2xl border border-white/20 rounded-2xl overflow-hidden bg-[radial-gradient(circle_at_50%_0%,theme(colors.white/10%),transparent)]">
           <div className="px-6 pt-8 pb-6 text-center">
             <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 mb-2">
-              PublikAI
+              FritoAI
             </h2>
             <p className="text-white">
               Create a new account
