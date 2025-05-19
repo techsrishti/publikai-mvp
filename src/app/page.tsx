@@ -8,37 +8,27 @@ import { TiltCard } from "@/components/tilt-card";
 import { ReviewsSection } from "@/components/reviews-section";
 import { PainpointsSection } from "@/components/painpoints-section";
 import Image from 'next/image'
+import { WaitlistForm } from "@/components/WaitlistForm";
+import { ContactForm } from "@/components/ContactForm";
 
-interface ComingSoonButtonProps {
+interface ButtonProps {
   children: ReactNode;
   className?: string;
-  tooltipPosition?: 'top' | 'bottom';
+  onClick?: () => void;
 }
 
-const ComingSoonButton = ({ children, className = "", tooltipPosition = 'top' }: ComingSoonButtonProps) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-  
+const WaitlistButton = ({ children, className = "", onClick }: ButtonProps) => {
   return (
-    <div className="relative inline-block">
-      <button 
-        className={`relative group ${className} cursor-not-allowed opacity-90`}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        onClick={(e) => e.preventDefault()}
-      >
-        {children}
-        {showTooltip && (
-          <div className={`absolute ${tooltipPosition === 'top' ? '-top-10' : 'top-full mt-2'} left-1/2 transform -translate-x-1/2 px-3 py-1 bg-black/90 text-white text-sm rounded-md whitespace-nowrap z-50`}>
-            Coming Soon
-            <div className={`absolute ${tooltipPosition === 'top' ? 'bottom-[-4px]' : 'top-[-4px]'} left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black/90 rotate-45`}></div>
-          </div>
-        )}
-      </button>
-    </div>
+    <button 
+      className={`${className} transition-all duration-300 hover:scale-105`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
 };
 
-const ComingSoonLink = ({ children, className = "" }: ComingSoonButtonProps) => {
+const ComingSoonLink = ({ children, className = "" }: ButtonProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
   return (
@@ -63,6 +53,7 @@ const ComingSoonLink = ({ children, className = "" }: ComingSoonButtonProps) => 
 export default function Home() {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMounted, setIsMounted] = useState(false);
+   const [highlightForm, setHighlightForm] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -82,8 +73,18 @@ export default function Home() {
   }, []);
 
   if (!isMounted) {
-    return null; // or a loading state
+    return null;
   }
+
+  const scrollToWaitlist = () => {
+     setHighlightForm(true);
+    // Reset highlight after animation
+    setTimeout(() => setHighlightForm(false), 2000);
+    const heroSection = document.getElementById('hero-section');
+    if (heroSection) {
+      heroSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -101,9 +102,12 @@ export default function Home() {
               <ComingSoonLink>
                 <span className="text-sm text-white/70 hover:text-white transition-colors">Pricing</span>
               </ComingSoonLink>
-              <ComingSoonButton className="bg-white hover:bg-white/90 transition-colors text-black text-sm px-4 py-2 rounded-lg">
+              <WaitlistButton 
+                className="bg-white hover:bg-white/90 transition-colors text-black text-sm px-4 py-2 rounded-lg"
+                onClick={scrollToWaitlist}
+              >
                 Join Waitlist
-              </ComingSoonButton>
+              </WaitlistButton>
             </div>
           </div>
         </div>
@@ -111,6 +115,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <motion.section 
+        id="hero-section"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -132,7 +137,7 @@ export default function Home() {
             </div>
             
             <AnimatedGradientText
-              text="Deploy and Monetize your AI models in one click"  
+              text="Deploy and Monetize your AI models in minutes"  
               className="text-5xl md:text-7xl font-bold mb-8"
               mousePosition={mousePosition}
             />
@@ -148,19 +153,16 @@ export default function Home() {
             </motion.p>
 
             <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              className="flex flex-col items-center justify-center gap-6 mb-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
             >
-              <input 
-                type="email" 
-                placeholder="Enter your work email" 
-                className="flex-1 max-w-sm px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500"
+              <WaitlistForm 
+                className="w-full max-w-lg" 
+                buttonText="Join Private Beta"
+                highlight={highlightForm}
               />
-              <ComingSoonButton className="bg-white hover:bg-white/90 transition-colors text-black px-6 py-3 rounded-lg font-medium">
-                Join Private Beta
-              </ComingSoonButton>
             </motion.div>
 
             <p className="text-sm text-white/50">
@@ -202,24 +204,25 @@ export default function Home() {
 
                   <pre className="text-sm md:text-base font-mono relative group">
                     <code className="text-white/90 block space-y-4">
-                      <span className="block text-blue-400">from</span>                      <span className="text-purple-400">frito</span> <span className="text-blue-400">import</span> Model
+                      <span className="block"><span className="text-blue-400">from</span> <span className="text-purple-400">frito</span> <span className="text-blue-400">import</span> Model</span>
 
-<span className="block text-slate-500"># Initialize your model</span>
-model = Model.from_huggingface(<span className="text-green-300">&quot;mistralai/Mistral-7B-v0.1&quot;</span>)
+                      <span className="block text-slate-500"># Initialize your model</span>
+                      model = Model.from_huggingface(<span className="text-green-300">&quot;mistralai/Mistral-7B-v0.1&quot;</span>)
 
-<span className="block text-slate-500"># Configure and deploy</span>
-model.deploy(
-    name=<span className="text-green-300">&quot;my-chatbot&quot;</span>,
-    pricing={`{`}
-        <span className="text-yellow-300">&quot;requests&quot;</span>: <span className="text-green-300">&quot;$0.01/call&quot;</span>,
-        <span className="text-yellow-300">&quot;tokens&quot;</span>: <span className="text-green-300">&quot;$0.001/1k&quot;</span>
-    {`}`}
-)
+                      <span className="block text-slate-500"># Configure and deploy</span>
+                      model.deploy(
+                          name=<span className="text-green-300">&quot;my-chatbot&quot;</span>,
+                          pricing={`{`}
+                              <span className="text-yellow-300">&quot;requests&quot;</span>: <span className="text-green-300">&quot;$0.01/call&quot;</span>,
+                              <span className="text-yellow-300">&quot;tokens&quot;</span>: <span className="text-green-300">&quot;$0.001/1k&quot;</span>
+                          {`}`}
+                      )
 
-<span className="block text-slate-500"># Your model is now live with:</span>
-<span className="text-green-400"># ✓ Production API endpoint</span>
-<span className="text-green-400"># ✓ Usage tracking & billing</span>
-<span className="text-green-400"># ✓ Rate limiting & security</span></code>
+                      <span className="block text-slate-500"># Your model is now live with:</span>
+                      <span className="text-green-400"># ✓ Production API endpoint</span>
+                      <span className="text-green-400"># ✓ Usage tracking & billing</span>
+                      <span className="text-green-400"># ✓ Rate limiting & security</span>
+                    </code>
                     
                     {/* Added typing cursor animation */}
                     <div className="absolute right-0 bottom-0 w-2 h-5 bg-purple-400 animate-blink opacity-0 group-hover:opacity-100"></div>
@@ -321,7 +324,7 @@ model.deploy(
             >
               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM10 9V7a4 4 0 018 0v2h-8z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM10 9V7a4 4 0 018 0v2h-8z" />
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-3">Enterprise-grade security</h3>
@@ -475,12 +478,12 @@ model.deploy(
             viewport={{ once: true }}
             className="text-center mt-16"
           >
-            <ComingSoonButton className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+            <WaitlistButton className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
               Start Building
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
-            </ComingSoonButton>
+            </WaitlistButton>
           </motion.div>
         </div>
       </section>
@@ -577,14 +580,13 @@ model.deploy(
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <input 
-                      type="email" 
-                      placeholder="Enter your work email"
-                      className="w-full sm:w-auto min-w-[300px] px-6 py-3 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
-                    />
-                    <ComingSoonButton className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25">
+                   
+                    <WaitlistButton 
+                      className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+                      onClick={scrollToWaitlist}
+                    >
                       Get Early Access
-                    </ComingSoonButton>
+                    </WaitlistButton>
                   </div>
                 </motion.div>
               </div>
@@ -617,48 +619,7 @@ model.deploy(
               viewport={{ once: true }}
               className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 md:p-8"
             >
-              <form className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">Name</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">Email</label>
-                    <input
-                      type="email"
-                      className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
-                      placeholder="john@company.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">Subject</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
-                    placeholder="How can we help?"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">Message</label>
-                  <textarea
-                    rows={4}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
-                    placeholder="Your message..."
-                  ></textarea>
-                </div>
-
-                <ComingSoonButton className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25">
-                  Send Message
-                </ComingSoonButton>
-              </form>
+              <ContactForm />
             </motion.div>
 
             {/* Contact Info */}
@@ -669,43 +630,38 @@ model.deploy(
               className="space-y-8"
             >
               <TiltCard mousePosition={mousePosition} className="overflow-hidden">
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                  <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                    Visit Our Office
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
+                  <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    About Frito
                   </h3>
-                  <p className="text-white/70 mb-4">
-                   AI Street, Gachibowli<br />
-                    Hyderabad, Telangana <br />
-                    India
-                  </p>
-                  <div className="h-48 rounded-lg overflow-hidden">
-                    <div className="w-full h-full bg-[url('/placeholder.jpg')] bg-cover bg-center"></div>
+                  <div className="space-y-4">
+                    <p className="text-lg text-white/70 leading-relaxed">
+                      We are a team of AI enthusiasts and infrastructure experts building the next generation of AI deployment platforms. Our mission is to democratize AI deployment and make it accessible to everyone.
+                    </p>
+                 
                   </div>
                 </div>
               </TiltCard>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
-                    <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+              <div className="grid grid-cols-1 gap-6">
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 flex flex-col">
+                  <div className="flex items-center gap-4 mb-14">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold text-white">Contact Us</h4>
+                      <p className="text-white/50">We would love to hear from you</p>
+                    </div>
                   </div>
-                  <h4 className="text-lg font-semibold text-white mb-2">Email Us</h4>
-                  <a href="mailto:hello@frito.ai" className="text-purple-400 hover:text-purple-300 transition-colors">
+                  <div className="flex-grow"></div>
+                  <a href="mailto:hello@frito.ai" className="inline-flex items-center gap-2 text-lg text-purple-400 hover:text-purple-300 transition-colors group">
                     hello@frito.ai
-                  </a>
-                </div>
-
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
-                    <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
-                  </div>
-                  <h4 className="text-lg font-semibold text-white mb-2">Call Us</h4>
-                  <a href="tel:+1234567890" className="text-blue-400 hover:text-blue-300 transition-colors">
-                    +1 (234) 567-890
                   </a>
                 </div>
               </div>

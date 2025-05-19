@@ -2,6 +2,7 @@
 
 import * as Clerk from '@clerk/elements/common'
 import * as SignIn from '@clerk/elements/sign-in'
+import { WaitlistForm } from '@/components/WaitlistForm'
 
 export default function SignInPage() {
   return (
@@ -20,6 +21,7 @@ export default function SignInPage() {
           </div>
           
           <div className="px-6 pb-8">
+            <WaitlistForm className="mb-6" buttonText="Join Waitlist" />
             <SignIn.Root routing="path" path="/sign-in">
               <SignIn.Step name="start">
                 <Clerk.GlobalError className="block text-sm text-rose-400" />
