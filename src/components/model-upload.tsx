@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Upload, LinkIcon, X, Link2, FileUp, Globe, FileUp2 } from "lucide-react"
+import { ArrowRight, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { uploadModelAction } from "@/app/creator-dashboard/model-actions"
 import { FileUploader } from "@/components/file-uploader"
@@ -183,8 +183,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
         addNotification("error", "Model does not exist on Hugging Face with the given details.");
         return;
       }
-    } catch (err) {
-      addNotification("error", "Failed to check model existence.");
+    } catch (error) {
+      addNotification("error", "Failed to check model existence." + error);
       return;
     }
     setLoadingUrl(true)
@@ -233,8 +233,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       } else {
         addNotification("error", result.error || "Failed to register model URL.")
       }
-    } catch {
-      addNotification("error", "Network error.")
+    } catch (error) {
+      addNotification("error", "Network error." + error);
     } finally {
       setLoadingUrl(false)
     }
@@ -258,11 +258,9 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           <Tabs defaultValue="url" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-blue-900/30 rounded-lg overflow-hidden">
               <TabsTrigger value="url" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
-                <Globe className="mr-2 h-4 w-4" />
                 Use Model URL
               </TabsTrigger>
               <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
-                <FileUp className="mr-2 h-4 w-4" />
                 Upload Model
               </TabsTrigger>
             </TabsList>
@@ -315,7 +313,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
                   </div>
                   <div className="flex flex-col items-start">
-                    <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to 'main')</span></label>
+                    <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to &apos;main&apos;)</span></label>
                     <Input
                       id="url-revision"
                       value={urlFields.revision}

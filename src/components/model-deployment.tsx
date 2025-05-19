@@ -2,8 +2,6 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { Upload, Server, Loader2, Check, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import { formatRelativeTime } from "@/lib/utils"
@@ -148,8 +146,8 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       } else {
         addNotification("error", data.message || "Deployment failed.")
       }
-    } catch (err) {
-      addNotification("error", "Deployment failed.")
+    } catch (error) {
+      addNotification("error", "Deployment failed." + error)
     } finally {
       setIsDeploying(false)
     }
@@ -296,18 +294,4 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       </div>
     </div>
   )
-}
-
-async function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64String = reader.result as string;
-      // Remove the data URL prefix (e.g., "data:text/plain;base64,")
-      const base64Content = base64String.split(',')[1];
-      resolve(base64Content);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }

@@ -4,9 +4,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Play, X, ChevronDown, RefreshCw } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Loader2, X, RefreshCw } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,7 +60,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch deployments from backend
-  const fetchDeployments = async () => {
+  const fetchDeployments = useCallback(async () => {
     setIsRefreshing(true)
     setLoading(true)
     try {
@@ -74,11 +73,11 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
       setLoading(false)
       setIsRefreshing(false)
     }
-  }
+  }, [addNotification])
 
   useEffect(() => {
     fetchDeployments()
-  }, [])
+  }, [fetchDeployments])
 
   // Delete deployment
   const handleDeleteDeployment = async (id: string) => {
@@ -127,7 +126,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             <AlertDialogDescription className="text-gray-400">
               {deploymentToDelete && (
                 <>
-                  Are you sure you want to delete the deployment for model "{deploymentToDelete.model?.userModelName || deploymentToDelete.model?.name || deploymentToDelete.modelName}"? This action cannot be undone.
+                  Are you sure you want to delete the deployment for model &quot;{deploymentToDelete.model?.userModelName || deploymentToDelete.model?.name || deploymentToDelete.modelName}&quot;? This action cannot be undone.
                 </>
               )}
             </AlertDialogDescription>
@@ -160,13 +159,13 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                   addNotification("success", "Deployment and model deleted.");
                   setDeployments(deployments.filter(dep => dep.id !== deploymentToDelete.id));
                   setDeploymentToDelete(null);
-                } catch (err) {
+                } catch {
                   addNotification("error", "Failed to delete model and deployment.");
                 } finally {
                   setIsDeleting(false);
                 }
               }}
-              className="bg-red-800 text-white hover:bg-red-900"
+              className="bg-red-600 text-white hover:bg-red-900"
               disabled={isDeleting}
             >
               {isDeleting ? (

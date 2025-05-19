@@ -97,9 +97,9 @@ export async function DELETE(req: Request) {
     });
 
     return NextResponse.json({ success: true, deployment });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete deployment error:', error);
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json(
         { success: false, message: 'Deployment not found' },
         { status: 404 }

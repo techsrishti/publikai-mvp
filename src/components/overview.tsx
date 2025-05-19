@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Package, CheckCircle, Clock } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import Image from 'next/image'
 
 interface Deployment {
   id: string
@@ -58,7 +59,7 @@ const Overview: React.FC = () => {
         <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-400">Total Models</CardTitle>
-            <Package className="h-4 w-4 text-gray-400" />
+            <Image src="/icons/package.svg" alt="Package" width={16} height={16} className="text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{metrics.totalUserModels}</div>
@@ -78,7 +79,7 @@ const Overview: React.FC = () => {
         <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-400">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-400" />
+            <Image src="/icons/clock.svg" alt="Clock" width={16} height={16} className="text-yellow-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{metrics.pendingModels}</div>

@@ -22,8 +22,6 @@ export async function uploadModelAction(formData: FormData) {
     const sourceType = formData.get('sourceType') as string | null;
     const url = formData.get('url') as string | null;
     const file = formData.get('file') as File | null;
-    const hfOrganizationName = formData.get('hfOrganizationName') as string | null;
-    const hfModelName = formData.get('hfModelName') as string | null;
     const modelName = formData.get('modelName') as string | null; // Used in creator-dashboard
     const urlModelType = formData.get('urlModelType') as string | null; // Used in creator-dashboard
     const parametersRaw = formData.get('parameters');
@@ -99,7 +97,6 @@ export async function uploadModelAction(formData: FormData) {
         tags,
         parameters,
         revision,
-        // @ts-ignore - customScript field exists in database but not in types
         customScript,
       },
     });
@@ -155,7 +152,7 @@ export async function startDeployment(modelName: string) {
       return { success: false, error: 'Model not found' };
     }
 
-    const deployment = await prisma.deployment.findUnique({
+    const deployment = await prisma.deployment.findFirst({
       where: {
         modelId: model.id,
       },
@@ -184,7 +181,7 @@ export async function startDeployment(modelName: string) {
       },
       body: JSON.stringify({
           model_type: "AutoModelForCausalLM",
-          model_name: model.hfOrganizationName + "/" + model.hfModelName,
+          model_name: model.name,
           user_id: clerkId,
           model_internal_name: model.name,
         }),
@@ -229,8 +226,7 @@ export async function getActiveDeployments() {
         id: true,
         status: true,
         createdAt: true,
-        instanceIP: true,
-        instancePort: true,
+        deploymentUrl: true,
         model: {
           select: {
             name: true,

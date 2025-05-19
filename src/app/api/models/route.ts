@@ -18,7 +18,6 @@ export async function GET(req: Request) {
             url: true,
             revision: true,
             parameters: true,
-            // @ts-ignore - customScript field exists in database but not in types
             customScript: true,
           }
         : {
@@ -33,7 +32,6 @@ export async function GET(req: Request) {
             createdAt: true,
             parameters: true,
             revision: true,
-            // @ts-ignore - customScript field exists in database but not in types
             customScript: true,
           },
     })
@@ -70,7 +68,6 @@ export async function POST(req: Request) {
         tags,
         revision,
         parameters,
-        // @ts-ignore - customScript field exists in database but not in types
         customScript,
       },
     })
@@ -112,7 +109,7 @@ export async function DELETE(req: Request) {
     });
 
     return NextResponse.json({ success: true, model });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete model error:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to delete model' },

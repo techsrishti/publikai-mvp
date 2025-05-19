@@ -4,9 +4,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Play, X, ChevronDown, RefreshCw } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Loader2, X, RefreshCw } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
 
 interface ActiveDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -34,7 +33,7 @@ export function ActiveDeployment({ addNotification }: ActiveDeploymentProps) {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 
   // Fetch deployments from backend
-  const fetchDeployments = async () => {
+  const fetchDeployments = useCallback(async () => {
     setIsRefreshing(true)
     setLoading(true)
     try {
@@ -47,11 +46,11 @@ export function ActiveDeployment({ addNotification }: ActiveDeploymentProps) {
       setLoading(false)
       setIsRefreshing(false)
     }
-  }
+  }, [addNotification])
 
   useEffect(() => {
     fetchDeployments()
-  }, [])
+  }, [fetchDeployments])
 
   // Filter and search
   const filteredDeployments = deployments.filter(dep => {
