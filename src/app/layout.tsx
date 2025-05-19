@@ -1,24 +1,18 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const inter = Inter({
   subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  variable: '--font-inter',
 })
 
 export const metadata: Metadata = {
   title: 'PublikAI - Deploy & Monetize AI Models',
   description: 'The first India-focused platform for AI developers to host, manage, and monetize their fine-tuned models via API',
 }
-
 
 export default function RootLayout({
   children,
@@ -28,7 +22,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${inter.variable} font-sans antialiased`}>
           {children}
           <Toaster position="top-right" />
         </body>
