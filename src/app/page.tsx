@@ -92,18 +92,18 @@ export default function Home() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+            <Link href="/" className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
               Frito
             </Link>
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4 md:gap-8">
               <ComingSoonLink>
-                <span className="text-sm text-white/70 hover:text-white transition-colors">Documentation</span>
+                <span className="text-xs md:text-sm text-white/70 hover:text-white transition-colors">Documentation</span>
               </ComingSoonLink>
               <ComingSoonLink>
-                <span className="text-sm text-white/70 hover:text-white transition-colors">Pricing</span>
+                <span className="text-xs md:text-sm text-white/70 hover:text-white transition-colors">Pricing</span>
               </ComingSoonLink>
               <WaitlistButton 
-                className="bg-white hover:bg-white/90 transition-colors text-black text-sm px-4 py-2 rounded-lg"
+                className="bg-white hover:bg-white/90 transition-colors text-black text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 rounded-lg"
                 onClick={scrollToWaitlist}
               >
                 Join Waitlist
@@ -411,19 +411,19 @@ export default function Home() {
               </div>
 
               <TiltCard mousePosition={mousePosition} className="ml-16 md:ml-0">
-                <div className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                  <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+                <div className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl p-4 md:p-6">
+                  <h3 className="text-xl md:text-2xl font-bold mb-2 md:mb-4 bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
                     One-Click Deployment
                   </h3>
-                  <p className="text-white/70 mb-6">
+                  <p className="text-sm md:text-base text-white/70 mb-4 md:mb-6">
                     Deploy your model with a single command. We handle scaling, security, and monitoring.
                   </p>
-                  <div className="bg-black/30 rounded-lg p-4">
-                    <pre className="text-sm">
+                  <div className="bg-black/30 rounded-lg p-3 md:p-4">
+                    <pre className="text-xs md:text-sm overflow-x-auto">
                       <code className="text-blue-300">$ frito deploy model.py --name chatbot</code>
                     </pre>
-                    <div className="mt-2 flex items-center gap-2 text-sm text-green-400">
-                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    <div className="mt-2 flex items-center gap-2 text-xs md:text-sm text-green-400">
+                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-400 animate-pulse"></div>
                       Deployed and ready to use
                     </div>
                   </div>
@@ -452,18 +452,18 @@ export default function Home() {
                   <p className="text-white/70 mb-6">
                     Real-time metrics, automated scaling, and built-in monetization.
                   </p>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-white/5 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-violet-400">99.9%</div>
-                      <div className="text-xs text-white/50">Uptime</div>
+                  <div className="grid grid-cols-3 gap-2 md:gap-4">
+                    <div className="bg-white/5 rounded-lg p-2 md:p-4 text-center">
+                      <div className="text-lg md:text-2xl font-bold text-violet-400 truncate">99.9%</div>
+                      <div className="text-[10px] md:text-xs text-white/50">Uptime</div>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-violet-400">45ms</div>
-                      <div className="text-xs text-white/50">Latency</div>
+                    <div className="bg-white/5 rounded-lg p-2 md:p-4 text-center">
+                      <div className="text-lg md:text-2xl font-bold text-violet-400 truncate">45ms</div>
+                      <div className="text-[10px] md:text-xs text-white/50">Latency</div>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-violet-400">24/7</div>
-                      <div className="text-xs text-white/50">Support</div>
+                    <div className="bg-white/5 rounded-lg p-2 md:p-4 text-center">
+                      <div className="text-lg md:text-2xl font-bold text-violet-400 truncate">24/7</div>
+                      <div className="text-[10px] md:text-xs text-white/50">Support</div>
                     </div>
                   </div>
                 </div>
