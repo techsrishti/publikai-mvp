@@ -47,10 +47,14 @@ export async function GET() {
       });
     }
 
-    // Get all models with their deployment status
+    // Get all models with their deployment status and API calls
     const models = await prisma.model.findMany({
       include: {
-        Deployment: true
+        Deployment: {
+          include: {
+            apiCalls: true
+          }
+        }
       }
     }) as ModelWithDeployments[];
 
@@ -69,14 +73,31 @@ export async function GET() {
       trend: "0%"
     }));
 
-    // Prepare model performance data
-    const modelPerformance = models.map(model => ({
-      name: model.name,
-      type: model.modelType || 'Unknown',
-      requests: "0 requests",
-      status: model.Deployment.some(d => d.status === 'success') ? 'Deployed' : 'Pending',
-      performance: 0,
-      earnings: "₹0"
+    // Prepare model performance data with API call statistics
+    const modelPerformance = await Promise.all(models.map(async model => {
+      const deployments = model.Deployment;
+      const allApiCalls = deployments.flatMap(d => d.apiCalls);
+      
+      // Calculate successful and failed calls
+      const successfulCalls = allApiCalls.filter(call => call.statusCode >= 200 && call.statusCode < 300);
+      const failedCalls = allApiCalls.filter(call => call.statusCode >= 400);
+      
+      // Calculate average latency for successful calls
+      const avgLatency = successfulCalls.length > 0
+        ? Math.round(successfulCalls.reduce((sum, call) => sum + call.latency, 0) / successfulCalls.length)
+        : 0;
+
+      return {
+        name: model.name,
+        type: model.modelType || 'Unknown',
+        requests: `${successfulCalls.length} successful, ${failedCalls.length} failed`,
+        status: model.Deployment.some(d => d.status === 'success') ? 'Deployed' : 'Pending',
+        performance: successfulCalls.length > 0 ? Math.round((successfulCalls.length / allApiCalls.length) * 100) : 0,
+        avgLatency: `${avgLatency}ms`,
+        totalCalls: allApiCalls.length,
+        successfulCalls: successfulCalls.length,
+        failedCalls: failedCalls.length
+      };
     }));
 
     return NextResponse.json({

@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Upload, Server, Loader2, Check, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
-import { formatRelativeTime } from "@/lib/utils"
+import { formatRelativeTime, getFormattedDeploymentUrl } from "@/lib/utils"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -245,13 +245,13 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                   <div>
                     <p className="text-gray-400">Deployment URL</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-gray-200 break-all flex-1">{dep.deploymentUrl || "-"}</p>
-                      {dep.deploymentUrl && (
+                      <p className="text-gray-200 break-all flex-1">{dep.modelId ? getFormattedDeploymentUrl(dep.modelId) : "-"}</p>
+                      {dep.modelId && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-gray-400 hover:text-gray-200"
-                          onClick={() => handleCopy(dep.deploymentUrl!, `url-${dep.id}`)}
+                          onClick={() => handleCopy(getFormattedDeploymentUrl(dep.modelId), `url-${dep.id}`)}
                         >
                           {copiedStates[`url-${dep.id}`] ? (
                             <Check className="h-4 w-4" />

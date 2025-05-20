@@ -37,3 +37,8 @@ export function formatRelativeTime(date: string): string {
   const diffInYears = Math.floor(diffInMonths / 12)
   return `${diffInYears} year${diffInYears === 1 ? '' : 's'} ago`
 }
+
+export function getFormattedDeploymentUrl(modelId: string): string {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+  return `${backendUrl}/api/model/${modelId}`;
+}
