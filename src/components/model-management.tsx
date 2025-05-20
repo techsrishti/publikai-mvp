@@ -21,20 +21,15 @@ interface ModelManagementProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
 }
 
-interface Deployment {
+interface Model {
   id: string
-  modelName: string
+  name: string
   modelType: string
   userModelName: string
-  status: string
-  createdAt: string
-  gpuType?: string
-  model: {
-    modelType: string
-    userModelName: string
-    name: string
+  deployment?: {
     id: string
-    organizationName?: string
+    status: string
+    gpuType?: string
   }
 }
 
@@ -51,24 +46,35 @@ function formatModelType(type?: string) {
 }
 
 export function ModelManagement({ addNotification }: ModelManagementProps) {
-  const [deployments, setDeployments] = useState<Deployment[]>([])
+  const [models, setModels] = useState<Model[]>([])
   const [filter, setFilter] = useState<string>("all")
   const [search, setSearch] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
-  const [deploymentToDelete, setDeploymentToDelete] = useState<Deployment | null>(null)
+  const [modelToDelete, setModelToDelete] = useState<Model | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch deployments from backend
-  const fetchDeployments = useCallback(async () => {
+  // Fetch models and their deployments from backend
+  const fetchModels = useCallback(async () => {
     setIsRefreshing(true)
     setLoading(true)
     try {
-      const res = await fetch("/api/deployment")
-      const data = await res.json()
-      setDeployments(data.deployments || [])
+      const [modelsRes, deploymentsRes] = await Promise.all([
+        fetch("/api/models"),
+        fetch("/api/deployment")
+      ])
+      const modelsData = await modelsRes.json()
+      const deploymentsData = await deploymentsRes.json()
+      
+      // Combine models with their deployment info
+      const modelsWithDeployments = modelsData.models.map((model: Model) => ({
+        ...model,
+        deployment: deploymentsData.deployments.find((dep: any) => dep.modelId === model.id)
+      }))
+      
+      setModels(modelsWithDeployments)
     } catch {
-      addNotification("error", "Failed to fetch deployments.")
+      addNotification("error", "Failed to fetch models.")
     } finally {
       setLoading(false)
       setIsRefreshing(false)
@@ -76,14 +82,40 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
   }, [addNotification])
 
   useEffect(() => {
-    fetchDeployments()
-  }, [fetchDeployments])
+    fetchModels()
+  }, [fetchModels])
 
-  // Delete deployment
-  const handleDeleteDeployment = async (id: string) => {
+  // Delete model and its deployments
+  const handleDeleteModel = async (modelId: string) => {
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/deployment?id=${id}`, { 
+      const res = await fetch(`/api/models?id=${modelId}`, { 
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      const data = await res.json()
+      if (data.success) {
+        addNotification("success", "Model and all its deployments deleted.")
+        setModels(models.filter(model => model.id !== modelId))
+        setModelToDelete(null)
+      } else {
+        addNotification("error", data.message || data.error || "Failed to delete model.")
+      }
+    } catch (error) {
+      console.error("Delete model error:", error)
+      addNotification("error", "Failed to delete model.")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Delete only deployment
+  const handleDeleteDeployment = async (deploymentId: string) => {
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/deployment?id=${deploymentId}`, { 
         method: "DELETE",
         headers: {
           "Content-Type": "application/json"
@@ -92,8 +124,13 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
       const data = await res.json()
       if (data.success) {
         addNotification("success", "Deployment deleted.")
-        setDeployments(deployments.filter(dep => dep.id !== id))
-        setDeploymentToDelete(null)
+        // Update the model's deployment status
+        setModels(models.map(model => 
+          model.deployment?.id === deploymentId 
+            ? { ...model, deployment: undefined }
+            : model
+        ))
+        setModelToDelete(null)
       } else {
         addNotification("error", data.message || data.error || "Failed to delete deployment.")
       }
@@ -106,11 +143,13 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
   }
 
   // Filter and search
-  const filteredDeployments = deployments.filter(dep => {
-    const matchesStatus = filter === "all" || dep.status.toLowerCase() === filter
+  const filteredModels = models.filter(model => {
+    const matchesStatus = filter === "all" || 
+      (filter === "deployed" && model.deployment) ||
+      (filter === "not-deployed" && !model.deployment)
     const searchTerm = search.toLowerCase()
-    const modelName = dep.model?.userModelName || dep.model?.name || dep.modelName || ""
-    const modelType = dep.model?.modelType || ""
+    const modelName = model.userModelName || model.name || ""
+    const modelType = model.modelType || ""
     const matchesSearch = 
       modelName.toLowerCase().includes(searchTerm) ||
       modelType.toLowerCase().includes(searchTerm)
@@ -119,53 +158,50 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
 
   return (
     <div className="space-y-6">
-      <AlertDialog open={!!deploymentToDelete} onOpenChange={(open) => !open && setDeploymentToDelete(null)}>
+      <AlertDialog open={!!modelToDelete} onOpenChange={(open) => !open && setModelToDelete(null)}>
         <AlertDialogContent className="bg-gray-900 border-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Deployment</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">Delete Model</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              {deploymentToDelete && (
-                <>
-                  Are you sure you want to delete the deployment for model &quot;{deploymentToDelete.model?.userModelName || deploymentToDelete.model?.name || deploymentToDelete.modelName}&quot;? This action cannot be undone.
-                </>
+              {modelToDelete && (
+                <div className="space-y-2">
+                  <div>
+                    Are you sure you want to delete the model &quot;{modelToDelete.userModelName || modelToDelete.name}&quot;?
+                  </div>
+                  {modelToDelete.deployment && (
+                    <div className="mt-2">
+                      <div>This model has an active deployment. You can:</div>
+                      <ul className="list-disc list-inside mt-1">
+                        <li>Delete only the deployment</li>
+                        <li>Delete both the model and its deployment</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-gray-800 text-gray-200 hover:bg-gray-700">Cancel</AlertDialogCancel>
+            {modelToDelete?.deployment && (
+              <AlertDialogAction
+                onClick={() => modelToDelete.deployment && handleDeleteDeployment(modelToDelete.deployment.id)}
+                className="bg-yellow-600 text-white hover:bg-yellow-700"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Deployment"
+                )}
+              </AlertDialogAction>
+            )}
             <AlertDialogAction
-              onClick={() => deploymentToDelete && handleDeleteDeployment(deploymentToDelete.id)}
+              onClick={() => modelToDelete && handleDeleteModel(modelToDelete.id)}
               className="bg-red-600 text-white hover:bg-red-700"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete Deployment"
-              )}
-            </AlertDialogAction>
-            <AlertDialogAction
-              onClick={async () => {
-                if (!deploymentToDelete) return;
-                setIsDeleting(true);
-                try {
-                  // Delete deployment first
-                  await fetch(`/api/deployment?id=${deploymentToDelete.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
-                  // Delete model
-                  await fetch(`/api/models?id=${deploymentToDelete.model?.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
-                  addNotification("success", "Deployment and model deleted.");
-                  setDeployments(deployments.filter(dep => dep.id !== deploymentToDelete.id));
-                  setDeploymentToDelete(null);
-                } catch {
-                  addNotification("error", "Failed to delete model and deployment.");
-                } finally {
-                  setIsDeleting(false);
-                }
-              }}
-              className="bg-red-600 text-white hover:bg-red-900"
               disabled={isDeleting}
             >
               {isDeleting ? (
@@ -190,14 +226,14 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             </SelectTrigger>
             <SelectContent className="bg-gray-900 border-gray-800">
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
+              <SelectItem value="deployed">Deployed</SelectItem>
+              <SelectItem value="not-deployed">Not Deployed</SelectItem>
             </SelectContent>
           </Select>
           <Button
             variant="ghost"
             size="icon"
-            onClick={fetchDeployments}
+            onClick={fetchModels}
             disabled={isRefreshing}
             className="text-gray-400 hover:text-white"
           >
@@ -218,7 +254,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
         </div>
       </div>
 
-      {/* Deployments List */}
+      {/* Models List */}
       <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
         <div className="p-6">
           <div className="space-y-4">
@@ -230,34 +266,38 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
               <div>Status</div>
               <div className="text-center">Actions</div>
             </div>
-            {/* Deployment Items */}
+            {/* Model Items */}
             {loading ? (
               <div className="flex items-center justify-center py-8 text-gray-400">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading deployments...
+                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading models...
               </div>
-            ) : filteredDeployments.length === 0 ? (
-              <div className="text-gray-400 py-8 text-center">No deployments found.</div>
-            ) : filteredDeployments.map((dep) => (
+            ) : filteredModels.length === 0 ? (
+              <div className="text-gray-400 py-8 text-center">No models found.</div>
+            ) : filteredModels.map((model) => (
               <div
-                key={dep.id}
+                key={model.id}
                 className="grid grid-cols-[1.5fr_1fr_1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
               >
-                <div className="truncate min-w-0 font-medium text-gray-200">{dep.model?.name?.toUpperCase() || dep.modelName?.toUpperCase() || 'UNKNOWN'}</div>
-                <div className="truncate min-w-0">{formatModelType(dep.model?.modelType)}</div>
+                <div className="truncate min-w-0 font-medium text-gray-200">
+                  {(model.userModelName || model.name).toUpperCase()}
+                </div>
+                <div className="truncate min-w-0">
+                  {formatModelType(model.modelType)}
+                </div>
                 <div className="truncate min-w-0">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">
-                    {dep.gpuType || 'Not specified'}
+                    {model.deployment?.gpuType || 'Not specified'}
                   </span>
                 </div>
                 <div>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      dep.status === "success"
+                      model.deployment
                         ? "bg-green-500/10 text-green-400"
-                        : "bg-red-500/10 text-red-400"
+                        : "bg-gray-500/10 text-gray-400"
                     }`}
                   >
-                    {dep.status.toUpperCase()}
+                    {model.deployment ? "Deployed" : "Not Deployed"}
                   </span>
                 </div>
                 <div className="flex justify-center gap-1">
@@ -265,7 +305,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-gray-400 hover:text-red-400 ml-6"
-                    onClick={() => setDeploymentToDelete(dep)}
+                    onClick={() => setModelToDelete(model)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
