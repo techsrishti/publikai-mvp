@@ -33,6 +33,13 @@ interface Model {
   }
 }
 
+interface Deployment {
+  id: string;
+  modelId: string;
+  status: string;
+  gpuType?: string;
+}
+
 // Utility to format model type
 function formatModelType(type?: string) {
   if (!type) return 'Unknown';
@@ -69,7 +76,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
       // Combine models with their deployment info
       const modelsWithDeployments = modelsData.models.map((model: Model) => ({
         ...model,
-        deployment: deploymentsData.deployments.find((dep: any) => dep.modelId === model.id)
+        deployment: (deploymentsData.deployments as Deployment[]).find((dep) => dep.modelId === model.id)
       }))
       
       setModels(modelsWithDeployments)

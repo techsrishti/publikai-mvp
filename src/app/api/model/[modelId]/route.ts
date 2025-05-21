@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { modelId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     // Get API key from Authorization header
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Missing or invalid authorization header' },
@@ -19,7 +20,7 @@ export async function POST(
     // Get deployment info
     const deployment = await prisma.deployment.findFirst({
       where: {
-        modelId: params.modelId,
+        modelId: resolvedParams.modelId,
         apiKey: apiKey,
       },
       select: {
@@ -44,7 +45,7 @@ export async function POST(
     }
 
     // Get request body
-    const body = await req.json();
+    const body = await request.json();
 
     // Start timing
     const startTime = Date.now();

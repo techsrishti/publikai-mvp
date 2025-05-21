@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
-import { Model, Deployment } from '@prisma/client';
+import { Model, Deployment, ModelApiCall } from '@prisma/client';
+
+interface DeploymentWithApiCalls extends Deployment {
+  apiCalls: ModelApiCall[];
+}
 
 interface ModelWithDeployments extends Model {
-  Deployment: Deployment[];
+  Deployment: DeploymentWithApiCalls[];
 }
 
 export async function GET() {
