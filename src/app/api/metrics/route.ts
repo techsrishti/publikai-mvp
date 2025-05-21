@@ -3,12 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { Model, Deployment, ModelApiCall } from '@prisma/client';
 
-interface DeploymentWithApiCalls extends Deployment {
-  apiCalls: ModelApiCall[];
-}
-
 interface ModelWithDeployments extends Model {
-  Deployment: DeploymentWithApiCalls[];
+  Deployment: Deployment[];
+  apiCalls: ModelApiCall[];
 }
 
 export async function GET() {
@@ -54,11 +51,8 @@ export async function GET() {
     // Get all models with their deployment status and API calls
     const models = await prisma.model.findMany({
       include: {
-        Deployment: {
-          include: {
-            apiCalls: true
-          }
-        }
+        Deployment: true,
+        apiCalls: true
       }
     }) as ModelWithDeployments[];
 
@@ -79,8 +73,7 @@ export async function GET() {
 
     // Prepare model performance data with API call statistics
     const modelPerformance = await Promise.all(models.map(async model => {
-      const deployments = model.Deployment;
-      const allApiCalls = deployments.flatMap(d => d.apiCalls);
+      const allApiCalls = model.apiCalls;
       
       // Calculate successful and failed calls
       const successfulCalls = allApiCalls.filter(call => call.statusCode >= 200 && call.statusCode < 300);

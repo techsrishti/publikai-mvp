@@ -76,12 +76,13 @@ model Model {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   Deployment  Deployment[]
+  apiCalls    ModelApiCall[]
 }
 
 model ModelApiCall {
   id            String   @id @default(cuid())
-  deploymentId  String
-  deployment    Deployment @relation(fields: [deploymentId], references: [id])
+  modelId       String
+  model         Model    @relation(fields: [modelId], references: [id])
   latency       Int      // Response time in milliseconds
   statusCode    Int      // HTTP status code
   errorMessage  String?  // Error message if any
@@ -96,7 +97,6 @@ model Deployment {
   deploymentUrl String?
   apiKey        String?
   gpuType       String?
-  apiCalls      ModelApiCall[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

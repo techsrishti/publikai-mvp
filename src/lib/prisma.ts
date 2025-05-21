@@ -6,7 +6,7 @@ const globalForPrisma = globalThis as unknown as {
 
 interface ModelApiCallCreateArgs {
   data: {
-    deploymentId: string;
+    modelId: string;
     latency: number;
     statusCode: number;
     errorMessage?: string | null;
@@ -21,8 +21,8 @@ function createPrismaClient() {
       modelApiCall: {
         create: async (args: ModelApiCallCreateArgs) => {
           return prisma.$queryRaw`
-            INSERT INTO "ModelApiCall" ("id", "deploymentId", "latency", "statusCode", "errorMessage", "timestamp")
-            VALUES (gen_random_uuid(), ${args.data.deploymentId}, ${args.data.latency}, ${args.data.statusCode}, ${args.data.errorMessage}, NOW())
+            INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
+            VALUES (gen_random_uuid(), ${args.data.modelId}, ${args.data.latency}, ${args.data.statusCode}, ${args.data.errorMessage}, NOW())
             RETURNING *
           `;
         },

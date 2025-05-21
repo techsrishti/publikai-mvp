@@ -92,6 +92,7 @@ export async function DELETE(req: Request) {
       );
     }
 
+    // Delete the deployment
     const deployment = await prisma.deployment.delete({
       where: { id },
     });

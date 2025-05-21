@@ -103,6 +103,16 @@ export async function DELETE(req: Request) {
       );
     }
 
+    // Delete associated metrics first
+    await prisma.modelApiCall.deleteMany({
+      where: { modelId: id }
+    });
+
+    // Delete associated deployments
+    await prisma.deployment.deleteMany({
+      where: { modelId: id }
+    });
+
     // Delete the model
     const model = await prisma.model.delete({
       where: { id },

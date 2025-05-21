@@ -171,20 +171,20 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             <AlertDialogTitle className="text-white">Delete Model</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
               {modelToDelete && (
-                <div className="space-y-2">
-                  <div>
-                    Are you sure you want to delete the model &quot;{modelToDelete.userModelName || modelToDelete.name}&quot;?
-                  </div>
+                <>
+                  Are you sure you want to delete the model &quot;{modelToDelete.userModelName || modelToDelete.name}&quot;?
                   {modelToDelete.deployment && (
-                    <div className="mt-2">
-                      <div>This model has an active deployment. You can:</div>
+                    <>
+                      <br />
+                      <br />
+                      This model has an active deployment. You can:
                       <ul className="list-disc list-inside mt-1">
                         <li>Delete only the deployment</li>
                         <li>Delete both the model and its deployment</li>
                       </ul>
-                    </div>
+                    </>
                   )}
-                </div>
+                </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

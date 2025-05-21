@@ -66,8 +66,8 @@ export async function POST(
 
       // Log API call
       await prisma.$executeRaw`
-        INSERT INTO "ModelApiCall" ("id", "deploymentId", "latency", "statusCode", "errorMessage", "timestamp")
-        VALUES (gen_random_uuid(), ${deployment.id}, ${responseTime}, ${response.status}, ${response.ok ? null : responseData.error || 'Unknown error'}, NOW())
+        INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
+        VALUES (gen_random_uuid(), ${deployment.modelId}, ${responseTime}, ${response.status}, ${response.ok ? null : responseData.error || 'Unknown error'}, NOW())
       `;
 
       return NextResponse.json({
@@ -81,8 +81,8 @@ export async function POST(
       
       // Log failed API call
       await prisma.$executeRaw`
-        INSERT INTO "ModelApiCall" ("id", "deploymentId", "latency", "statusCode", "errorMessage", "timestamp")
-        VALUES (gen_random_uuid(), ${deployment.id}, ${responseTime}, 500, ${error instanceof Error ? error.message : 'Unknown error'}, NOW())
+        INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
+        VALUES (gen_random_uuid(), ${deployment.modelId}, ${responseTime}, 500, ${error instanceof Error ? error.message : 'Unknown error'}, NOW())
       `;
 
       return NextResponse.json({
