@@ -328,7 +328,39 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-3">Enterprise-grade security</h3>
-              <p className="text-white/70">Built-in authentication, rate limiting, and encryption to keep your models and data safe.</p>
+              <p className="text-white/70">Built-in authentication, rate limiting, and secure API keys to keep your models and data safe.</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Metric-Based Billing</h3>
+              <p className="text-white/70">Flexible pay-as-you-go pricing with custom pricing tiers, usage tracking, and automated billing.</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.6 }}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Creator Suite </h3>
+              <p className="text-white/70">All-in-one platform to deploy, manage, and earn from your AI models. Set your own prices, get paid instantly, and track your revenue growth - all from a single dashboard.</p>
             </motion.div>
           </div>
         </div>
@@ -387,10 +419,10 @@ export default function Home() {
                       <Image src="/icons/chat.png" alt="OpenAI" width={32} height={32} />
                     </div>
                     <div className="flex items-center justify-center p-3 bg-white/5 rounded-lg">
-                      <Image src="/icons/image.png" alt="Mistral" width={32} height={32} />
+                      <Image src="/icons/mistral.png" alt="Mistral" width={32} height={32} />
                     </div>
                     <div className="flex items-center justify-center p-3 bg-white/5 rounded-lg">
-                      <Image src="/icons/meta.svg" alt="Anthropic" width={32} height={32} />
+                      <Image src="/icons/image.png" alt="Anthropic" width={32} height={32} />
                     </div>
                   </div>
                 </div>
@@ -478,7 +510,10 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mt-16"
           >
-            <WaitlistButton className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+            <WaitlistButton 
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              onClick={scrollToWaitlist}
+            >
               Start Building
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -561,21 +596,21 @@ export default function Home() {
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 transform hover:scale-105 transition-transform">
                       <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 mx-auto">
                         <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <h3 className="text-lg font-semibold text-white mb-2">Free Credits</h3>
-                      <p className="text-white/60 text-sm">$100 in deployment credits</p>
+                      <h3 className="text-lg font-semibold text-white mb-2">Premium Features</h3>
+                      <p className="text-white/60 text-sm">Free access to all premium features</p>
                     </div>
 
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 transform hover:scale-105 transition-transform">
                       <div className="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center mb-4 mx-auto">
                         <svg className="w-6 h-6 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                         </svg>
                       </div>
-                      <h3 className="text-lg font-semibold text-white mb-2">24/7 Support</h3>
-                      <p className="text-white/60 text-sm">Direct access to our team</p>
+                      <h3 className="text-lg font-semibold text-white mb-2">Community Access</h3>
+                      <p className="text-white/60 text-sm">Join our exclusive creator community</p>
                     </div>
                   </div>
 

@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 const inter = Inter({
   variable: '--font-inter',
@@ -26,6 +27,7 @@ export default function RootLayout({
           {children}
           <Toaster position="top-right" />
         </body>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
       </html>
     </ClerkProvider>
   )

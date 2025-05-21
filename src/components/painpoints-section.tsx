@@ -40,7 +40,7 @@ export function PainpointsSection() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 font-cabinet-grotesk bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400">
-            Transform Your AI Development
+            Transform Your AI Deployment
           </h2>
           <p className="text-lg text-white/70">
             See how Frito eliminates common pain points in AI deployment

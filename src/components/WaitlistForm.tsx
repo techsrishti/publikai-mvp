@@ -13,6 +13,7 @@ export function WaitlistForm({ className = '', buttonText = 'Join Private Beta',
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isHighlighted, setIsHighlighted] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     if (highlight) {
@@ -41,6 +42,7 @@ export function WaitlistForm({ className = '', buttonText = 'Join Private Beta',
       if (response.ok) {
         toast.success(data.message);
         setEmail('');
+        setIsSubmitted(true);
       } else {
         toast.error(data.error || 'Failed to join waitlist');
       }
@@ -48,6 +50,17 @@ export function WaitlistForm({ className = '', buttonText = 'Join Private Beta',
       setIsLoading(false);
     }
   };
+
+  if (isSubmitted) {
+    return (
+      <div className={`flex flex-col items-center gap-4 ${className}`}>
+        <div className="w-full sm:w-[580px] px-6 py-4 rounded-lg bg-white/5 backdrop-blur-sm border border-purple-500/50 text-center">
+          <h3 className="text-lg font-medium text-white mb-2">Thanks for jumping in! 🎉</h3>
+          <p className="text-white/70">You're officially on the insider list for early access.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className={`flex flex-col sm:flex-row items-center gap-4 ${className}`}>

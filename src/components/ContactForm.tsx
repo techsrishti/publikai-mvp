@@ -11,6 +11,7 @@ export function ContactForm() {
     message: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +36,7 @@ export function ContactForm() {
           subject: '',
           message: ''
         });
+        setIsSubmitted(true);
       } else {
         toast.error(data.error || 'Failed to send message');
       }
@@ -50,6 +52,17 @@ export function ContactForm() {
       [name]: value
     }));
   };
+
+  if (isSubmitted) {
+    return (
+      <div className="flex flex-col items-center gap-4 p-8">
+        <div className="w-full max-w-2xl px-8 py-6 rounded-lg bg-white/5 backdrop-blur-sm border border-purple-500/50 text-center">
+          <h3 className="text-xl font-medium text-white mb-3">Message Sent Successfully! 🎉</h3>
+          <p className="text-white/70">Thank you for reaching out. We'll get back to you as soon as possible.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
