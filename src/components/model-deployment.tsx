@@ -61,6 +61,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
   const [showScriptUpload, setShowScriptUpload] = useState(false)
   const [scriptFile, setScriptFile] = useState<File | null>(null)
+  const [isUploadingScript, setIsUploadingScript] = useState(false)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -101,66 +102,72 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       addNotification("error", "Please select a script file to upload.");
       return;
     }
-
+    setIsUploadingScript(true);
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        const base64Content = btoa(content);
+        try {
+          const content = e.target?.result as string;
+          const base64Content = btoa(content);
 
-        // Create new ModelScript entry
-        const scriptRes = await fetch("/api/model-scripts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: base64Content,
-            modelType: "user-defined",
-          }),
-        });
+          // Create new ModelScript entry
+          const scriptRes = await fetch("/api/model-scripts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: base64Content,
+              modelType: "user-defined",
+            }),
+          });
 
-        if (!scriptRes.ok) {
-          throw new Error("Failed to create script entry");
-        }
-
-        const scriptData = await scriptRes.json();
-        console.log('Created script:', scriptData); // Debug log
-
-        // Update model with script reference and set modelType to 'user-defined'
-        const modelRes = await fetch(`/api/models/${selectedModel}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            scriptId: scriptData.script.id,
-            modelType: "user-defined",
-          }),
-        });
-
-        if (!modelRes.ok) {
-          throw new Error("Failed to update model with script reference");
-        }
-
-        const updatedModel = await modelRes.json();
-        console.log('Updated model:', updatedModel); // Debug log
-
-        // Refresh models to get updated data
-        const updatedModelsRes = await fetch("/api/models", { 
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
+          if (!scriptRes.ok) {
+            throw new Error("Failed to create script entry");
           }
-        });
-        const updatedModelsData = await updatedModelsRes.json();
-        console.log('Refreshed models:', updatedModelsData); // Debug log
-        setModels(updatedModelsData.models || []);
 
-        setScriptFile(null);
-        addNotification("success", "Script uploaded successfully!");
+          const scriptData = await scriptRes.json();
+          console.log('Created script:', scriptData); // Debug log
+
+          // Update model with script reference and set modelType to 'user-defined'
+          const modelRes = await fetch(`/api/models/${selectedModel}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              scriptId: scriptData.script.id,
+              modelType: "user-defined",
+            }),
+          });
+
+          if (!modelRes.ok) {
+            throw new Error("Failed to update model with script reference");
+          }
+
+          const updatedModel = await modelRes.json();
+          console.log('Updated model:', updatedModel); // Debug log
+
+          // Refresh models to get updated data
+          const updatedModelsRes = await fetch("/api/models", { 
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          const updatedModelsData = await updatedModelsRes.json();
+          console.log('Refreshed models:', updatedModelsData); // Debug log
+          setModels(updatedModelsData.models || []);
+
+          setScriptFile(null);
+          addNotification("success", "Script uploaded successfully!");
+        } catch (error) {
+          console.error("Error uploading script:", error);
+          addNotification("error", "Failed to upload script.");
+        } finally {
+          setIsUploadingScript(false);
+        }
       };
-
       reader.readAsText(scriptFile);
     } catch (error) {
-      console.error("Error uploading script:", error);
+      setIsUploadingScript(false);
       addNotification("error", "Failed to upload script.");
     }
   };
@@ -387,9 +394,16 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
               <Button
                 onClick={handleScriptUpload}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={!scriptFile}
+                disabled={!scriptFile || isUploadingScript}
               >
-                Upload Script
+                {isUploadingScript ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Uploading...
+                  </>
+                ) : (
+                  "Upload Script"
+                )}
               </Button>
             </div>
           </Card>
