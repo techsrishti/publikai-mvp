@@ -39,6 +39,6 @@ export function formatRelativeTime(date: string): string {
 }
 
 export function getFormattedDeploymentUrl(modelId: string): string {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+  const backendUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   return `${backendUrl}/api/model/${modelId}`;
 }
