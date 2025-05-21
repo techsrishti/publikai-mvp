@@ -56,7 +56,7 @@ export function WaitlistForm({ className = '', buttonText = 'Join Private Beta',
       <div className={`flex flex-col items-center gap-4 ${className}`}>
         <div className="w-full sm:w-[580px] px-6 py-4 rounded-lg bg-white/5 backdrop-blur-sm border border-purple-500/50 text-center">
           <h3 className="text-lg font-medium text-white mb-2">Thanks for jumping in! 🎉</h3>
-          <p className="text-white/70">You're officially on the insider list for early access.</p>
+          <p className="text-white/70">You are officially on the insider list for early access.</p>
         </div>
       </div>
     );
