@@ -73,7 +73,8 @@ model Model {
   tags        String[] // Tags as array of strings
   revision    String? // Optional model revision (e.g., 'main')
   parameters  Float // Number of parameters in billions
-  script      ModelScript?
+  script      ModelScript? @relation(fields: [scriptId], references: [id])
+  scriptId    String?      @unique
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   Deployment  Deployment[]
@@ -84,8 +85,7 @@ model ModelScript {
   id          String   @id @default(cuid())
   content     String   // Base64 encoded script content
   modelType   String   // Type of model this script is for
-  model       Model    @relation(fields: [modelId], references: [id])
-  modelId     String   @unique
+  model       Model?
 }
 
 model ModelApiCall {

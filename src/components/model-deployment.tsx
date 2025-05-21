@@ -25,7 +25,14 @@ interface Model {
   modelName?: string
   organizationName?: string
   userModelName?: string
-  customScript?: string | null
+  scriptId?: string | null
+  script?: ModelScript | null
+}
+
+interface ModelScript {
+  id: string
+  content: string
+  modelType: string
 }
 
 interface Deployment {
@@ -46,16 +53,19 @@ interface Deployment {
 export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [models, setModels] = useState<Model[]>([])
   const [deployments, setDeployments] = useState<Deployment[]>([])
+  const [modelScript, setModelScripts] = useState<ModelScript[]>([])
   const [isDeploying, setIsDeploying] = useState(false)
   const [selectedModel, setSelectedModel] = useState<string>("")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingModels, setLoadingModels] = useState(true)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
+  const [showScriptUpload, setShowScriptUpload] = useState(false)
+  const [scriptFile, setScriptFile] = useState<File | null>(null)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      const response = await fetch("/api/deployment")
+      const response = await fetch("/api/deployment", { cache: 'no-store' })
       if (!response.ok) {
         throw new Error("Failed to fetch deployments")
       }
@@ -70,14 +80,14 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   }
 
   useEffect(() => {
-    // Fetch models (request only summary fields for faster response)
-    fetch("/api/models?summary=1")
+    // Fetch models with full details including script
+    fetch("/api/models", { cache: 'no-store' })
       .then(res => res.json())
       .then(data => setModels(data.models || []))
       .finally(() => setLoadingModels(false))
 
     // Fetch deployments in parallel
-    fetch("/api/deployment")
+    fetch("/api/deployment", { cache: 'no-store' })
       .then(res => res.json())
       .then(data => setDeployments(data.deployments || []))
       .catch(error => {
@@ -86,19 +96,140 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       })
   }, [])
 
+  const handleScriptUpload = async () => {
+    if (!scriptFile || !selectedModel) {
+      addNotification("error", "Please select a script file to upload.");
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        const base64Content = btoa(content);
+
+        // Create new ModelScript entry
+        const scriptRes = await fetch("/api/model-scripts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: base64Content,
+            modelType: "user-defined",
+          }),
+        });
+
+        if (!scriptRes.ok) {
+          throw new Error("Failed to create script entry");
+        }
+
+        const scriptData = await scriptRes.json();
+        console.log('Created script:', scriptData); // Debug log
+
+        // Update model with script reference and set modelType to 'user-defined'
+        const modelRes = await fetch(`/api/models/${selectedModel}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scriptId: scriptData.script.id,
+            modelType: "user-defined",
+          }),
+        });
+
+        if (!modelRes.ok) {
+          throw new Error("Failed to update model with script reference");
+        }
+
+        const updatedModel = await modelRes.json();
+        console.log('Updated model:', updatedModel); // Debug log
+
+        // Refresh models to get updated data
+        const updatedModelsRes = await fetch("/api/models", { 
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        const updatedModelsData = await updatedModelsRes.json();
+        console.log('Refreshed models:', updatedModelsData); // Debug log
+        setModels(updatedModelsData.models || []);
+
+        setScriptFile(null);
+        addNotification("success", "Script uploaded successfully!");
+      };
+
+      reader.readAsText(scriptFile);
+    } catch (error) {
+      console.error("Error uploading script:", error);
+      addNotification("error", "Failed to upload script.");
+    }
+  };
+
+  const handleModelSelect = async (modelId: string) => {
+    setSelectedModel(modelId);
+    try {
+      const res = await fetch(`/api/models/${modelId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch model details");
+      const { model } = await res.json();
+      console.log('Selected model (fresh):', model); // Debug log
+      if (model?.modelType === "other" && !model.scriptId) {
+        setShowScriptUpload(true);
+        addNotification("info", "Please upload a script for this model type.");
+      } else {
+        setShowScriptUpload(false);
+      }
+    } catch (error) {
+      setShowScriptUpload(false);
+      addNotification("error", "Failed to fetch model details.");
+    }
+  };
+
   const handleDeploy = async () => {
     if (!selectedModel) {
-      addNotification("error", "Please select a model to deploy.")
-      return
+      addNotification("error", "Please select a model to deploy.");
+      return;
     }
-    const model = models.find((m: Model) => m.id === selectedModel)
+
+    // Fetch fresh model data
+    const freshModelRes = await fetch(`/api/models/${selectedModel}`, { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    if (!freshModelRes.ok) {
+      throw new Error("Failed to fetch fresh model data");
+    }
+    const freshModelData = await freshModelRes.json();
+    const model = freshModelData.model;
+    console.log('Fresh model data for deployment:', model); // Debug log
+
     if (!model) {
-      addNotification("error", "Model not found.")
-      return
+      addNotification("error", "Model not found.");
+      return;
     }
-    setIsDeploying(true)
-    addNotification("info", "Starting deployment process...")
+
+    // Check if model type is "other" and has no script
+    if (model.modelType === "other" && !model.scriptId) {
+      console.log('Model needs script:', { modelType: model.modelType, scriptId: model.scriptId }); // Debug log
+      setShowScriptUpload(true);
+      addNotification("info", "Please upload a script for this model type.");
+      return;
+    }
+
+    setIsDeploying(true);
+    addNotification("info", "Starting deployment process...");
     try {
+      const scriptContent = model.script?.content || null;
+      console.log('Script content for deployment:', scriptContent ? 'Present' : 'Missing'); // Debug log
+
       // Prepare payload for backend deploy
       const deployPayload = {
         model_name: model.url ? model.url.split("/")[4] : "",
@@ -106,8 +237,8 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         org_name: model.organizationName || (model.url ? model.url.split("/")[3] : ""),
         model_unique_name: model.userModelName || model.name,
         param_count: model.parameters,
-        custom_script: model.customScript || null,
-      }
+        custom_script: scriptContent,
+      };
       console.log("Deploy payload:", deployPayload)
       if (!deployPayload.model_name || !deployPayload.model_unique_name || !deployPayload.org_name || !deployPayload.param_count) {
         addNotification("error", "Model details are incomplete for deployment.")
@@ -166,51 +297,105 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="">
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
-        {/* Deployment Configuration */}
-        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 self-start">
-          <h3 className="text-lg font-medium text-white mb-4">Deployment Configuration</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
-              {loadingModels ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <select
-                  className="w-full bg-black border-gray-700 text-gray-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  value={selectedModel}
-                  onChange={e => setSelectedModel(e.target.value)}
+        {/* Left column: Deployment Configuration and Upload Script */}
+        <div className="flex flex-col gap-6 w-full">
+          {/* Deployment Configuration */}
+          <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+            <h3 className="text-lg font-medium text-white mb-4">Deployment Configuration</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
+                {loadingModels ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <select
+                    className="w-full bg-black border-gray-700 text-gray-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={selectedModel}
+                    onChange={e => handleModelSelect(e.target.value)}
+                  >
+                    <option value="" className="bg-black text-gray-200">Choose a model</option>
+                    {models.map((model: Model) => (
+                      <option 
+                        key={model.id} 
+                        value={model.id}
+                        className="bg-black text-gray-200 hover:bg-gray-800"
+                      >
+                        {model.name.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="pt-2">
+                <Button
+                  onClick={handleDeploy}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={isDeploying}
                 >
-                  <option value="" className="bg-black text-gray-200">Choose a model</option>
-                  {models.map((model: Model) => (
-                    <option 
-                      key={model.id} 
-                      value={model.id}
-                      className="bg-black text-gray-200 hover:bg-gray-800"
-                    >
-                      {model.name.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  <Upload className="mr-2 h-4 w-4" />
+                  {isDeploying ? "Deploying..." : "Deploy Model"}
+                </Button>
+              </div>
             </div>
-            <div className="pt-2">
-              <Button
-                onClick={handleDeploy}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                disabled={isDeploying}
+          </Card>
+
+          {/* Script Upload Section (now always below deployment config) */}
+          <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+            <h3 className="text-lg font-medium text-white mb-4">Upload Model Script</h3>
+            <div className="space-y-4">
+              <div
+                className="border-2 border-dashed border-blue-500 rounded-lg p-6 flex flex-col items-center justify-center text-center bg-blue-950/40 cursor-pointer"
+                onClick={() => document.getElementById('script-upload-input')?.click()}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                {isDeploying ? "Deploying..." : "Deploy Model"}
+                <Upload className="h-10 w-10 text-blue-400 mb-2" />
+                <span className="font-medium text-white">Drag and drop your Python script here</span>
+                <span className="text-blue-400 underline cursor-pointer mt-1">
+                  Or click to browse your files
+                </span>
+                <span className="text-xs text-gray-400 mt-2">
+                  Supports <b>.py</b> files only
+                </span>
+                <input
+                  id="script-upload-input"
+                  type="file"
+                  accept=".py"
+                  onChange={e => setScriptFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                {/* Show current script if present */}
+                {(() => {
+                  const model = models.find(m => m.id === selectedModel);
+                  if (model?.script) {
+                    return (
+                      <div className="mt-2 text-blue-300 text-sm">
+                        Current script: <span className="font-semibold">{model.script.id}.py</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {scriptFile && (
+                  <div className="mt-2 text-green-400 text-sm">
+                    Selected: {scriptFile.name}
+                  </div>
+                )}
+              </div>
+              <Button
+                onClick={handleScriptUpload}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={!scriptFile}
+              >
+                Upload Script
               </Button>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
 
-        {/* Deployment Status */}
+        {/* Right column: Deployment Status */}
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 h-[calc(100vh-12rem)] overflow-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-white">Active Deployments</h3>

@@ -118,37 +118,6 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
     }
   }
 
-  // Delete only deployment
-  const handleDeleteDeployment = async (deploymentId: string) => {
-    setIsDeleting(true)
-    try {
-      const res = await fetch(`/api/deployment?id=${deploymentId}`, { 
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      const data = await res.json()
-      if (data.success) {
-        addNotification("success", "Deployment deleted.")
-        // Update the model's deployment status
-        setModels(models.map(model => 
-          model.deployment?.id === deploymentId 
-            ? { ...model, deployment: undefined }
-            : model
-        ))
-        setModelToDelete(null)
-      } else {
-        addNotification("error", data.message || data.error || "Failed to delete deployment.")
-      }
-    } catch (error) {
-      console.error("Delete deployment error:", error)
-      addNotification("error", "Failed to delete deployment.")
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   // Filter and search
   const filteredModels = models.filter(model => {
     const matchesStatus = filter === "all" || 
@@ -176,12 +145,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                   {modelToDelete.deployment && (
                     <>
                       <br />
-                      <br />
-                      This model has an active deployment. You can:
-                      <ul className="list-disc list-inside mt-1">
-                        <li>Delete only the deployment</li>
-                        <li>Delete both the model and its deployment</li>
-                      </ul>
+                      <span className="text-red-400">This model is deployed and cannot be deleted.</span>
                     </>
                   )}
                 </>
@@ -190,10 +154,10 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-gray-800 text-gray-200 hover:bg-gray-700">Cancel</AlertDialogCancel>
-            {modelToDelete?.deployment && (
+            {!modelToDelete?.deployment && (
               <AlertDialogAction
-                onClick={() => modelToDelete.deployment && handleDeleteDeployment(modelToDelete.deployment.id)}
-                className="bg-yellow-600 text-white hover:bg-yellow-700"
+                onClick={() => modelToDelete && handleDeleteModel(modelToDelete.id)}
+                className="bg-red-600 text-white hover:bg-red-700"
                 disabled={isDeleting}
               >
                 {isDeleting ? (
@@ -202,24 +166,10 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                     Deleting...
                   </>
                 ) : (
-                  "Delete Deployment"
+                  "Delete Model"
                 )}
               </AlertDialogAction>
             )}
-            <AlertDialogAction
-              onClick={() => modelToDelete && handleDeleteModel(modelToDelete.id)}
-              className="bg-red-600 text-white hover:bg-red-700"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete Model"
-              )}
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -308,14 +258,26 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                   </span>
                 </div>
                 <div className="flex justify-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-red-400 ml-6"
-                    onClick={() => setModelToDelete(model)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {!model.deployment ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-400 ml-6"
+                      onClick={() => setModelToDelete(model)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-700 cursor-not-allowed ml-6"
+                      disabled
+                      title="Cannot delete a deployed model"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

@@ -17,6 +17,18 @@ export async function POST(req: Request) {
       finalApiKey = generateApiKey(modelUniqueName);
     }
 
+    // Fetch the model to get its script ID
+    const model = await prisma.model.findUnique({
+      where: { id: modelId },
+      include: {
+        script: true, // Include the related ModelScript
+      },
+    });
+
+    if (!model) {
+      return NextResponse.json({ error: 'Model not found' }, { status: 404 });
+    }
+
     // First, find if a deployment exists for this model
     const existingDeployment = await prisma.deployment.findFirst({
       where: { modelId }
@@ -24,19 +36,18 @@ export async function POST(req: Request) {
 
     let deployment;
     if (existingDeployment) {
-      // Update existing deployment
+      // Update existing deployment without changing the API key
       deployment = await prisma.deployment.update({
         where: { id: existingDeployment.id },
         data: {
           status,
           deploymentUrl,
-          apiKey: finalApiKey,
           gpuType,
           updatedAt: new Date(),
         },
       });
     } else {
-      // Create new deployment
+      // Create new deployment with API key
       deployment = await prisma.deployment.create({
         data: {
           modelId,
@@ -48,7 +59,12 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, deployment });
+    // Return both the deployment and the script content
+    return NextResponse.json({ 
+      success: true, 
+      deployment,
+      script: model.script?.content || null,
+    });
   } catch (e) {
     console.error('Error creating deployment:', e);
     return NextResponse.json({ error: 'Failed to create deployment' }, { status: 500 });

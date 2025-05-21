@@ -18,7 +18,6 @@ export async function GET(req: Request) {
             url: true,
             revision: true,
             parameters: true,
-            customScript: true,
           }
         : {
             id: true,
@@ -32,7 +31,6 @@ export async function GET(req: Request) {
             createdAt: true,
             parameters: true,
             revision: true,
-            customScript: true,
           },
     })
 
@@ -55,8 +53,16 @@ export async function POST(req: Request) {
     const tags = (formData.get("tags") as string).split(",")
     const revision = formData.get("revision") as string | null
     const parameters = parseFloat(formData.get("parameters") as string)
-    const customScript = formData.get("customScript") as string | null
 
+    // Find the corresponding ModelScript for this model type, but only if it's not "other"
+    let modelScript = null;
+    if (modelType !== "other") {
+      modelScript = await prisma.modelScript.findFirst({
+        where: { modelType }
+      });
+    }
+
+    // Create the model with the script reference
     const model = await prisma.model.create({
       data: {
         name,
@@ -68,7 +74,7 @@ export async function POST(req: Request) {
         tags,
         revision,
         parameters,
-        customScript,
+        script: modelScript ? { connect: { id: modelScript.id } } : undefined,
       },
     })
 

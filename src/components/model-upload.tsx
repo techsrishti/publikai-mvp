@@ -39,7 +39,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tagInput: "",
     revision: "",
     parameters: "",
-    customScript: null as File | null, // Add custom script field
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
   const uploadFormRef = useRef<HTMLFormElement>(null)
@@ -198,19 +197,12 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("description", urlFields.description)
       formData.set("modelName", urlFields.modelName)
       formData.set("name", urlFields.userModelName) // Ensure 'name' is set for backend compatibility
-      formData.set("urlModelType", urlFields.modelType)
       formData.set("modelType", urlFields.modelType) // Ensure 'modelType' is set for backend compatibility
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
       formData.set("parameters", urlFields.parameters)
       formData.set("sourceType", "URL")
       formData.set("revision", urlFields.revision || "main")
-      
-      // Add custom script if present
-      if (urlFields.customScript) {
-        const base64Script = await readFileAsBase64(urlFields.customScript);
-        formData.set("customScript", base64Script);
-      }
       
       const result = await uploadModelAction(formData)
       if (result.success) {
@@ -228,13 +220,12 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           tagInput: "",
           revision: "",
           parameters: "",
-          customScript: null,
         })
       } else {
         addNotification("error", result.error || "Failed to register model URL.")
       }
     } catch (error) {
-      addNotification("error", "Network error." + error);
+      addNotification("error", "Network error.")
     } finally {
       setLoadingUrl(false)
     }
@@ -348,6 +339,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                         <SelectItem value="summarization">Summarization</SelectItem>
                         <SelectItem value="text-generation">Text Generation</SelectItem>
                         <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
+                        <SelectItem value="image-classification">Image Classification</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -392,33 +384,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     ))}
                   </div>
                 </div>
-                <div className="flex flex-col items-start w-full">
-                  <label className="text-blue-200 text-xs mb-1">Custom Script</label>
-                  <p className="text-xs text-blue-300 mb-2">Upload a Python script to customize model loading and inference.</p>
-                  <div className="w-full">
-                    <FileUploader 
-                      onFilesSelected={(files) => {
-                        if (files.length > 0) {
-                          const file = files[0];
-                          if (!file.name.endsWith('.py')) {
-                            addNotification("error", "Only Python (.py) files are allowed for custom scripts.");
-                            return;
-                          }
-                          setUrlFields(prev => ({ ...prev, customScript: file }));
-                        }
-                      }} 
-                      accept=".py"
-                    />
-                  </div>
-                  {urlFields.customScript && (
-                    <div className="mt-2 w-full">
-                      <div className="flex items-center justify-between bg-blue-900/30 p-1.5 rounded-md text-xs">
-                        <span className="text-white truncate max-w-[80%]">{urlFields.customScript.name}</span>
-                        <span className="text-blue-300">{(urlFields.customScript.size / 1024).toFixed(2)} KB</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 <div className="pt-2">
                   <Button
                     type="submit"
@@ -459,6 +424,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                         <SelectItem value="summarization">Summarization</SelectItem>
                         <SelectItem value="text-generation">Text Generation</SelectItem>
                         <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
+                        <SelectItem value="image-classification">Image Classification</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>

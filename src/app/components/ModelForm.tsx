@@ -75,9 +75,13 @@ export default function ModelForm({ onSuccess }: ModelFormProps) {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
         >
           <option value="text-classification">Text Classification</option>
+          <option value="token-classification">Token Classification</option>
+          <option value="question-answering">Question Answering</option>
+          <option value="translation">Translation</option>
+          <option value="summarization">Summarization</option>
           <option value="text-generation">Text Generation</option>
+          <option value="masked-language-modeling">Masked Language Modeling</option>
           <option value="image-classification">Image Classification</option>
-          <option value="object-detection">Object Detection</option>
           <option value="other">Other</option>
         </select>
       </div>

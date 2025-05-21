@@ -14,40 +14,16 @@ interface PrismaError {
 
 export async function uploadModelAction(formData: FormData) {
   try {
-    // Extract all possible form fields
-    const name = formData.get('name') as string | null;
-    const description = formData.get('description') as string | null;
-    const modelType = formData.get('modelType') as string | null;
-    const license = formData.get('license') as string | null;
-    const sourceType = formData.get('sourceType') as string | null;
-    const url = formData.get('url') as string | null;
+    const name = formData.get('name') as string;
+    const description = formData.get('description') as string;
+    const modelType = formData.get('modelType') as string;
+    const license = formData.get('license') as string;
+    const sourceType = formData.get('sourceType') as string;
+    const url = formData.get('url') as string;
+    const tags = (formData.get('tags') as string).split(',').filter(tag => tag.trim());
+    const parameters = parseFloat(formData.get('parameters') as string);
+    const revision = formData.get('revision') as string;
     const file = formData.get('file') as File | null;
-    const modelName = formData.get('modelName') as string | null; // Used in creator-dashboard
-    const urlModelType = formData.get('urlModelType') as string | null; // Used in creator-dashboard
-    const parametersRaw = formData.get('parameters');
-    const revision = formData.get('revision') as string | null;
-    const customScript = formData.get('customScript') as string | null;
-
-    // Always ensure tags is an array
-    const tagsRaw = formData.get('tags');
-    const tags = typeof tagsRaw === 'string'
-      ? tagsRaw.split(',').map(tag => tag.trim()).filter(Boolean)
-      : [];
-
-    // Debug log for creator-dashboard version
-    console.log('Creator Dashboard uploadModelAction received:', {
-      name, description, modelType, license, sourceType, url, tags, modelName, urlModelType,
-      parametersRaw, revision, customScript
-    });
-
-    // Validate required fields
-    if (!name || !description || !modelType || !license || !sourceType || parametersRaw === null || parametersRaw === undefined || parametersRaw === '') {
-      return { success: false, error: 'All required fields must be provided, including parameters.' };
-    }
-    const parameters = parseFloat(parametersRaw as string);
-    if (isNaN(parameters)) {
-      return { success: false, error: 'Parameters must be a valid number.' };
-    }
     
     // Optional validation for tags (specific to creator-dashboard)
     if (tags.length === 0) {
@@ -65,11 +41,18 @@ export async function uploadModelAction(formData: FormData) {
       return { success: false, error: 'URL is required for URL source type.' };
     }
 
-    
     // Check if a model with the same name already exists
     const existing = await prisma.model.findUnique({ where: { name } });
     if (existing) {
       return { success: false, error: 'A model with this name already exists.' };
+    }
+
+    // Find the corresponding ModelScript for this model type, but only if it's not "other"
+    let modelScript = null;
+    if (modelType !== "other") {
+      modelScript = await prisma.modelScript.findFirst({
+        where: { modelType }
+      });
     }
 
     // Process file upload (if applicable)
@@ -97,18 +80,14 @@ export async function uploadModelAction(formData: FormData) {
         tags,
         parameters,
         revision,
-        customScript,
+        script: modelScript ? { connect: { id: modelScript.id } } : undefined,
       },
     });
     
     return { success: true, model };
-  } catch (error: unknown) {
-    const prismaError = error as PrismaError;
-    if (prismaError.code === 'P2002' && prismaError.meta?.target?.includes('name')) {
-      return { success: false, error: 'Model name must be unique.' };
-    }
-    console.error('Error creating model in creator dashboard:', error);
-    return { success: false, error: 'Failed to create model' };
+  } catch (error) {
+    console.error('Error in uploadModelAction:', error);
+    return { success: false, error: 'Failed to create model.' };
   }
 }
 
@@ -145,6 +124,9 @@ export async function startDeployment(modelName: string) {
     const model = await prisma.model.findUnique({
       where: { 
         name: modelName,
+      },
+      include: {
+        script: true, // Include the related ModelScript
       },
     });
 
@@ -184,6 +166,8 @@ export async function startDeployment(modelName: string) {
           model_name: model.name,
           user_id: clerkId,
           model_internal_name: model.name,
+          script_content: model.script?.content || null,
+          custom_script: model.script?.content || null,
         }),
     });
 
