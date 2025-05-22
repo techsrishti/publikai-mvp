@@ -24,6 +24,7 @@ export async function uploadModelAction(formData: FormData) {
     const parameters = parseFloat(formData.get('parameters') as string);
     const revision = formData.get('revision') as string;
     const file = formData.get('file') as File | null;
+    const subscriptionPrice = parseFloat(formData.get('subscriptionPrice') as string);
     
     // Optional validation for tags (specific to creator-dashboard)
     if (tags.length === 0) {
@@ -39,6 +40,11 @@ export async function uploadModelAction(formData: FormData) {
     // For URL source type, url must be present
     if (normalizedSourceType === SourceType.URL && !url) {
       return { success: false, error: 'URL is required for URL source type.' };
+    }
+
+    // Validate subscription price
+    if (isNaN(subscriptionPrice) || subscriptionPrice < 0) {
+      return { success: false, error: 'Invalid subscription price. Must be a non-negative number.' };
     }
 
     // Check if a model with the same name already exists
@@ -80,6 +86,7 @@ export async function uploadModelAction(formData: FormData) {
         tags,
         parameters,
         revision,
+        subscriptionPrice,
         script: modelScript ? { connect: { id: modelScript.id } } : undefined,
       },
     });

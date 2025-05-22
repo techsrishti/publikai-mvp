@@ -25,8 +25,9 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     license: "",
     tags: ["transformer", "nlp", "bert"],
     tagInput: "",
-    files: [] as File[],
     parameters: "",
+    subscriptionPrice: "",
+    files: [] as File[],
   })
   const [urlFields, setUrlFields] = useState({
     organizationName: "",
@@ -39,6 +40,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tagInput: "",
     revision: "",
     parameters: "",
+    subscriptionPrice: "",
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
   const uploadFormRef = useRef<HTMLFormElement>(null)
@@ -95,12 +97,45 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   }
 
   function validateUploadFields() {
-    const { modelName, description, modelType, license, parameters } = uploadFields
-    return modelName && description && modelType && license && parameters
+    const { modelName, description, modelType, license, parameters, subscriptionPrice } = uploadFields
+    console.log('Validating upload fields:', { modelName, description, modelType, license, parameters, subscriptionPrice })
+    
+    // Validate parameters
+    const parametersNum = parseFloat(parameters)
+    if (isNaN(parametersNum) || parametersNum < 0) {
+      addNotification("error", "Parameters must be a non-negative number.")
+      return false
+    }
+
+    // Validate subscription price
+    const subscriptionPriceNum = parseFloat(subscriptionPrice)
+    if (isNaN(subscriptionPriceNum) || subscriptionPriceNum < 0) {
+      addNotification("error", "Subscription price must be a non-negative number.")
+      return false
+    }
+
+    return modelName && description && modelType && license && parameters && subscriptionPrice
   }
+
   function validateUrlFields() {
-    const { organizationName, modelName, userModelName, description, license, parameters } = urlFields
-    return organizationName && modelName && userModelName && description && license && parameters
+    const { organizationName, modelName, userModelName, description, license, parameters, subscriptionPrice } = urlFields
+    console.log('Validating URL fields:', { organizationName, modelName, userModelName, description, license, parameters, subscriptionPrice })
+    
+    // Validate parameters
+    const parametersNum = parseFloat(parameters)
+    if (isNaN(parametersNum) || parametersNum < 0) {
+      addNotification("error", "Parameters must be a non-negative number.")
+      return false
+    }
+
+    // Validate subscription price
+    const subscriptionPriceNum = parseFloat(subscriptionPrice)
+    if (isNaN(subscriptionPriceNum) || subscriptionPriceNum < 0) {
+      addNotification("error", "Subscription price must be a non-negative number.")
+      return false
+    }
+
+    return organizationName && modelName && userModelName && description && license && parameters && subscriptionPrice
   }
 
   // Add function to convert file to base64
@@ -120,7 +155,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
 
   async function handleUploadAction(formData: FormData) {
     if (!validateUploadFields()) {
-      addNotification("error", "Please fill all required fields.")
+      addNotification("error", "Please fill all required fields including subscription price.")
       return
     }
     setLoadingUpload(true)
@@ -131,10 +166,20 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("license", uploadFields.license)
       formData.set("tags", uploadFields.tags.join(","))
       formData.set("parameters", uploadFields.parameters)
+      formData.set("subscriptionPrice", uploadFields.subscriptionPrice)
       if (uploadFields.files.length > 0) {
         formData.set("file", uploadFields.files[0])
       }
       formData.set("sourceType", "UPLOAD")
+      console.log('Submitting model with data:', {
+        name: uploadFields.modelName,
+        description: uploadFields.description,
+        modelType: uploadFields.modelType,
+        license: uploadFields.license,
+        tags: uploadFields.tags,
+        parameters: uploadFields.parameters,
+        subscriptionPrice: uploadFields.subscriptionPrice
+      })
       const result = await uploadModelAction(formData)
       if (result.success) {
         addNotification("success", "Model uploaded successfully!")
@@ -149,6 +194,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           tagInput: "",
           files: [],
           parameters: "",
+          subscriptionPrice: "",
         })
       } else {
         addNotification("error", result.error || "Failed to upload model.")
@@ -162,7 +208,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
 
   async function handleUrlAction(formData: FormData) {
     if (!validateUrlFields()) {
-      addNotification("error", "Please fill all required fields.")
+      addNotification("error", "Please fill all required fields including subscription price.")
       return
     }
     // Check if model exists on backend before pushing to DB
@@ -201,8 +247,20 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
       formData.set("parameters", urlFields.parameters)
+      formData.set("subscriptionPrice", urlFields.subscriptionPrice)
       formData.set("sourceType", "URL")
       formData.set("revision", urlFields.revision || "main")
+      
+      console.log('Submitting URL model with data:', {
+        name: urlFields.userModelName,
+        description: urlFields.description,
+        modelType: urlFields.modelType,
+        license: urlFields.license,
+        tags: urlFields.tags,
+        parameters: urlFields.parameters,
+        subscriptionPrice: urlFields.subscriptionPrice,
+        url: fullUrl
+      })
       
       const result = await uploadModelAction(formData)
       if (result.success) {
@@ -220,6 +278,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           tagInput: "",
           revision: "",
           parameters: "",
+          subscriptionPrice: "",
         })
       } else {
         addNotification("error", result.error || "Failed to register model URL.")
@@ -294,14 +353,39 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       id="url-parameters"
                       type="number"
                       value={urlFields.parameters}
-                      onChange={(e) => handleUrlChange("parameters", e.target.value.replace(/[^0-9.]/g, ""))}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUrlChange("parameters", value);
+                        }
+                      }}
                       placeholder="e.g., 1 for 1B, 0.1 for 100M, 1.7 for 1.7B"
                       className="w-full max-w-full"
                       min="0"
-                      step="any"
+                      step="0.1"
                       required
                     />
                     <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-subscription-price" className="text-blue-200 text-xs mb-1">Monthly Subscription Price (INR) <span className="text-red-400">*</span></label>
+                    <Input
+                      id="url-subscription-price"
+                      type="number"
+                      value={urlFields.subscriptionPrice}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUrlChange("subscriptionPrice", value);
+                        }
+                      }}
+                      placeholder="Enter monthly subscription price in Rupees"
+                      className="w-full max-w-full"
+                      min="0"
+                      step="1"
+                      required
+                    />
+                    <span className="text-xs text-blue-300 mt-1">You will receive 70% of the subscription revenue</span>
                   </div>
                   <div className="flex flex-col items-start">
                     <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to &apos;main&apos;)</span></label>
@@ -312,6 +396,28 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       placeholder="main"
                       className="w-full max-w-full"
                     />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label className="text-blue-200 text-xs mb-1">Tags</label>
+                    <Input
+                      value={urlFields.tagInput}
+                      onChange={(e) => handleUrlChange("tagInput", e.target.value)}
+                      onKeyDown={handleUrlTagInputKeyDown}
+                      placeholder="Add tags (press Enter)"
+                      className="w-full max-w-full"
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {urlFields.tags.map((tag, index) => (
+                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                          {tag}
+                          <X
+                            size={12}
+                            className="cursor-pointer opacity-70 hover:opacity-100"
+                            onClick={() => removeUrlTag(tag)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-start">
@@ -362,28 +468,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     </Select>
                   </div>
                 </div>
-                <div className="flex flex-col items-start">
-                  <label className="text-blue-200 text-xs mb-1">Tags</label>
-                  <Input
-                    value={urlFields.tagInput}
-                    onChange={(e) => handleUrlChange("tagInput", e.target.value)}
-                    onKeyDown={handleUrlTagInputKeyDown}
-                    placeholder="Add tags (press Enter)"
-                    className="w-full max-w-full"
-                  />
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {urlFields.tags.map((tag, index) => (
-                      <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
-                        {tag}
-                        <X
-                          size={12}
-                          className="cursor-pointer opacity-70 hover:opacity-100"
-                          onClick={() => removeUrlTag(tag)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
                 <div className="pt-2">
                   <Button
                     type="submit"
@@ -406,7 +490,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       id="model-name"
                       value={uploadFields.modelName}
                       onChange={(e) => handleUploadChange("modelName", e.target.value)}
-                      placeholder="Model Name"
                       className="w-full max-w-full"
                     />
                   </div>
@@ -440,20 +523,45 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     className="w-full max-w-full"
                   />
                 </div>
-                <div className="flex flex-col items-start">
-                  <label htmlFor="upload-parameters" className="text-blue-200 text-xs mb-1">Parameters (in billions) <span className="text-red-400">*</span></label>
-                  <Input
-                    id="upload-parameters"
-                    type="number"
-                    value={uploadFields.parameters}
-                    onChange={(e) => handleUploadChange("parameters", e.target.value.replace(/[^0-9.]/g, ""))}
-                    placeholder="e.g., 1 for 1B, 0.1 for 100M, 1.7 for 1.7B"
-                    className="w-full max-w-full"
-                    min="0"
-                    step="any"
-                    required
-                  />
-                  <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="parameters" className="text-blue-200 text-xs mb-1">Parameters (billions)</label>
+                    <Input
+                      id="parameters"
+                      value={uploadFields.parameters}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUploadChange("parameters", value);
+                        }
+                      }}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      className="w-full max-w-full"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="subscription-price" className="text-blue-200 text-xs mb-1">Monthly Subscription Price (INR)</label>
+                    <Input
+                      id="subscription-price"
+                      value={uploadFields.subscriptionPrice}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUploadChange("subscriptionPrice", value);
+                        }
+                      }}
+                      type="number"
+                      step="1"
+                      min="0"
+                      className="w-full max-w-full"
+                      required
+                      placeholder="Enter monthly subscription price in Rupees"
+                    />
+                    <span className="text-xs text-blue-300 mt-1">You will receive 70% of the subscription revenue</span>
+                  </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">

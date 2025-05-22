@@ -18,6 +18,7 @@ export async function GET(req: Request) {
             url: true,
             revision: true,
             parameters: true,
+            subscriptionPrice: true,
           }
         : {
             id: true,
@@ -31,6 +32,7 @@ export async function GET(req: Request) {
             createdAt: true,
             parameters: true,
             revision: true,
+            subscriptionPrice: true,
           },
     })
 
@@ -53,6 +55,7 @@ export async function POST(req: Request) {
     const tags = (formData.get("tags") as string).split(",")
     const revision = formData.get("revision") as string | null
     const parameters = parseFloat(formData.get("parameters") as string)
+    const subscriptionPrice = parseFloat(formData.get("subscriptionPrice") as string)
 
     // Find the corresponding ModelScript for this model type, but only if it's not "other"
     let modelScript = null;
@@ -74,6 +77,7 @@ export async function POST(req: Request) {
         tags,
         revision,
         parameters,
+        subscriptionPrice,
         script: modelScript ? { connect: { id: modelScript.id } } : undefined,
       },
     })
