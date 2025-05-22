@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { modelId: string } }
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
-  const modelId = params.modelId;
+  const { modelId } = await params;
   
   try {
     const model = await prisma.model.findUnique({
@@ -34,9 +33,9 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { modelId: string } }
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
-  const modelId = params.modelId;
+  const { modelId } = await params;
   
   try {
     const { scriptId } = await request.json();

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 
 // An optional `summary` query parameter lets the client request a smaller payload (id, name, url, revision, parameters)
 // This is useful in the creator-dashboard deployment tab where only these fields are needed and we want the

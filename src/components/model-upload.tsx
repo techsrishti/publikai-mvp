@@ -216,7 +216,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
         addNotification("error", result.error || "Failed to register model URL.")
       }
     } catch (error) {
-      addNotification("error", "Network error.")
+      addNotification("error", "Network error.", error)
     } finally {
       setLoadingUrl(false)
     }
