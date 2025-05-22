@@ -77,7 +77,9 @@ export async function POST(req: Request) {
             data: {
               email: primaryEmail,
               clerkId, // This is required in the schema
-              role: 'USER'
+              role: 'USER', 
+              firstName: evt.data.first_name,
+              lastName: evt.data.last_name
             },
             select: {
               id: true,
@@ -101,7 +103,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Handle other webhook types if needed
     return NextResponse.json({ message: 'Webhook processed' }, { status: 200 });
 
   } catch (error) {

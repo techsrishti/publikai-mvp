@@ -1,6 +1,7 @@
 "use server"
 import { prisma } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import btoa from "btoa";
 
 export async function createCreatorProfile(experienceLevel: string, specialization: string[], aiFrameworks: string[], modelTypes: string[], developmentGoals: string, projectDescription: string, portfolioUrl: string, githubUrl: string) {
     try {
@@ -18,15 +19,37 @@ export async function createCreatorProfile(experienceLevel: string, specializati
             select: {
                 id: true,
                 clerkId: true,
+                email: true,
+                firstName: true,
+                lastName: true
             }
         })
-
 
         if (!user) {
             throw new Error('User not found');
         }
 
         //Create creator profile and update user role in a transaction
+        const response = await fetch("https://api.razorpay.com/v1/contacts", {
+            method: "POST",
+            headers: {
+              "Authorization": `Basic ${btoa(`${process.env.RAZORPAY_APIKEY}:${process.env.RAZORPAY_APISECRET}`)}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email: user.email,
+              name: `${user.firstName} ${user.lastName}`,
+              type: "vendor"
+            })
+          });
+
+        const data = await response.json()
+        console.log(data)
+        
+        if (data.error) {
+            throw new Error(data.error.message)
+        }
+
         await prisma.$transaction([
             prisma.creator.create({
                 data: { 
@@ -39,6 +62,7 @@ export async function createCreatorProfile(experienceLevel: string, specializati
                     modelTypes: modelTypes,
                     portfolioUrl: portfolioUrl || null,
                     githubUrl: githubUrl || null,
+                    razorpayCreatorId: data.id
                 }
             }),
             prisma.user.update({

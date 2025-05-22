@@ -2,13 +2,29 @@
 
 import { prisma } from '@/lib/prisma';
 import { SourceType } from '@prisma/client';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 
-// Define error interface for Prisma errors
 interface PrismaError {
   code?: string;
   meta?: {
     target?: string[];
   };
+}
+
+export interface LinkBankAccountOrVpa {
+  vpa: string; 
+  bankAccount: { 
+    name: string; 
+    bankAccountNumber: string; 
+    bankIfscCode: string; 
+    bankName?: string; 
+  }
+}
+
+export interface LinkBankAccountOrVpaResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
 }
 
 export async function uploadModelAction(formData: FormData) {
@@ -100,3 +116,86 @@ export async function uploadModelAction(formData: FormData) {
     return { success: false, error: 'Failed to create model' };
   }
 }
+
+
+export async function linkBankAccountOrVpa(data: LinkBankAccountOrVpa): Promise<LinkBankAccountOrVpaResponse> {
+  try {
+
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: {
+        role: true,
+        creator: {
+          select: {
+            id: true,
+            razorpayCreatorId: true,
+            razorpayFaId: true,
+          }
+        }
+      }
+    })
+
+    if (!user || user.role !== "ELEVATED_USER" || !user.creator) {
+      throw new Error("Unauthorized");
+    }
+
+    const { vpa, bankAccount } = data;
+
+    if (!vpa && !bankAccount) {
+      throw new Error("Invalid request");
+    }
+
+    const response = await fetch("https://api.razorpay.com/v1/fund_accounts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${btoa(`${process.env.RAZORPAY_APIKEY}:${process.env.RAZORPAY_APISECRET}`)}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contact_id: user.creator.razorpayCreatorId,
+        account_type: vpa ? "vpa" : "bank_account",
+        ...(vpa
+          ? { vpa: { address: vpa } }
+          : {
+              bank_account: {
+                name: bankAccount.name,
+                ifsc: bankAccount.bankIfscCode,
+                account_number: bankAccount.bankAccountNumber
+              }
+            })
+      })
+    });
+
+
+    const responseData = await response.json(); 
+    console.log(responseData);
+
+    if (responseData.error) {
+      throw new Error(responseData.error.message);
+    }
+
+    await prisma.creator.update({ 
+      where: { 
+        id: user.creator.id
+      },
+      data: { 
+        razorpayFaId: responseData.id,
+        razorpayFaType: vpa ? "vpa" : "bank_account"
+      }
+    })
+
+
+    return { success: true, message: "Bank account linked successfully" };
+    
+  } catch (error) {
+    console.log("Error linking bank account or VPA:", error);
+    return { success: false, error: "Failed to link bank account or VPA" };
+  }
+}
+

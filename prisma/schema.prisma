@@ -18,8 +18,20 @@ enum SourceType {
   UPLOAD
 }
 
+enum RazorpayFundAccountType { 
+  vpa
+  bank_account
+}
+
+enum CreatorPayoutsStatues { 
+  initiated
+  processed
+}
+
 model User {
   id        String   @id @default(cuid())
+  firstName String
+  lastName  String
   clerkId   String   @unique
   email     String   @unique
   role      UserRole @default(USER)
@@ -40,8 +52,25 @@ model Creator {
   projectDescription String
   portfolioUrl      String?
   githubUrl         String?
+  razorpayCreatorId String
+  razorpayFaId      String?  //razorpay fund acc. id.
+  razorpayFaType    RazorpayFundAccountType?
+  outstandingAmount Decimal? 
+  totalPaidAmount   Decimal?
+  totalEarnedAmount Decimal?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  CreatorPayouts    CreatorPayout[]
+}
+
+model CreatorPayout { 
+  id                String  @id @default(cuid())
+  creatorId         String  @unique
+  Creator           Creator @relation(fields: [creatorId], references: [id])  
+  payoutDate        DateTime
+  paidAmount        Decimal
+  razorpayTxnId     String  @unique
+  status            String        
 }
 
 model Model {
