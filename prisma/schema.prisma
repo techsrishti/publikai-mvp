@@ -73,6 +73,7 @@ model Model {
   tags        String[] // Tags as array of strings
   revision    String? // Optional model revision (e.g., 'main')
   parameters  Float // Number of parameters in billions
+  subscriptionPrice Decimal? // Subscription price per month
   script      ModelScript? @relation(fields: [scriptId], references: [id])
   scriptId    String?      @unique
   createdAt   DateTime     @default(now())

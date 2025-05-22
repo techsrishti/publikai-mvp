@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // An optional `summary` query parameter lets the client request a smaller payload (id, name, url, revision, parameters)
 // This is useful in the creator-dashboard deployment tab where only these fields are needed and we want the
@@ -53,6 +54,8 @@ export async function POST(req: Request) {
     const tags = (formData.get("tags") as string).split(",")
     const revision = formData.get("revision") as string | null
     const parameters = parseFloat(formData.get("parameters") as string)
+    const subscriptionPrice = parseInt(formData.get("subscriptionPrice") as string);
+    console.log('subscriptionPrice:', subscriptionPrice);
 
     // Find the corresponding ModelScript for this model type, but only if it's not "other"
     let modelScript = null;
@@ -74,6 +77,7 @@ export async function POST(req: Request) {
         tags,
         revision,
         parameters,
+        subscriptionPrice,
         script: modelScript ? { connect: { id: modelScript.id } } : undefined,
       },
     })

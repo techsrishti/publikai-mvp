@@ -27,6 +27,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tagInput: "",
     files: [] as File[],
     parameters: "",
+    subscriptionPrice: "",
   })
   const [urlFields, setUrlFields] = useState({
     organizationName: "",
@@ -39,6 +40,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     tagInput: "",
     revision: "",
     parameters: "",
+    subscriptionPrice: "",
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
   const uploadFormRef = useRef<HTMLFormElement>(null)
@@ -103,21 +105,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     return organizationName && modelName && userModelName && description && license && parameters
   }
 
-  // Add function to convert file to base64
-  const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64String = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:text/plain;base64,")
-        const base64Content = base64String.split(',')[1];
-        resolve(base64Content);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   async function handleUploadAction(formData: FormData) {
     if (!validateUploadFields()) {
       addNotification("error", "Please fill all required fields.")
@@ -131,6 +118,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("license", uploadFields.license)
       formData.set("tags", uploadFields.tags.join(","))
       formData.set("parameters", uploadFields.parameters)
+      formData.set("subscriptionPrice", uploadFields.subscriptionPrice || "0")
       if (uploadFields.files.length > 0) {
         formData.set("file", uploadFields.files[0])
       }
@@ -149,6 +137,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           tagInput: "",
           files: [],
           parameters: "",
+          subscriptionPrice: "",
         })
       } else {
         addNotification("error", result.error || "Failed to upload model.")
@@ -201,6 +190,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
       formData.set("parameters", urlFields.parameters)
+      formData.set("subscriptionPrice", urlFields.subscriptionPrice || "0")
       formData.set("sourceType", "URL")
       formData.set("revision", urlFields.revision || "main")
       
@@ -220,6 +210,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           tagInput: "",
           revision: "",
           parameters: "",
+          subscriptionPrice: "",
         })
       } else {
         addNotification("error", result.error || "Failed to register model URL.")
@@ -384,6 +375,22 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     ))}
                   </div>
                 </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="url-subscription-price" className="text-blue-200 text-xs mb-1">
+                    Subscription Price (per month)
+                    <span className="block text-xs text-blue-400 mt-1">70% of this amount will be given to you</span>
+                  </label>
+                  <Input
+                    id="url-subscription-price"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={urlFields.subscriptionPrice}
+                    onChange={e => handleUrlChange("subscriptionPrice", e.target.value.replace(/[^0-9.]/g, ""))}
+                    placeholder="e.g., 10 for $10/month"
+                    className="w-full max-w-full"
+                  />
+                </div>
                 <div className="pt-2">
                   <Button
                     type="submit"
@@ -454,6 +461,22 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     required
                   />
                   <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
+                </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="subscription-price" className="text-blue-200 text-xs mb-1">
+                    Subscription Price (per month)
+                    <span className="block text-xs text-blue-400 mt-1">70% of this amount will be given to you</span>
+                  </label>
+                  <Input
+                    id="subscription-price"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={uploadFields.subscriptionPrice}
+                    onChange={e => handleUploadChange("subscriptionPrice", e.target.value.replace(/[^0-9.]/g, ""))}
+                    placeholder="e.g., 10 for $10/month"
+                    className="w-full max-w-full"
+                  />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
