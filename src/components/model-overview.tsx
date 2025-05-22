@@ -172,7 +172,7 @@ export function ModelOverview() {
 
       {/* Earnings and Payout Section */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+        <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 h-[375px] flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-medium text-white">Earnings by Model</h2>
@@ -199,23 +199,25 @@ export function ModelOverview() {
               </TooltipProvider>
             </div>
           </div>
-          <div className="space-y-4">
-            {metrics.modelEarnings.map((model, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="space-y-1">
-                    <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
-                    <p className="text-sm text-gray-400">{model.trend}</p>
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="space-y-4">
+              {metrics.modelEarnings.map((model, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="space-y-1">
+                      <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
+                      <p className="text-sm text-gray-400">{model.trend}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-medium text-white">{model.earnings}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-medium text-white">{model.earnings}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </Card>
 
@@ -388,83 +390,85 @@ export function ModelOverview() {
       </div>
 
       {/* Model Performance */}
-      <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
+      <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 h-[300px] flex flex-col">
         <h2 className="text-xl font-medium text-white mb-6">Model Performance</h2>
         
         {/* Column Headers */}
         <div className="grid grid-cols-12 gap-4 px-4 mb-2">
-          <div className="col-span-3">
+          <div className="col-span-3 text-left">
             <p className="text-sm font-medium text-gray-400">Model</p>
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 text-left">
             <p className="text-sm font-medium text-gray-400">Status</p>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-3 text-left">
             <p className="text-sm font-medium text-gray-400">API Calls</p>
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 text-left">
             <p className="text-sm font-medium text-gray-400">Avg Latency</p>
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 text-left">
             <p className="text-sm font-medium text-gray-400">Success Rate</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          {metrics.modelPerformance.map((model, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-12 gap-4 p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
-            >
-              {/* Model Info - 3 columns */}
-              <div className="col-span-3 space-y-1">
-                <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
-                <p className="text-sm text-gray-400">
-                  {model.type.split('-').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join('-')}
-                </p>
-              </div>
-
-              {/* Status - 2 columns */}
-              <div className="col-span-2 flex items-center">
-                <p className={`text-sm ${
-                  model.status === 'Deployed' 
-                    ? 'text-green-400' 
-                    : 'text-yellow-400'
-                }`}>
-                  {model.status}
-                </p>
-              </div>
-
-              {/* API Calls - 3 columns */}
-              <div className="col-span-3 flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-green-400">{model.successfulCalls}</span>
-                  <span className="text-sm text-gray-500">|</span>
-                  <span className="text-sm font-medium text-red-400">{model.failedCalls}</span>
+        <div className="flex-1 overflow-y-auto pr-2">
+          <div className="space-y-4">
+            {metrics.modelPerformance.map((model, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-12 gap-4 p-4 rounded-xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-all hover:shadow-lg"
+              >
+                {/* Model Info - 3 columns */}
+                <div className="col-span-3 text-left">
+                  <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
+                  <p className="text-sm text-gray-400">
+                    {model.type.split('-').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join('-')}
+                  </p>
                 </div>
-              </div>
 
-              {/* Latency - 2 columns */}
-              <div className="col-span-2 flex items-center">
-                <p className="text-sm text-gray-400">{model.avgLatency}</p>
-              </div>
+                {/* Status - 2 columns */}
+                <div className="col-span-2 flex items-center text-left pl-2">
+                  <p className={`text-sm ${
+                    model.status === 'Deployed' 
+                      ? 'text-green-400' 
+                      : 'text-yellow-400'
+                  }`}>
+                    {model.status}
+                  </p>
+                </div>
 
-              {/* Success Rate - 2 columns */}
-              <div className="col-span-2 flex flex-col items-end">
-                <div className="w-full">
-                  <div className="h-2 rounded-full bg-gray-800">
-                    <div
-                      className="h-2 rounded-full bg-blue-500"
-                      style={{ width: `${model.performance}%` }}
-                    />
+                {/* API Calls - 3 columns */}
+                <div className="col-span-3 flex items-center text-left pl-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-green-400">{model.successfulCalls}</span>
+                    <span className="text-sm text-gray-500">|</span>
+                    <span className="text-sm font-medium text-red-400">{model.failedCalls}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1 text-center">{model.performance}%</p>
+                </div>
+
+                {/* Latency - 2 columns */}
+                <div className="col-span-2 flex items-center text-left pl-5">
+                  <p className="text-sm text-gray-400">{model.avgLatency}</p>
+                </div>
+
+                {/* Success Rate - 2 columns */}
+                <div className="col-span-2 flex flex-col items-end justify-center pl-6">
+                  <div className="w-full">
+                    <div className="h-2 rounded-full bg-gray-800">
+                      <div
+                        className="h-2 rounded-full bg-blue-500"
+                        style={{ width: `${model.performance}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1 text-center">{model.performance}%</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </Card>
 

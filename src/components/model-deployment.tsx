@@ -307,104 +307,105 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
     <div className="">
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
         {/* Left column: Deployment Configuration and Upload Script */}
-        <div className="flex flex-col gap-6 w-full">
-          {/* Deployment Configuration */}
-          <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
-            <h3 className="text-lg font-medium text-white mb-4">Deployment Configuration</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
-                {loadingModels ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                  </div>
-                ) : (
-                  <select
-                    className="w-full bg-black border-gray-700 text-gray-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    value={selectedModel}
-                    onChange={e => handleModelSelect(e.target.value)}
+        <div className="w-full h-[calc(100vh-12rem)]">
+          <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 w-full h-full flex flex-col">
+            {/* Deployment Configuration Section */}
+            <div>
+              <h3 className="text-lg font-medium text-white mb-4">Deployment Configuration</h3>
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Select Model</label>
+                  {loadingModels ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <select
+                      className="w-full bg-black border-gray-700 text-gray-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      value={selectedModel}
+                      onChange={e => handleModelSelect(e.target.value)}
+                    >
+                      <option value="" className="bg-black text-gray-200">Choose a model</option>
+                      {models.map((model: Model) => (
+                        <option 
+                          key={model.id} 
+                          value={model.id}
+                          className="bg-black text-gray-200 hover:bg-gray-800"
+                        >
+                          {model.name.toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div className="pt-2">
+                  <Button
+                    onClick={handleDeploy}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={isDeploying}
                   >
-                    <option value="" className="bg-black text-gray-200">Choose a model</option>
-                    {models.map((model: Model) => (
-                      <option 
-                        key={model.id} 
-                        value={model.id}
-                        className="bg-black text-gray-200 hover:bg-gray-800"
-                      >
-                        {model.name.toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <div className="pt-2">
-                <Button
-                  onClick={handleDeploy}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                  disabled={isDeploying}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {isDeploying ? "Deploying..." : "Deploy Model"}
-                </Button>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isDeploying ? "Deploying..." : "Deploy Model"}
+                  </Button>
+                </div>
               </div>
             </div>
-          </Card>
-
-          {/* Script Upload Section (now always below deployment config) */}
-          <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800">
-            <h3 className="text-lg font-medium text-white mb-4">Upload Model Script</h3>
-            <div className="space-y-4">
-              <div
-                className="border-2 border-dashed border-blue-500 rounded-lg p-6 flex flex-col items-center justify-center text-center bg-blue-950/40 cursor-pointer"
-                onClick={() => document.getElementById('script-upload-input')?.click()}
-              >
-                <Upload className="h-10 w-10 text-blue-400 mb-2" />
-                <span className="font-medium text-white">Drag and drop your Python script here</span>
-                <span className="text-blue-400 underline cursor-pointer mt-1">
-                  Or click to browse your files
-                </span>
-                <span className="text-xs text-gray-400 mt-2">
-                  Supports <b>.py</b> files only
-                </span>
-                <input
-                  id="script-upload-input"
-                  type="file"
-                  accept=".py"
-                  onChange={e => setScriptFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-                {/* Show current script if present */}
-                {(() => {
-                  const model = models.find(m => m.id === selectedModel);
-                  if (model?.script) {
-                    return (
-                      <div className="mt-2 text-blue-300 text-sm">
-                        Current script: <span className="font-semibold">{model.script.id}.py</span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-                {scriptFile && (
-                  <div className="mt-2 text-green-400 text-sm">
-                    Selected: {scriptFile.name}
-                  </div>
-                )}
+            {/* Upload Model Script Section */}
+            <div className="flex-1 flex flex-col">
+              <h3 className="text-lg font-medium text-white mb-4">Upload Model Script</h3>
+              <div className="space-y-4 flex-1 flex flex-col">
+                <div
+                  className="border-2 border-dashed border-blue-500 rounded-lg p-6 flex-1 flex flex-col items-center justify-center text-center bg-blue-950/40 cursor-pointer w-full"
+                  onClick={() => document.getElementById('script-upload-input')?.click()}
+                >
+                  <Upload className="h-10 w-10 text-blue-400 mb-2" />
+                  <span className="font-medium text-white">Drag and drop your Python script here</span>
+                  <span className="text-blue-400 underline cursor-pointer mt-1">
+                    Or click to browse your files
+                  </span>
+                  <span className="text-xs text-gray-400 mt-2">
+                    Supports <b>.py</b> files only
+                  </span>
+                  <input
+                    id="script-upload-input"
+                    type="file"
+                    accept=".py"
+                    onChange={e => setScriptFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  {/* Show current script if present */}
+                  {(() => {
+                    const model = models.find(m => m.id === selectedModel);
+                    if (model?.script) {
+                      return (
+                        <div className="mt-2 text-blue-300 text-sm">
+                          Current script: <span className="font-semibold">{model.script.id}.py</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  {scriptFile && (
+                    <div className="mt-2 text-green-400 text-sm">
+                      Selected: {scriptFile.name}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={handleScriptUpload}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={!scriptFile || isUploadingScript}
+                >
+                  {isUploadingScript ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Upload Script"
+                  )}
+                </Button>
               </div>
-              <Button
-                onClick={handleScriptUpload}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={!scriptFile || isUploadingScript}
-              >
-                {isUploadingScript ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Upload Script"
-                )}
-              </Button>
             </div>
           </Card>
         </div>
