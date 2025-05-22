@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+type RouteContext = {
+  params: Promise<{ modelId: string }>
+}
+
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { modelId: string } }
+  _request: NextRequest,
+  context: RouteContext
 ) {
-  const modelId = params.modelId;
+  const { modelId } = await context.params;
   
   try {
     const model = await prisma.model.findUnique({
@@ -34,9 +38,9 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { modelId: string } }
+  context: RouteContext
 ) {
-  const modelId = params.modelId;
+  const { modelId } = await context.params;
   
   try {
     const { scriptId } = await request.json();

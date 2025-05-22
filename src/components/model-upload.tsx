@@ -138,21 +138,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     return organizationName && modelName && userModelName && description && license && parameters && subscriptionPrice
   }
 
-  // Add function to convert file to base64
-  const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64String = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:text/plain;base64,")
-        const base64Content = base64String.split(',')[1];
-        resolve(base64Content);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   async function handleUploadAction(formData: FormData) {
     if (!validateUploadFields()) {
       addNotification("error", "Please fill all required fields including subscription price.")
@@ -284,7 +269,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
         addNotification("error", result.error || "Failed to register model URL.")
       }
     } catch (error) {
-      addNotification("error", "Network error.")
+      addNotification("error", "Network error. " + error)
     } finally {
       setLoadingUrl(false)
     }

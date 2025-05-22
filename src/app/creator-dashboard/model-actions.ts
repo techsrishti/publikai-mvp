@@ -4,14 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { SourceType, DeploymentStatus } from '@prisma/client';
 
-// Define error interface for Prisma errors
-interface PrismaError {
-  code?: string;
-  meta?: {
-    target?: string[];
-  };
-}
-
 export async function uploadModelAction(formData: FormData) {
   try {
     const name = formData.get('name') as string;

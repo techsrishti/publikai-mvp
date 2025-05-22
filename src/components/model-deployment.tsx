@@ -53,13 +53,12 @@ interface Deployment {
 export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [models, setModels] = useState<Model[]>([])
   const [deployments, setDeployments] = useState<Deployment[]>([])
-  const [modelScript, setModelScripts] = useState<ModelScript[]>([])
   const [isDeploying, setIsDeploying] = useState(false)
   const [selectedModel, setSelectedModel] = useState<string>("")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingModels, setLoadingModels] = useState(true)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
-  const [showScriptUpload, setShowScriptUpload] = useState(false)
+  const [, setShowScriptUpload] = useState(false)
   const [scriptFile, setScriptFile] = useState<File | null>(null)
   const [isUploadingScript, setIsUploadingScript] = useState(false)
 
@@ -168,7 +167,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       reader.readAsText(scriptFile);
     } catch (error) {
       setIsUploadingScript(false);
-      addNotification("error", "Failed to upload script.");
+      addNotification("error", "Failed to upload script."+error);
     }
   };
 
@@ -193,7 +192,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       }
     } catch (error) {
       setShowScriptUpload(false);
-      addNotification("error", "Failed to fetch model details.");
+      addNotification("error", "Failed to fetch model details. " + error);
     }
   };
 
