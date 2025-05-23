@@ -11,8 +11,6 @@ export async function POST(request: NextRequest) {
     const payoutId = body.payload.payout.entity.id;
     const payoutStatus = body.payload.payout.entity.status;
     const payoutAmount = body.payload.payout.entity.amount / 100;
-    const payoutDate = body.payload.payout.entity.created_at;
-    const payoutReferenceNumber = body.payload.payout.entity.reference_id;
 
     const payout = await prisma.creatorPayout.findUnique({ 
       where: { 
@@ -66,9 +64,6 @@ export async function POST(request: NextRequest) {
   } else if (event === "payout.failed") { 
     const payoutId = body.payload.payout.entity.id;
     const payoutStatus = body.payload.payout.entity.status;
-    const payoutAmount = body.payload.payout.entity.amount / 100;
-    const payoutDate = body.payload.payout.entity.created_at;
-    const payoutReferenceNumber = body.payload.payout.entity.reference_id;
 
     const payout = await prisma.creatorPayout.findUnique({ 
         where: { 

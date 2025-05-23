@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { SourceType } from '@prisma/client';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 
 interface PrismaError {
   code?: string;
