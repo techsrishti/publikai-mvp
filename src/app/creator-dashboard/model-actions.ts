@@ -199,3 +199,187 @@ export async function linkBankAccountOrVpa(data: LinkBankAccountOrVpa): Promise<
   }
 }
 
+
+export interface GetLinkedBankAccountOrVpaResponse {
+  success: boolean;
+  data: { 
+    account_type: string;
+    bank_account?: { 
+      ifsc: string;
+      name: string; 
+      account_number: string; 
+      bank_name: string;
+    }
+    vpa?: { 
+      address: string;
+    }
+  } | null;
+  message: string;
+}
+
+export async function getLinkedBankAccountOrVpa(): Promise<GetLinkedBankAccountOrVpaResponse> {
+  try {
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: {
+        role: true,
+        creator: {
+          select: {
+            razorpayFaId: true,
+            razorpayFaType: true,
+          }
+        }
+      }
+    })
+
+    if (!user || user.role !== "ELEVATED_USER" || !user.creator) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!user.creator.razorpayFaId) { 
+      console.log("No bank account or VPA linked");
+      return { success: true, data: null, message: "Bank account or VPA not linked" };
+    }
+
+    const response = await fetch(`https://api.razorpay.com/v1/fund_accounts/${user.creator.razorpayFaId}`, {
+        headers: {
+          "Authorization": `Basic ${btoa(`${process.env.RAZORPAY_APIKEY}:${process.env.RAZORPAY_APISECRET}`)}`
+        }
+
+    })
+
+    const responseData = await response.json();
+    console.log(responseData);
+
+    if (responseData.error) {
+        throw new Error(responseData.error.message);
+    }
+
+    return { success: true, data: responseData, message: "Bank account or VPA linked" };  
+    
+  } catch (error) {
+    console.log("Error getting linked bank account or VPA:", error);
+    return { success: false, data: null, message: "Failed to get linked bank account or VPA" };
+  }
+}
+
+export interface AllPayoutsResponse { 
+  success: boolean;
+  data: { 
+    paidAmount: number;
+    payoutDate: Date;
+    status: string;
+    razorpayPayoutId: string;
+    referenceNumber: string;
+  }[] | null;
+  message: string;
+}
+
+export async function getAllPayouts(): Promise<AllPayoutsResponse> { 
+  try { 
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId }, 
+      select: {
+        role: true,
+        creator: {
+          select: {
+            id: true,
+          }, 
+        }, 
+      }
+    })
+    
+    if (!user || !user?.creator || user?.role !== "ELEVATED_USER") {
+      throw new Error("Unauthorized");
+    }
+
+    const payout = await prisma.creatorPayout.findMany({ 
+      where: { 
+        creatorId: user.creator.id,
+      }, 
+      orderBy: { 
+        payoutDate: "desc"
+      }, 
+      select: { 
+        paidAmount: true, 
+        payoutDate: true, 
+        status: true, 
+        razorpayPayoutId: true, 
+        referenceNumber: true, 
+      }
+    })
+
+    const payoutData = payout.map((payout) => { 
+      return { 
+        paidAmount: payout.paidAmount.toNumber(), 
+        payoutDate: payout.payoutDate, 
+        status: payout.status, 
+        razorpayPayoutId: payout.razorpayPayoutId, 
+        referenceNumber: payout.referenceNumber, 
+      }
+    })
+
+    return { success: true, data: payoutData, message: "All payouts fetched successfully" };
+
+  } catch (error) {
+    console.log("Error getting all payouts:", error);
+    return { success: false, data: null, message: "Failed to get all payouts" };
+  }
+}
+
+export interface CreatorPayoutStatsResponse { 
+  success: boolean;
+  totalEarned: number | null;
+  outstandingAmount: number | null;
+  totalPaidAmount: number | null;
+  message: string;
+}
+
+export async function getCreatorPayoutStats(): Promise<CreatorPayoutStatsResponse> { 
+  
+  try { 
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) { 
+      throw new Error("Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({ 
+      where: { clerkId }, 
+      select: { 
+        role: true, 
+        creator: { 
+          select: { 
+            id: true, 
+            outstandingAmount: true, 
+            totalPaidAmount: true, 
+            totalEarnedAmount: true, 
+          }
+        }
+      }
+    })
+
+    if (!user || !user?.creator || user?.role !== "ELEVATED_USER") { 
+      throw new Error("Unauthorized");
+    }
+
+    return { success: true, totalEarned: user.creator.totalEarnedAmount?.toNumber() ?? null, outstandingAmount: user.creator.outstandingAmount?.toNumber() ?? null, totalPaidAmount: user.creator.totalPaidAmount?.toNumber() ?? null, message: "Creator payout stats fetched successfully" };
+
+  } catch (error) { 
+    console.log("Error getting creator payout stats:", error);
+    return { success: false, totalEarned: null, outstandingAmount: null, totalPaidAmount: null, message: "Failed to get creator payout stats" };
+  }
+}
+
