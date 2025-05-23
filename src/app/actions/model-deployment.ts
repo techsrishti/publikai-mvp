@@ -103,7 +103,7 @@ export async function deployModel(modelId: string, gpuType: string = 'default') 
           updatedAt: new Date()
         },
       })
-      throw new Error('Failed to connect to deployment API. Please check if the deployment service is running.')
+      throw new Error('Failed to connect to deployment API. Please check if the deployment service is running.' + fetchError)
     }
 
     console.log('Deployment API Response Status:', response.status)

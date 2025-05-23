@@ -71,7 +71,7 @@ export async function uploadModelAction(formData: FormData) {
           return { success: false, error: 'Model does not exist on Hugging Face with the given details.' };
         }
       } catch (error) {
-        return { success: false, error: 'Failed to verify model existence on Hugging Face.' };
+        return { success: false, error: 'Failed to verify model existence on Hugging Face.' + error };
       }
     }
 
@@ -122,7 +122,7 @@ export async function uploadModelAction(formData: FormData) {
         subscriptionPrice,
         scriptId: modelScript?.id,
         creatorId: user.creator.id
-      } as any, // Using type assertion as a temporary fix
+      },
     });
     
     return { success: true, model };

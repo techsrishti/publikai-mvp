@@ -56,15 +56,26 @@ interface Deployment {
   model: Model
 }
 
-// Helper function to convert Date to string
-function convertDateToString(date: Date): string {
-  return date.toISOString()
+interface ServerResponseItem {
+  id: string;
+  modelId: string;
+  status: string;
+  deploymentUrl?: string | null;
+  apiKey?: string | null;
+  gpuType?: string | null;
+  deploymentName?: string | null;
+  modelName?: string | null;
+  modelRevision?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  model: Model;
 }
 
 // Helper function to convert server response to our interface types
-function convertServerResponse(response: any): Deployment[] {
-  return response.map((item: any) => ({
+function convertServerResponse(response: ServerResponseItem[]): Deployment[] {
+  return response.map((item) => ({
     ...item,
+    status: item.status as DeploymentStatus,
     createdAt: item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt),
     updatedAt: item.updatedAt instanceof Date ? item.updatedAt : new Date(item.updatedAt),
     model: {
@@ -148,7 +159,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           }
 
           // Update model with script reference using server action
-          const { model, error: updateError } = await updateModelWithScript(selectedModel, scriptResult.script.id)
+          const { error: updateError } = await updateModelWithScript(selectedModel, scriptResult.script.id)
           if (updateError) {
             throw new Error(updateError)
           }

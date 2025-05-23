@@ -13,7 +13,6 @@ export async function createModelScript(content: string, modelType: string) {
       data: {
         content,
         modelType,
-        model: undefined, // The model relation is optional
       },
     })
 
