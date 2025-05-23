@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, X, RefreshCw } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
+import { getModels } from "@/app/actions/models"
+import { getDeployments } from "@/app/actions/deployments"
+import { deleteModel } from "@/app/actions/models"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +28,6 @@ interface Model {
   id: string
   name: string
   modelType: string
-  userModelName: string
   deployment?: {
     id: string
     status: string
@@ -34,22 +36,22 @@ interface Model {
 }
 
 interface Deployment {
-  id: string;
-  modelId: string;
-  status: string;
-  gpuType?: string;
+  id: string
+  modelId: string
+  status: string
+  gpuType?: string
 }
 
 // Utility to format model type
 function formatModelType(type?: string) {
-  if (!type) return 'Unknown';
+  if (!type) return 'Unknown'
   // Replace underscores and spaces with dashes, split camelCase, then capitalize
   return type
     .replace(/([a-z])([A-Z])/g, '$1-$2') // camelCase to dash
     .replace(/[_\s]+/g, '-') // underscores/spaces to dash
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join('-');
+    .join('-')
 }
 
 export function ModelManagement({ addNotification }: ModelManagementProps) {
@@ -66,21 +68,26 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
     setIsRefreshing(true)
     setLoading(true)
     try {
-      const [modelsRes, deploymentsRes] = await Promise.all([
-        fetch("/api/models"),
-        fetch("/api/deployment")
+      const [modelsResult, deploymentsResult] = await Promise.all([
+        getModels(),
+        getDeployments()
       ])
-      const modelsData = await modelsRes.json()
-      const deploymentsData = await deploymentsRes.json()
-      
+
+      if (!modelsResult.success || !modelsResult.models) {
+        throw new Error(modelsResult.error || 'Failed to fetch models')
+      }
+
       // Combine models with their deployment info
-      const modelsWithDeployments = modelsData.models.map((model: Model) => ({
-        ...model,
-        deployment: (deploymentsData.deployments as Deployment[]).find((dep) => dep.modelId === model.id)
+      const modelsWithDeployments = modelsResult.models.map((model) => ({
+        id: model.id,
+        name: model.name,
+        modelType: model.modelType,
+        deployment: (deploymentsResult.deployments as Deployment[]).find((dep) => dep.modelId === model.id)
       }))
       
       setModels(modelsWithDeployments)
-    } catch {
+    } catch (error) {
+      console.error("Error fetching models:", error)
       addNotification("error", "Failed to fetch models.")
     } finally {
       setLoading(false)
@@ -96,19 +103,13 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
   const handleDeleteModel = async (modelId: string) => {
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/models?id=${modelId}`, { 
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      const data = await res.json()
-      if (data.success) {
+      const result = await deleteModel(modelId)
+      if (result.success) {
         addNotification("success", "Model is deleted.")
         setModels(models.filter(model => model.id !== modelId))
         setModelToDelete(null)
       } else {
-        addNotification("error", data.message || data.error || "Failed to delete model.")
+        addNotification("error", result.error || "Failed to delete model.")
       }
     } catch (error) {
       console.error("Delete model error:", error)
@@ -124,7 +125,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
       (filter === "deployed" && model.deployment) ||
       (filter === "not-deployed" && !model.deployment)
     const searchTerm = search.toLowerCase()
-    const modelName = model.userModelName || model.name || ""
+    const modelName = model.name || ""
     const modelType = model.modelType || ""
     const matchesSearch = 
       modelName.toLowerCase().includes(searchTerm) ||
@@ -141,7 +142,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
             <AlertDialogDescription className="text-gray-400">
               {modelToDelete && (
                 <>
-                  Are you sure you want to delete the model &quot;{modelToDelete.userModelName || modelToDelete.name}&quot;?
+                  Are you sure you want to delete the model &quot;{modelToDelete.name}&quot;?
                   {modelToDelete.deployment && (
                     <>
                       <br />
@@ -230,57 +231,59 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
               </div>
             ) : filteredModels.length === 0 ? (
               <div className="text-gray-400 py-8 text-center">No models found.</div>
-            ) : filteredModels.map((model) => (
-              <div
-                key={model.id}
-                className="grid grid-cols-[1.5fr_1fr_1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
-              >
-                <div className="truncate min-w-0 font-medium text-gray-200">
-                  {(model.userModelName || model.name).toUpperCase()}
-                </div>
-                <div className="truncate min-w-0">
-                  {formatModelType(model.modelType)}
-                </div>
-                <div className="truncate min-w-0">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">
-                    {model.deployment?.gpuType || 'Not specified'}
-                  </span>
-                </div>
-                <div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      model.deployment
-                        ? "bg-green-500/10 text-green-400"
-                        : "bg-gray-500/10 text-gray-400"
-                    }`}
-                  >
-                    {model.deployment ? "Deployed" : "Not Deployed"}
-                  </span>
-                </div>
-                <div className="flex justify-center gap-1">
-                  {!model.deployment ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-red-400 ml-6"
-                      onClick={() => setModelToDelete(model)}
+            ) : (
+              filteredModels.map((model) => (
+                <div
+                  key={model.id}
+                  className="grid grid-cols-[1.5fr_1fr_1fr_8rem_6rem] items-center gap-0 p-4 rounded-lg bg-gray-900/30 border border-gray-800/60 hover:border-gray-700/60 transition-colors"
+                >
+                  <div className="truncate min-w-0 font-medium text-gray-200">
+                    {model.name.toUpperCase()}
+                  </div>
+                  <div className="truncate min-w-0">
+                    {formatModelType(model.modelType)}
+                  </div>
+                  <div className="truncate min-w-0">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">
+                      {model.deployment?.gpuType || 'Not specified'}
+                    </span>
+                  </div>
+                  <div>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        model.deployment
+                          ? "bg-green-500/10 text-green-400"
+                          : "bg-gray-500/10 text-gray-400"
+                      }`}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-700 cursor-not-allowed ml-6"
-                      disabled
-                      title="Cannot delete a deployed model"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                      {model.deployment ? "Deployed" : "Not Deployed"}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    {!model.deployment ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-400 hover:text-red-400 ml-6"
+                        onClick={() => setModelToDelete(model)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-700 cursor-not-allowed ml-6"
+                        disabled
+                        title="Cannot delete a deployed model"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </Card>

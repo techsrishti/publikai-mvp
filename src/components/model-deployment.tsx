@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { formatRelativeTime, getFormattedDeploymentUrl } from "@/lib/utils"
+import { deployModel } from "@/app/actions/model-deployment"
+import { getDeployments } from "@/app/actions/deployments"
+import { createModelScript } from "@/app/actions/model-scripts"
+import { getModels, getModelById, updateModelWithScript } from "@/app/actions/models"
+import { DeploymentStatus } from "@prisma/client"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -21,7 +26,8 @@ interface Model {
   tags: string[]
   revision?: string | null
   parameters: number
-  createdAt: string
+  createdAt: Date
+  updatedAt: Date
   modelName?: string
   organizationName?: string
   userModelName?: string
@@ -38,16 +44,35 @@ interface ModelScript {
 interface Deployment {
   id: string
   modelId: string
-  status: string
+  status: DeploymentStatus
   deploymentUrl?: string | null
   apiKey?: string | null
   gpuType?: string | null
   deploymentName?: string | null
   modelName?: string | null
   modelRevision?: string | null
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
   model: Model
+}
+
+// Helper function to convert Date to string
+function convertDateToString(date: Date): string {
+  return date.toISOString()
+}
+
+// Helper function to convert server response to our interface types
+function convertServerResponse(response: any): Deployment[] {
+  return response.map((item: any) => ({
+    ...item,
+    createdAt: item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt),
+    updatedAt: item.updatedAt instanceof Date ? item.updatedAt : new Date(item.updatedAt),
+    model: {
+      ...item.model,
+      createdAt: item.model.createdAt instanceof Date ? item.model.createdAt : new Date(item.model.createdAt),
+      updatedAt: item.model.updatedAt instanceof Date ? item.model.updatedAt : new Date(item.model.updatedAt)
+    }
+  }))
 }
 
 export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
@@ -68,12 +93,8 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      const response = await fetch("/api/deployment", { cache: 'no-store' })
-      if (!response.ok) {
-        throw new Error("Failed to fetch deployments")
-      }
-      const data = await response.json()
-      setDeployments(data.deployments || [])
+      const { deployments: fetchedDeployments } = await getDeployments()
+      setDeployments(convertServerResponse(fetchedDeployments || []))
     } catch (error) {
       console.error("Error refreshing deployments:", error)
       addNotification("error", "Failed to refresh deployments")
@@ -83,204 +104,153 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   }
 
   useEffect(() => {
-    // Fetch models with full details including script
-    fetch("/api/models", { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => setModels(data.models || []))
-      .finally(() => setLoadingModels(false))
+    const fetchData = async () => {
+      try {
+        // Fetch models using server action
+        const { models: fetchedModels, error: modelsError } = await getModels()
+        if (modelsError) {
+          throw new Error(modelsError)
+        }
+        setModels(fetchedModels || [])
 
-    // Fetch deployments in parallel
-    fetch("/api/deployment", { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => setDeployments(data.deployments || []))
-      .catch(error => {
-        console.error("Error fetching deployments:", error)
+        // Fetch deployments using server action
+        const { deployments: fetchedDeployments } = await getDeployments()
+        setDeployments(convertServerResponse(fetchedDeployments || []))
+      } catch (error) {
+        console.error("Error fetching data:", error)
         setDeployments([])
-      })
+      } finally {
+        setLoadingModels(false)
+      }
+    }
+
+    fetchData()
   }, [])
 
   const handleScriptUpload = async () => {
     if (!scriptFile || !selectedModel) {
-      addNotification("error", "Please select a script file to upload.");
-      return;
+      addNotification("error", "Please select a script file to upload.")
+      return
     }
-    setIsUploadingScript(true);
+    setIsUploadingScript(true)
     try {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = async (e) => {
         try {
-          const content = e.target?.result as string;
-          const base64Content = btoa(content);
+          const content = e.target?.result as string
+          const base64Content = btoa(content)
 
-          // Create new ModelScript entry
-          const scriptRes = await fetch("/api/model-scripts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: base64Content,
-              modelType: "user-defined",
-            }),
-          });
+          // Create new ModelScript entry using server action
+          const scriptResult = await createModelScript(base64Content, "user-defined")
 
-          if (!scriptRes.ok) {
-            throw new Error("Failed to create script entry");
+          if (!scriptResult.success) {
+            throw new Error("Failed to create script entry")
           }
 
-          const scriptData = await scriptRes.json();
-
-          // Update model with script reference and set modelType to 'user-defined'
-          const modelRes = await fetch(`/api/models/${selectedModel}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scriptId: scriptData.script.id,
-              modelType: "user-defined",
-            }),
-          });
-
-          if (!modelRes.ok) {
-            throw new Error("Failed to update model with script reference");
+          // Update model with script reference using server action
+          const { model, error: updateError } = await updateModelWithScript(selectedModel, scriptResult.script.id)
+          if (updateError) {
+            throw new Error(updateError)
           }
 
-          // Refresh models to get updated data
-          const updatedModelsRes = await fetch("/api/models", { 
-            cache: 'no-store',
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
-            }
-          });
-          const updatedModelsData = await updatedModelsRes.json();
-          setModels(updatedModelsData.models || []);
+          // Refresh models list
+          const { models: fetchedModels, error: modelsError } = await getModels()
+          if (modelsError) {
+            throw new Error(modelsError)
+          }
+          setModels(fetchedModels || [])
 
-          setScriptFile(null);
-          addNotification("success", "Script uploaded successfully!");
+          // Clear the script file input
+          setScriptFile(null)
+          const fileInput = document.getElementById('script-upload-input') as HTMLInputElement
+          if (fileInput) {
+            fileInput.value = ''
+          }
+          addNotification("success", "Script uploaded successfully!")
         } catch (error) {
-          console.error("Error uploading script:", error);
-          addNotification("error", "Failed to upload script.");
+          console.error("Error uploading script:", error)
+          addNotification("error", "Failed to upload script.")
         } finally {
-          setIsUploadingScript(false);
+          setIsUploadingScript(false)
         }
-      };
-      reader.readAsText(scriptFile);
+      }
+      reader.readAsText(scriptFile)
     } catch (error) {
-      setIsUploadingScript(false);
-      addNotification("error", "Failed to upload script."+error);
+      setIsUploadingScript(false)
+      addNotification("error", "Failed to upload script: " + error)
     }
-  };
+  }
 
   const handleModelSelect = async (modelId: string) => {
-    setSelectedModel(modelId);
+    setSelectedModel(modelId)
     try {
-      const res = await fetch(`/api/models/${modelId}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      if (!res.ok) throw new Error("Failed to fetch model details");
-      const { model } = await res.json();
+      const { model, error } = await getModelById(modelId)
+      if (error) {
+        throw new Error(error)
+      }
       if (model?.modelType === "other" && !model.scriptId) {
-        setShowScriptUpload(true);
-        addNotification("info", "Please upload a script for this model type.");
+        setShowScriptUpload(true)
+        addNotification("info", "Please upload a script for this model type.")
       } else {
-        setShowScriptUpload(false);
+        setShowScriptUpload(false)
       }
     } catch (error) {
-      setShowScriptUpload(false);
-      addNotification("error", "Failed to fetch model details. " + error);
+      setShowScriptUpload(false)
+      addNotification("error", "Failed to fetch model details. " + error)
     }
-  };
+  }
 
   const handleDeploy = async () => {
     if (!selectedModel) {
-      addNotification("error", "Please select a model to deploy.");
-      return;
+      addNotification("error", "Please select a model to deploy.")
+      return
     }
 
-    setIsDeploying(true);
-    addNotification("info", "Starting deployment process...");
+    setIsDeploying(true)
+    addNotification("info", "Starting deployment process...")
     try {
-      // Fetch fresh model data
-      const freshModelRes = await fetch(`/api/models/${selectedModel}`, { 
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (!freshModelRes.ok) {
-        throw new Error("Failed to fetch fresh model data");
+      // Fetch fresh model data using server action
+      const { model, error: modelError } = await getModelById(selectedModel)
+      if (modelError) {
+        throw new Error(modelError)
       }
-      
-      const freshModelData = await freshModelRes.json();
-      const model = freshModelData.model;
 
       if (!model) {
-        addNotification("error", "Model not found.");
-        return;
+        addNotification("error", "Model not found.")
+        return
       }
 
       // Check if model type is "other" or has no script
       if ((model.modelType === "other" || !model.scriptId) && !model.script) {
-        setShowScriptUpload(true);
-        addNotification("error", "A custom script is required for this model type. Please upload a script first.");
-        setIsDeploying(false);
-        return;
+        setShowScriptUpload(true)
+        addNotification("error", "A custom script is required for this model type. Please upload a script first.")
+        setIsDeploying(false)
+        return
       }
 
-      // Create JSON data with model details
-      const modelData = {
-        modelId: selectedModel,
-        status: "NOTDEPLOYED",
-        modelUniqueName: model.name,
-        gpuType: "default"
-      };
-
-      // Call the unified endpoint
-      const res = await fetch("/api/model-deployment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(modelData)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Failed to parse error response' }));
-        console.error("Deployment API error:", errorData);
-        throw new Error(
-          `Deployment failed: ${errorData.message || errorData.error || errorData.details?.error || `Status: ${errorData.status || res.status}`}`
-        );
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        addNotification("success", "Model deployment initiated!");
+      // Deploy the model using server action
+      const result = await deployModel(selectedModel, "default")
+      
+      if (result.success) {
+        addNotification("success", "Model deployment initiated!")
         // Update deployments by fetching the latest data
-        const updatedDeploymentsRes = await fetch("/api/deployment", { cache: 'no-store' });
-        if (!updatedDeploymentsRes.ok) {
-          throw new Error("Failed to fetch updated deployments");
-        }
-        const updatedDeploymentsData = await updatedDeploymentsRes.json();
-        setDeployments(updatedDeploymentsData.deployments || []);
+        const { deployments: fetchedDeployments } = await getDeployments()
+        setDeployments(convertServerResponse(fetchedDeployments || []))
         
         // If we have an API key, show it to the user
-        if (data.deployment?.apiKey) {
-          addNotification("success", `Deployment successful! API Key: ${data.deployment.apiKey}`);
+        if (result.deployment?.apiKey) {
+          addNotification("success", `Deployment successful! API Key: ${result.deployment.apiKey}`)
         }
       } else {
-        addNotification("error", data.error || "Failed to deploy model.");
+        addNotification("error", "Failed to deploy model.")
       }
     } catch (error) {
-      console.error("Deployment error:", error);
-      addNotification("error", error instanceof Error ? error.message : "Deployment failed.");
+      console.error("Deployment error:", error)
+      addNotification("error", error instanceof Error ? error.message : "Deployment failed.")
     } finally {
-      setIsDeploying(false);
+      setIsDeploying(false)
     }
-  };
+  }
 
   const handleCopy = async (text: string, id: string) => {
     try {
