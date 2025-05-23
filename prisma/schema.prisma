@@ -38,6 +38,34 @@ model User {
   creator   Creator?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  UserSubscription UserSubscription[]
+}
+
+model UserSubscription { 
+  id        String    @id @default(cuid())
+  userId    String    
+  user      User      @relation(fields: [userId], references: [id])
+  modelId   String    
+  model     Model     @relation(fields: [modelId], references: [id])
+  amount    Decimal   
+  startDate DateTime
+  endDate   DateTime?
+  lastPaymentDate  DateTime
+  nextPaymentDate  DateTime?
+  status    String
+  razorpayPlanId  String  
+  razorpaySubscriptionId  String
+  UserSubscriptionPayments UserSubscriptionPayment[]
+  @@unique([userId, modelId])
+}
+
+model UserSubscriptionPayment { 
+  id         String   @id @default(cuid())
+  subscriptionId    String  
+  UserSubscription  UserSubscription @relation(fields: [subscriptionId], references: [id])
+  paymentDate   DateTime
+  status      String
 }
 
 model Creator {
@@ -65,11 +93,13 @@ model Creator {
 
 model CreatorPayout { 
   id                String  @id @default(cuid())
-  creatorId         String  @unique
+  creatorId         String  
   Creator           Creator @relation(fields: [creatorId], references: [id])  
   payoutDate        DateTime
   paidAmount        Decimal
-  razorpayTxnId     String  @unique
+  razorpayPayoutId  String  @unique
+  referenceNumber   String  @unique
+  idempotencyKey    String  @unique
   status            String        
 }
 
@@ -84,4 +114,6 @@ model Model {
   tags        String[]   // Tags as array of strings
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  UserSubscription  UserSubscription[]
 }
