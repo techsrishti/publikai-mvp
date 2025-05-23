@@ -124,7 +124,6 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           }
 
           const scriptData = await scriptRes.json();
-          console.log('Created script:', scriptData); // Debug log
 
           // Update model with script reference and set modelType to 'user-defined'
           const modelRes = await fetch(`/api/models/${selectedModel}`, {
@@ -140,9 +139,6 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
             throw new Error("Failed to update model with script reference");
           }
 
-          const updatedModel = await modelRes.json();
-          console.log('Updated model:', updatedModel); // Debug log
-
           // Refresh models to get updated data
           const updatedModelsRes = await fetch("/api/models", { 
             cache: 'no-store',
@@ -152,7 +148,6 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
             }
           });
           const updatedModelsData = await updatedModelsRes.json();
-          console.log('Refreshed models:', updatedModelsData); // Debug log
           setModels(updatedModelsData.models || []);
 
           setScriptFile(null);
@@ -183,7 +178,6 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       });
       if (!res.ok) throw new Error("Failed to fetch model details");
       const { model } = await res.json();
-      console.log('Selected model (fresh):', model); // Debug log
       if (model?.modelType === "other" && !model.scriptId) {
         setShowScriptUpload(true);
         addNotification("info", "Please upload a script for this model type.");
@@ -202,93 +196,72 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       return;
     }
 
-    // Fetch fresh model data
-    const freshModelRes = await fetch(`/api/models/${selectedModel}`, { 
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    });
-    if (!freshModelRes.ok) {
-      throw new Error("Failed to fetch fresh model data");
-    }
-    const freshModelData = await freshModelRes.json();
-    const model = freshModelData.model;
-    console.log('Fresh model data for deployment:', model); // Debug log
-
-    if (!model) {
-      addNotification("error", "Model not found.");
-      return;
-    }
-
-    // Check if model type is "other" and has no script
-    if (model.modelType === "other" && !model.scriptId) {
-      console.log('Model needs script:', { modelType: model.modelType, scriptId: model.scriptId }); // Debug log
-      setShowScriptUpload(true);
-      addNotification("info", "Please upload a script for this model type.");
-      return;
-    }
-
     setIsDeploying(true);
     addNotification("info", "Starting deployment process...");
     try {
-      const scriptContent = model.script?.content || null;
-      console.log('Script content for deployment:', scriptContent ? 'Present' : 'Missing'); // Debug log
-
-      // Prepare payload for backend deploy
-      const deployPayload = {
-        model_name: model.url ? model.url.split("/")[4] : "",
-        model_revision: model.revision || "main",
-        org_name: model.organizationName || (model.url ? model.url.split("/")[3] : ""),
-        model_unique_name: model.userModelName || model.name,
-        param_count: model.parameters,
-        custom_script: scriptContent,
-      };
-      console.log("Deploy payload:", deployPayload)
-      if (!deployPayload.model_name || !deployPayload.model_unique_name || !deployPayload.org_name || !deployPayload.param_count) {
-        addNotification("error", "Model details are incomplete for deployment.")
-        setIsDeploying(false)
-        return
-      }
-      const res = await fetch("http://127.0.0.1:8000/deploy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(deployPayload),
-      })
-      const data = await res.json()
-      if (data.status === "success") {
-        // POST to /api/deployment
-        const depRes = await fetch("/api/deployment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            modelId: model.id,
-            status: data.status,
-            deploymentUrl: data.deployment_url,
-            modelUniqueName: deployPayload.model_unique_name,
-            gpuType: data.gpu_type,
-          }),
-        })
-        const depData = await depRes.json()
-        if (depData.success) {
-          addNotification("success", "Model deployed successfully!")
-          // Update deployments by fetching the latest data
-          const updatedDeploymentsRes = await fetch("/api/deployment")
-          const updatedDeploymentsData = await updatedDeploymentsRes.json()
-          setDeployments(updatedDeploymentsData.deployments || [])
-        } else {
-          addNotification("error", depData.error || "Failed to save deployment.")
+      // Fetch fresh model data
+      const freshModelRes = await fetch(`/api/models/${selectedModel}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
+      });
+      if (!freshModelRes.ok) {
+        throw new Error("Failed to fetch fresh model data");
+      }
+      const freshModelData = await freshModelRes.json();
+      const model = freshModelData.model;
+
+      if (!model) {
+        addNotification("error", "Model not found.");
+        return;
+      }
+
+      // Check if model type is "other" or has no script
+      if ((model.modelType === "other" || !model.scriptId) && !model.script) {
+        setShowScriptUpload(true);
+        addNotification("error", "A custom script is required for this model type. Please upload a script first.");
+        setIsDeploying(false);
+        return;
+      }
+
+      // Create FormData with model details
+      const formData = new FormData();
+      formData.append("name", model.name);
+      formData.append("description", model.description);
+      formData.append("modelType", model.modelType);
+      formData.append("license", model.license);
+      formData.append("sourceType", model.sourceType);
+      formData.append("url", model.url || "");
+      formData.append("tags", model.tags.join(","));
+      formData.append("revision", model.revision || "");
+      formData.append("parameters", model.parameters.toString());
+      formData.append("subscriptionPrice", model.subscriptionPrice.toString());
+
+      // Call the unified endpoint
+      const res = await fetch("/api/model-deployment", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addNotification("success", "Model created and deployment initiated!");
+        // Update deployments by fetching the latest data
+        const updatedDeploymentsRes = await fetch("/api/deployment");
+        const updatedDeploymentsData = await updatedDeploymentsRes.json();
+        setDeployments(updatedDeploymentsData.deployments || []);
       } else {
-        addNotification("error", data.message || "Deployment failed.")
+        addNotification("error", data.error || "Failed to create and deploy model.");
       }
     } catch (error) {
-      addNotification("error", "Deployment failed." + error)
+      console.error("Deployment error:", error);
+      addNotification("error", "Deployment failed.");
     } finally {
-      setIsDeploying(false)
+      setIsDeploying(false);
     }
-  }
+  };
 
   const handleCopy = async (text: string, id: string) => {
     try {

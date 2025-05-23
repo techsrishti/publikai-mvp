@@ -39,13 +39,10 @@ export async function GET() {
     });
 
     if (!creator) {
-      return NextResponse.json({
-        totalModels: 0,
-        activeModels: 0,
-        pendingModels: 0,
-        modelEarnings: [],
-        modelPerformance: []
-      });
+      return NextResponse.json(
+        { error: 'Creator profile not found' },
+        { status: 403 }
+      );
     }
 
     // Get all models with their deployment status and API calls

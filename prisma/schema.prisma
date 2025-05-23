@@ -58,6 +58,7 @@ model Creator {
   projectDescription String
   portfolioUrl       String?
   githubUrl          String?
+  models             Model[]  @relation("CreatorToModels")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -76,6 +77,8 @@ model Model {
   subscriptionPrice Float // Monthly subscription price in USD
   script      ModelScript? @relation(fields: [scriptId], references: [id])
   scriptId    String?      @unique
+  creatorId   String
+  creator     Creator      @relation("CreatorToModels", fields: [creatorId], references: [id])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   Deployment  Deployment[]

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
 
 // An optional `summary` query parameter lets the client request a smaller payload (id, name, url, revision, parameters)
 // This is useful in the creator-dashboard deployment tab where only these fields are needed and we want the
@@ -45,6 +46,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await req.formData()
     const name = formData.get("name") as string
     const description = formData.get("description") as string
@@ -57,6 +63,19 @@ export async function POST(req: Request) {
     const parameters = parseFloat(formData.get("parameters") as string)
     const subscriptionPrice = parseFloat(formData.get("subscriptionPrice") as string)
 
+    // Get the user and creator information
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      include: { creator: true }
+    });
+
+    if (!user || !user.creator) {
+      return NextResponse.json(
+        { error: 'Creator profile not found' },
+        { status: 403 }
+      );
+    }
+
     // Find the corresponding ModelScript for this model type, but only if it's not "other"
     let modelScript = null;
     if (modelType !== "other") {
@@ -65,7 +84,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Create the model with the script reference
+    // Create the model with the script reference and creator relationship
     const model = await prisma.model.create({
       data: {
         name,
@@ -79,6 +98,7 @@ export async function POST(req: Request) {
         parameters,
         subscriptionPrice,
         script: modelScript ? { connect: { id: modelScript.id } } : undefined,
+        creatorId: user.creator.id
       },
     })
 

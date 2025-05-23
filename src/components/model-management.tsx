@@ -104,7 +104,7 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
       })
       const data = await res.json()
       if (data.success) {
-        addNotification("success", "Model and all its deployments deleted.")
+        addNotification("success", "Model is deleted.")
         setModels(models.filter(model => model.id !== modelId))
         setModelToDelete(null)
       } else {

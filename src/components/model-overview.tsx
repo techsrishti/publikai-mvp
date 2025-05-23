@@ -48,7 +48,11 @@ interface ModelMetrics {
   modelPerformance: ModelPerformance[];
 }
 
-export function ModelOverview() {
+interface ModelOverviewProps {
+  addNotification: (type: "success" | "error" | "info", message: string) => void;
+}
+
+export function ModelOverview({ addNotification }: ModelOverviewProps) {
   const [metrics, setMetrics] = useState<ModelMetrics>({
     totalModels: 0,
     activeModels: 0,
@@ -81,10 +85,28 @@ export function ModelOverview() {
     fetchMetrics();
   }, []);
 
-  const handleBankDetailsSubmit = (e: React.FormEvent) => {
+  const handleBankDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically make an API call to update the bank details
-    console.log("Updated bank details:", bankDetails)
+    try {
+      const response = await fetch('/api/creator/bank-details', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bankDetails)
+      });
+
+      if (response.ok) {
+        const updatedBankDetails = await response.json();
+        setBankDetails(updatedBankDetails);
+        addNotification("success", "Bank details updated successfully!");
+      } else {
+        addNotification("error", "Failed to update bank details.");
+      }
+    } catch (error) {
+      console.error("Error updating bank details:", error);
+      addNotification("error", "An error occurred while updating bank details.");
+    }
   }
 
   const handleRefresh = () => {

@@ -75,11 +75,14 @@ export async function GET() {
   try {
     // Return only the latest deployment per model
     const deployments = await prisma.deployment.findMany({
-      distinct: ['modelId'],
-      orderBy: { updatedAt: 'desc' },
-      include: { model: true },
+      include: {
+        model: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
-    console.log(deployments)
+
     return NextResponse.json({ deployments });
   } catch (e: unknown) {
     console.error('Error getting deployment:', e);

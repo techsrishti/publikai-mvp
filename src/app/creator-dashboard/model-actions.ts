@@ -6,6 +6,11 @@ import { SourceType, DeploymentStatus } from '@prisma/client';
 
 export async function uploadModelAction(formData: FormData) {
   try {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
     const modelType = formData.get('modelType') as string;
@@ -18,6 +23,16 @@ export async function uploadModelAction(formData: FormData) {
     const file = formData.get('file') as File | null;
     const subscriptionPrice = parseFloat(formData.get('subscriptionPrice') as string);
     
+    // Get the user and creator information
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      include: { creator: true }
+    });
+
+    if (!user || !user.creator) {
+      return { success: false, error: 'Creator profile not found', status: 403 };
+    }
+
     // Optional validation for tags (specific to creator-dashboard)
     if (tags.length === 0) {
       return { success: false, error: 'At least one tag is required.' };
@@ -66,7 +81,7 @@ export async function uploadModelAction(formData: FormData) {
       fileUrl = 'pending-upload-placeholder';
     }
 
-    // Create model in database - creator dashboard specific version
+    // Create model in database with creator relationship
     const model = await prisma.model.create({
       data: {
         name,
@@ -80,6 +95,7 @@ export async function uploadModelAction(formData: FormData) {
         revision,
         subscriptionPrice,
         script: modelScript ? { connect: { id: modelScript.id } } : undefined,
+        creatorId: user.creator.id
       },
     });
     
