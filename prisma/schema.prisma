@@ -76,7 +76,7 @@ model Model {
   parameters  Float // Number of parameters in billions
   subscriptionPrice Float // Monthly subscription price in USD
   script      ModelScript? @relation(fields: [scriptId], references: [id])
-  scriptId    String?      @unique
+  scriptId    String?
   creatorId   String
   creator     Creator      @relation("CreatorToModels", fields: [creatorId], references: [id])
   createdAt   DateTime     @default(now())
@@ -89,7 +89,7 @@ model ModelScript {
   id          String   @id @default(cuid())
   content     String   // Base64 encoded script content
   modelType   String   // Type of model this script is for
-  model       Model?
+  models      Model[]  // Changed to one-to-many relation
 }
 
 model ModelApiCall {

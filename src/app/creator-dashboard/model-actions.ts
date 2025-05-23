@@ -22,6 +22,8 @@ export async function uploadModelAction(formData: FormData) {
     const revision = formData.get('revision') as string;
     const file = formData.get('file') as File | null;
     const subscriptionPrice = parseFloat(formData.get('subscriptionPrice') as string);
+    const hfOrganizationName = formData.get('hfOrganizationName') as string;
+    const hfModelName = formData.get('hfModelName') as string;
     
     // Get the user and creator information
     const user = await prisma.user.findUnique({
@@ -44,9 +46,33 @@ export async function uploadModelAction(formData: FormData) {
       return { success: false, error: 'Invalid source type' };
     }
 
-    // For URL source type, url must be present
-    if (normalizedSourceType === SourceType.URL && !url) {
-      return { success: false, error: 'URL is required for URL source type.' };
+    // For URL source type, validate Hugging Face model existence
+    if (normalizedSourceType === SourceType.URL) {
+      if (!url) {
+        return { success: false, error: 'URL is required for URL source type.' };
+      }
+
+      // Check if model exists on Hugging Face
+      try {
+        const checkPayload = {
+          model_name: hfModelName,
+          org_name: hfOrganizationName,
+          model_revision: revision || "main",
+        };
+        
+        const checkRes = await fetch("http://127.0.0.1:8000/check_if_model_exists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(checkPayload),
+        });
+        
+        const exists = await checkRes.json();
+        if (!exists) {
+          return { success: false, error: 'Model does not exist on Hugging Face with the given details.' };
+        }
+      } catch (error) {
+        return { success: false, error: 'Failed to verify model existence on Hugging Face.' };
+      }
     }
 
     // Validate subscription price
@@ -94,9 +120,9 @@ export async function uploadModelAction(formData: FormData) {
         parameters,
         revision,
         subscriptionPrice,
-        script: modelScript ? { connect: { id: modelScript.id } } : undefined,
+        scriptId: modelScript?.id,
         creatorId: user.creator.id
-      },
+      } as any, // Using type assertion as a temporary fix
     });
     
     return { success: true, model };

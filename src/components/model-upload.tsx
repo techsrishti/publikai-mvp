@@ -43,10 +43,11 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     subscriptionPrice: "",
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
+  const urlBtnRef = useRef<HTMLButtonElement>(null)
   const uploadFormRef = useRef<HTMLFormElement>(null)
   const urlFormRef = useRef<HTMLFormElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [isHovering, setIsHovering] = useState(false)
+  const [hoverStates, setHoverStates] = useState({ upload: false, url: false })
   const [loadingUpload, setLoadingUpload] = useState(false)
   const [loadingUrl, setLoadingUrl] = useState(false)
 
@@ -196,28 +197,9 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       addNotification("error", "Please fill all required fields including subscription price.")
       return
     }
-    // Check if model exists on backend before pushing to DB
-    const checkPayload = {
-      model_name: urlFields.modelName,
-      org_name: urlFields.organizationName,
-      model_revision: urlFields.revision || "main",
-    };
-    try {
-      const checkRes = await fetch("http://127.0.0.1:8000/check_if_model_exists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(checkPayload),
-      });
-      const exists = await checkRes.json();
-      if (!exists) {
-        addNotification("error", "Model does not exist on Hugging Face with the given details.");
-        return;
-      }
-    } catch (error) {
-      addNotification("error", "Failed to check model existence." + error);
-      return;
-    }
+    
     setLoadingUrl(true)
+    
     try {
       const fullUrl = urlFields.organizationName && urlFields.modelName
         ? `https://huggingface.co/${urlFields.organizationName}/${urlFields.modelName}`
@@ -227,8 +209,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("hfModelName", urlFields.modelName)
       formData.set("description", urlFields.description)
       formData.set("modelName", urlFields.modelName)
-      formData.set("name", urlFields.userModelName) // Ensure 'name' is set for backend compatibility
-      formData.set("modelType", urlFields.modelType) // Ensure 'modelType' is set for backend compatibility
+      formData.set("name", urlFields.userModelName)
+      formData.set("modelType", urlFields.modelType)
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
       formData.set("parameters", urlFields.parameters)
@@ -236,20 +218,10 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("sourceType", "URL")
       formData.set("revision", urlFields.revision || "main")
       
-      console.log('Submitting URL model with data:', {
-        name: urlFields.userModelName,
-        description: urlFields.description,
-        modelType: urlFields.modelType,
-        license: urlFields.license,
-        tags: urlFields.tags,
-        parameters: urlFields.parameters,
-        subscriptionPrice: urlFields.subscriptionPrice,
-        url: fullUrl
-      })
-      
       const result = await uploadModelAction(formData)
+      
       if (result.success) {
-        addNotification("success", "Model URL registered successfully!")
+        addNotification("success", "Model added successfully!")
         // Reset form and state
         urlFormRef.current?.reset()
         setUrlFields({
@@ -266,25 +238,29 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
           subscriptionPrice: "",
         })
       } else {
-        addNotification("error", result.error || "Failed to register model URL.")
+        addNotification("error", result.error || "Failed to add model.")
       }
     } catch (error) {
-      addNotification("error", "Network error. " + error)
+      addNotification("error", "Network error.")
     } finally {
       setLoadingUrl(false)
     }
   }
 
   useEffect(() => {
-    if (uploadBtnRef.current && isHovering) {
-      const btnElement = uploadBtnRef.current
-      const glowElement = btnElement.querySelector(".glow-effect") as HTMLElement
+    const updateGlowEffect = (isHovering: boolean, btnRef: React.RefObject<HTMLButtonElement>) => {
+      if (!isHovering || !btnRef.current) return
+      
+      const glowElement = btnRef.current.querySelector(".glow-effect") as HTMLElement
       if (glowElement) {
         glowElement.style.left = `${mousePosition.x}px`
         glowElement.style.top = `${mousePosition.y}px`
       }
     }
-  }, [mousePosition, isHovering])
+
+    updateGlowEffect(hoverStates.upload, uploadBtnRef)
+    updateGlowEffect(hoverStates.url, urlBtnRef)
+  }, [mousePosition, hoverStates])
 
   return (
     <div className="space-y-4">
@@ -300,12 +276,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="url">
-              <form ref={urlFormRef} className="space-y-5" action={async (formData) => {
-                if (!formData.get("name")) {
-                  formData.set("name", formData.get("userModelName") || "")
-                }
-                await handleUrlAction(formData)
-              }}>
+              <form ref={urlFormRef} className="space-y-5" action={handleUrlAction}>
                 <input type="hidden" name="name" value={urlFields.userModelName} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
@@ -455,13 +426,27 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                 </div>
                 <div className="pt-2">
                   <Button
+                    ref={urlBtnRef}
                     type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
+                    onMouseMove={handleMouseMove}
+                    onMouseEnter={() => setHoverStates(prev => ({ ...prev, url: true }))}
+                    onMouseLeave={() => setHoverStates(prev => ({ ...prev, url: false }))}
                     disabled={loadingUrl}
                   >
                     <span className="relative z-10">
                       {loadingUrl ? "Registering..." : "Register Model URL"} <ArrowRight className="ml-2 h-4 w-4 inline" />
                     </span>
+                    <span
+                      className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
+                      style={{
+                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
+                        transform: "translate(-50%, -50%)",
+                        pointerEvents: "none",
+                        left: `${mousePosition.x}px`,
+                        top: `${mousePosition.y}px`,
+                      }}
+                    />
                   </Button>
                 </div>
               </form>
@@ -612,8 +597,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
                     onMouseMove={handleMouseMove}
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
+                    onMouseEnter={() => setHoverStates(prev => ({ ...prev, upload: true }))}
+                    onMouseLeave={() => setHoverStates(prev => ({ ...prev, upload: false }))}
                     disabled={loadingUpload}
                   >
                     <span className="relative z-10">
