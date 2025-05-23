@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, X } from "lucide-react"
+import { ArrowRight, X, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { uploadModelAction } from "@/app/creator-dashboard/model-actions"
 import { FileUploader } from "@/components/file-uploader"
@@ -201,14 +201,22 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     setLoadingUrl(true)
     
     try {
-      const fullUrl = urlFields.organizationName && urlFields.modelName
-        ? `https://huggingface.co/${urlFields.organizationName}/${urlFields.modelName}`
-        : ""
+      // Format the model name properly for Hugging Face
+      const organizationName = urlFields.organizationName.trim()
+      const modelName = urlFields.modelName.trim()
+      
+      if (!organizationName || !modelName) {
+        addNotification("error", "Please provide both organization name and model name.")
+        setLoadingUrl(false)
+        return
+      }
+
+      const fullUrl = `https://huggingface.co/${organizationName}/${modelName}`
       formData.set("url", fullUrl)
-      formData.set("hfOrganizationName", urlFields.organizationName)
-      formData.set("hfModelName", urlFields.modelName)
+      formData.set("hfOrganizationName", organizationName)
+      formData.set("hfModelName", modelName)
       formData.set("description", urlFields.description)
-      formData.set("modelName", urlFields.modelName)
+      formData.set("modelName", modelName)
       formData.set("name", urlFields.userModelName)
       formData.set("modelType", urlFields.modelType)
       formData.set("license", urlFields.license)
@@ -241,6 +249,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
         addNotification("error", result.error || "Failed to add model.")
       }
     } catch (error) {
+      console.error("Error in handleUrlAction:", error)
       addNotification("error", "Network error.")
     } finally {
       setLoadingUrl(false)
@@ -248,7 +257,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   }
 
   useEffect(() => {
-    const updateGlowEffect = (isHovering: boolean, btnRef: React.RefObject<HTMLButtonElement>) => {
+    const updateGlowEffect = (isHovering: boolean, btnRef: React.RefObject<HTMLButtonElement | null>) => {
       if (!isHovering || !btnRef.current) return
       
       const glowElement = btnRef.current.querySelector(".glow-effect") as HTMLElement
@@ -276,7 +285,14 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="url">
-              <form ref={urlFormRef} className="space-y-5" action={handleUrlAction}>
+              <form 
+                ref={urlFormRef} 
+                className="space-y-5" 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await handleUrlAction(new FormData(e.currentTarget));
+                }}
+              >
                 <input type="hidden" name="name" value={urlFields.userModelName} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
@@ -434,8 +450,17 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     onMouseLeave={() => setHoverStates(prev => ({ ...prev, url: false }))}
                     disabled={loadingUrl}
                   >
-                    <span className="relative z-10">
-                      {loadingUrl ? "Registering..." : "Register Model URL"} <ArrowRight className="ml-2 h-4 w-4 inline" />
+                    <span className="relative z-10 flex items-center justify-center">
+                      {loadingUrl ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 animate-spin" />
+                          Registering...
+                        </>
+                      ) : (
+                        <>
+                          Register Model URL <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </span>
                     <span
                       className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"

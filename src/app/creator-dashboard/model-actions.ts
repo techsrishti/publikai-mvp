@@ -132,11 +132,12 @@ export async function uploadModelAction(formData: FormData) {
   }
 }
 
-
 export async function getAllModels() { 
   try { 
     const { userId: clerkId } = await auth();
-    console.log(clerkId + "requested models")
+    if (!clerkId) {
+      return { success: false, error: 'Unauthorized' };
+    }
 
     const models = await prisma.model.findMany({
       select: {
@@ -249,23 +250,25 @@ export async function getActiveDeployments() {
       },
       select: {
         id: true,
+        modelId: true,
         status: true,
-        createdAt: true,
         deploymentUrl: true,
+        apiKey: true,
+        gpuType: true,
+        createdAt: true,
+        updatedAt: true,
         model: {
           select: {
             name: true,
+            modelType: true,
           }
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
       }
     });
 
     return { success: true, deployments };
   } catch (error) {
-    console.error('Error fetching deployments:', error);
-    return { success: false, error: 'Failed to fetch deployments' };
+    console.error('Error fetching active deployments:', error);
+    return { success: false, error: 'Failed to fetch active deployments' };
   }
 }

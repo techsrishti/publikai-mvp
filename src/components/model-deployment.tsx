@@ -2,8 +2,8 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Server, Loader2, Check, RefreshCw } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight } from "lucide-react"
+import { useEffect, useState, useRef } from "react"
 import { formatRelativeTime, getFormattedDeploymentUrl } from "@/lib/utils"
 
 interface ModelDeploymentProps {
@@ -61,6 +61,9 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
   const [, setShowScriptUpload] = useState(false)
   const [scriptFile, setScriptFile] = useState<File | null>(null)
   const [isUploadingScript, setIsUploadingScript] = useState(false)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [hoverStates, setHoverStates] = useState({ deploy: false })
+  const deployBtnRef = useRef<HTMLButtonElement>(null)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -207,9 +210,11 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
           'Pragma': 'no-cache'
         }
       });
+      
       if (!freshModelRes.ok) {
         throw new Error("Failed to fetch fresh model data");
       }
+      
       const freshModelData = await freshModelRes.json();
       const model = freshModelData.model;
 
@@ -226,38 +231,52 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
         return;
       }
 
-      // Create FormData with model details
-      const formData = new FormData();
-      formData.append("name", model.name);
-      formData.append("description", model.description);
-      formData.append("modelType", model.modelType);
-      formData.append("license", model.license);
-      formData.append("sourceType", model.sourceType);
-      formData.append("url", model.url || "");
-      formData.append("tags", model.tags.join(","));
-      formData.append("revision", model.revision || "");
-      formData.append("parameters", model.parameters.toString());
-      formData.append("subscriptionPrice", model.subscriptionPrice.toString());
+      // Create JSON data with model details
+      const modelData = {
+        modelId: selectedModel,
+        status: "NOTDEPLOYED",
+        modelUniqueName: model.name,
+        gpuType: "default"
+      };
 
       // Call the unified endpoint
       const res = await fetch("/api/model-deployment", {
         method: "POST",
-        body: formData
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(modelData)
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Failed to parse error response' }));
+        console.error("Deployment API error:", errorData);
+        throw new Error(
+          `Deployment failed: ${errorData.message || errorData.error || errorData.details?.error || `Status: ${errorData.status || res.status}`}`
+        );
+      }
 
       const data = await res.json();
       if (data.success) {
-        addNotification("success", "Model created and deployment initiated!");
+        addNotification("success", "Model deployment initiated!");
         // Update deployments by fetching the latest data
-        const updatedDeploymentsRes = await fetch("/api/deployment");
+        const updatedDeploymentsRes = await fetch("/api/deployment", { cache: 'no-store' });
+        if (!updatedDeploymentsRes.ok) {
+          throw new Error("Failed to fetch updated deployments");
+        }
         const updatedDeploymentsData = await updatedDeploymentsRes.json();
         setDeployments(updatedDeploymentsData.deployments || []);
+        
+        // If we have an API key, show it to the user
+        if (data.deployment?.apiKey) {
+          addNotification("success", `Deployment successful! API Key: ${data.deployment.apiKey}`);
+        }
       } else {
-        addNotification("error", data.error || "Failed to create and deploy model.");
+        addNotification("error", data.error || "Failed to deploy model.");
       }
     } catch (error) {
       console.error("Deployment error:", error);
-      addNotification("error", "Deployment failed.");
+      addNotification("error", error instanceof Error ? error.message : "Deployment failed.");
     } finally {
       setIsDeploying(false);
     }
@@ -274,6 +293,28 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       console.error('Failed to copy text:', err)
     }
   }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    })
+  }
+
+  useEffect(() => {
+    const updateGlowEffect = (isHovering: boolean, btnRef: React.RefObject<HTMLButtonElement | null>) => {
+      if (!isHovering || !btnRef.current) return
+      
+      const glowElement = btnRef.current.querySelector(".glow-effect") as HTMLElement
+      if (glowElement) {
+        glowElement.style.left = `${mousePosition.x}px`
+        glowElement.style.top = `${mousePosition.y}px`
+      }
+    }
+
+    updateGlowEffect(hoverStates.deploy, deployBtnRef)
+  }, [mousePosition, hoverStates])
 
   return (
     <div className="">
@@ -312,12 +353,36 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                 </div>
                 <div className="pt-2">
                   <Button
+                    ref={deployBtnRef}
                     onClick={handleDeploy}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
+                    onMouseMove={handleMouseMove}
+                    onMouseEnter={() => setHoverStates(prev => ({ ...prev, deploy: true }))}
+                    onMouseLeave={() => setHoverStates(prev => ({ ...prev, deploy: false }))}
                     disabled={isDeploying}
                   >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {isDeploying ? "Deploying..." : "Deploy Model"}
+                    <span className="relative z-10 flex items-center justify-center">
+                      {isDeploying ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 animate-spin" />
+                          Deploying...
+                        </>
+                      ) : (
+                        <>
+                          Deploy Model <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </span>
+                    <span
+                      className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
+                      style={{
+                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
+                        transform: "translate(-50%, -50%)",
+                        pointerEvents: "none",
+                        left: `${mousePosition.x}px`,
+                        top: `${mousePosition.y}px`,
+                      }}
+                    />
                   </Button>
                 </div>
               </div>
