@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         console.log("payout processed", payoutId);
         return NextResponse.json({ message: "Payout processed" }, { status: 200 }); 
     }
-  } else if (event === "payout.failed") { 
+  } else if (event === "payout.failed" || event === "payout.reversed") { 
     const payoutId = body.payload.payout.entity.id;
     const payoutStatus = body.payload.payout.entity.status;
 
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: "Payout already processed or failed" }, { status: 200 });
     }
 
-    if (payoutStatus === "failed") { 
+    if (payoutStatus === "failed" || payoutStatus === "reversed") { 
         await prisma.$transaction(async (tx) => { 
             await tx.creatorPayout.update({ 
                 where: { 

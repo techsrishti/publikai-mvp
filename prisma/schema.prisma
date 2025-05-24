@@ -55,18 +55,21 @@ model UserSubscription {
   nextPaymentDate  DateTime?
   status    String
   razorpayPlanId  String  
-  razorpaySubscriptionId  String
+  razorpaySubscriptionId  String  @unique
   UserSubscriptionPayments UserSubscriptionPayment[]
   @@unique([userId, modelId])
 }
 
 model UserSubscriptionPayment { 
   id         String   @id @default(cuid())
+  razorpayPaymentsId String @unique
   subscriptionId    String  
   UserSubscription  UserSubscription @relation(fields: [subscriptionId], references: [id])
   paymentDate   DateTime
   status      String
+  remainingCount   Int
 }
+
 
 model Creator {
   id                String   @id @default(cuid())
@@ -114,6 +117,8 @@ model Model {
   tags        String[]   // Tags as array of strings
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  price       Decimal
+  razorpayPlanId  String 
 
-  UserSubscription  UserSubscription[]
+  UserSubscription  UserSubscription[]  
 }
