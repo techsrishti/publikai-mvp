@@ -68,10 +68,16 @@ export async function POST(
       const responseData = await response.json();
 
       // Async logging of API call - fire and forget
-      prisma.$executeRaw`
-        INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
-        VALUES (gen_random_uuid(), ${deployment.modelId}, ${responseTime}, ${response.status}, ${response.ok ? null : responseData.error || 'Unknown error'}, NOW())
-      `.catch(console.error);
+      prisma.modelApiCall
+        .create({
+          data: {
+            modelId: deployment.modelId,
+            latency: responseTime,
+            statusCode: response.status,
+            errorMessage: response.ok ? null : (responseData.error ?? 'Unknown error'),
+          },
+        })
+        .catch(console.error);
 
       return NextResponse.json({
         response: responseData,
@@ -82,10 +88,16 @@ export async function POST(
       const responseTime = Date.now() - startTime;
       
       // Async logging of failed API call - fire and forget
-      prisma.$executeRaw`
-        INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
-        VALUES (gen_random_uuid(), ${deployment.modelId}, ${responseTime}, 500, ${error instanceof Error ? error.message : 'Unknown error'}, NOW())
-      `.catch(console.error);
+      prisma.modelApiCall
+        .create({
+          data: {
+            modelId: deployment.modelId,
+            latency: responseTime,
+            statusCode: 500,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          },
+        })
+        .catch(console.error);
 
       if (error instanceof Error && error.name === 'AbortError') {
         return NextResponse.json({
@@ -108,4 +120,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

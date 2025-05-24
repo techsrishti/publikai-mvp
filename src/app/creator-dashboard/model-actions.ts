@@ -8,20 +8,24 @@ import { randomBytes as nodeRandomBytes } from 'crypto';
 const ELEVATED_ROLE = 'ELEVATED_USER' as const;  // expected creator role
 
 // ---------------------------------------------------------------------------
-// helper: returns the creator only if the user owns one AND has ELEVATED_USER
+// helper: returns the Creator record only if:
+//   • user exists in the DB,
+//   • user has a linked creator profile, and
+//   • user.role === ELEVATED_USER
 async function getLoggedInCreator() {
   const { userId: clerkId } = await auth();
   if (!clerkId) return null;
 
   const user = await prisma.user.findUnique({
     where: { clerkId },
-    select: { role: true, creator: true },          // fetch role as well
+    select: { role: true, creator: true },
   });
 
-  if (!user || user.role !== ELEVATED_ROLE) {       // <- role guard
-    return null;
-  }
-  return user.creator;                              // may still be null
+  if (!user) return null;                // user not in DB
+  if (user.role !== ELEVATED_ROLE) return null; // wrong role
+  if (!user.creator) return null;        // not a creator
+
+  return user.creator;
 }
 // ---------------------------------------------------------------------------
 
@@ -65,19 +69,24 @@ export async function uploadModelAction(formData: FormData) {
         return { success: false, error: 'URL is required for URL source type.' };
       }
 
-      // Check if model exists on Hugging Face
+      // Check if model exists on Hugging Face -------------------------------
       try {
         const checkPayload = {
           model_name: hfModelName,
           org_name: hfOrganizationName,
           model_revision: revision || "main",
         };
-        
-        const checkRes = await fetch("http://127.0.0.1:8000/check_if_model_exists", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(checkPayload),
-        });
+
+        const registryUrl =
+          process.env.DEPLOYMENT_API_URL || "http://localhost:8000"; // <- env fallback
+        const checkRes = await fetch(
+          `${registryUrl}/check_if_model_exists`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(checkPayload),
+          }
+        );
         
         const exists = await checkRes.json();
         if (!exists) {
@@ -197,7 +206,14 @@ export async function deleteModel(modelId: string) {
   const creator = await getLoggedInCreator();
   if (!creator) return { success: false, error: 'Creator profile not found' };
 
-  const hasDeployment = await prisma.deployment.findFirst({ where: { modelId } });
+  // ensure we only block deletion if *this creator* has deployments
+  const hasDeployment = await prisma.deployment.findFirst({
+    where: {
+      modelId,
+      model: { creatorId: creator.id },
+    },
+  });
+
   if (hasDeployment) {
     return { success: false, error: 'Cannot delete a model that has deployments' };
   }
@@ -290,8 +306,12 @@ export async function deployModel(modelId: string, gpuType: string = 'default') 
 // 5.  Deployment records CRUD ------------------------------------------------
 export async function getDeployments() {
   "use server";
+  const creator = await getLoggedInCreator();
+  if (!creator) return { success: false, error: 'Creator profile not found' };
+
   return {
     deployments: await prisma.deployment.findMany({
+      where: { model: { creatorId: creator.id } }, // <- scoped to creator
       include: { model: true },
       orderBy: { createdAt: 'desc' },
     }),
