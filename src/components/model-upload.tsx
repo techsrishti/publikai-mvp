@@ -273,7 +273,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg w-[75%] max-w-5xl mx-auto">
+      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg w-[90%] max-w-7xl mx-auto">
         <CardContent className="p-6">
           <Tabs defaultValue="url" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-blue-900/30 rounded-lg overflow-hidden">
