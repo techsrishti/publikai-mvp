@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, X, RefreshCw } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
-import { getModels } from "@/app/actions/models"
-import { getDeployments } from "@/app/actions/deployments"
-import { deleteModel } from "@/app/actions/models"
+import { getModels, getDeployments, deleteModel } from "@/app/creator-dashboard/model-actions"
 import {
   AlertDialog,
   AlertDialogAction,

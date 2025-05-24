@@ -5,10 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { formatRelativeTime, getFormattedDeploymentUrl } from "@/lib/utils"
-import { deployModel } from "@/app/actions/model-deployment"
-import { getDeployments } from "@/app/actions/deployments"
-import { createModelScript } from "@/app/actions/model-scripts"
-import { getModels, getModelById, updateModelWithScript } from "@/app/actions/models"
+import { deployModel, getDeployments, createModelScript } from "@/app/creator-dashboard/model-actions"
+import { getModels, getModelById, updateModelWithScript } from "@/app/creator-dashboard/model-actions"
 import { DeploymentStatus } from "@prisma/client"
 
 interface ModelDeploymentProps {

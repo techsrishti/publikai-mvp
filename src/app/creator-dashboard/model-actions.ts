@@ -3,13 +3,36 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { SourceType, DeploymentStatus } from '@prisma/client';
+import { randomBytes as nodeRandomBytes } from 'crypto';
+
+const ELEVATED_ROLE = 'ELEVATED_USER' as const;  // expected creator role
+
+// ---------------------------------------------------------------------------
+// helper: returns the creator only if the user owns one AND has ELEVATED_USER
+async function getLoggedInCreator() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { role: true, creator: true },          // fetch role as well
+  });
+
+  if (!user || user.role !== ELEVATED_ROLE) {       // <- role guard
+    return null;
+  }
+  return user.creator;                              // may still be null
+}
+// ---------------------------------------------------------------------------
 
 export async function uploadModelAction(formData: FormData) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return { success: false, error: 'Unauthorized' };
+    // ----- use shared helper ------------------------------------------------
+    const creator = await getLoggedInCreator();
+    if (!creator) {
+      return { success: false, error: 'Creator profile not found', status: 403 };
     }
+    // -----------------------------------------------------------------------
 
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
@@ -24,16 +47,6 @@ export async function uploadModelAction(formData: FormData) {
     const subscriptionPrice = parseFloat(formData.get('subscriptionPrice') as string);
     const hfOrganizationName = formData.get('hfOrganizationName') as string;
     const hfModelName = formData.get('hfModelName') as string;
-    
-    // Get the user and creator information
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      include: { creator: true }
-    });
-
-    if (!user || !user.creator) {
-      return { success: false, error: 'Creator profile not found', status: 403 };
-    }
 
     // Optional validation for tags (specific to creator-dashboard)
     if (tags.length === 0) {
@@ -121,7 +134,7 @@ export async function uploadModelAction(formData: FormData) {
         revision,
         subscriptionPrice,
         scriptId: modelScript?.id,
-        creatorId: user.creator.id
+        creatorId: creator.id,                       // <- use creator from helper
       },
     });
     
@@ -132,143 +145,161 @@ export async function uploadModelAction(formData: FormData) {
   }
 }
 
-export async function getAllModels() { 
-  try { 
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return { success: false, error: 'Unauthorized' };
-    }
+// ---------------------------------------------------------------------------
+// Additional helpers
+function generateApiKey(modelUniqueName: string) {
+  return `${modelUniqueName}-${randomBytes(16).toString('hex')}`;
+}
+// ---------------------------------------------------------------------------
 
-    const models = await prisma.model.findMany({
-      select: {
-        id: true,
-        name: true,
-        modelType: true,
-      },
-    });
+// ---------------------------------------------------------------------------
+// 1.  Models CRUD ------------------------------------------------------------
+export async function getModels() {
+  "use server";
+  const creator = await getLoggedInCreator();
+  if (!creator) return { success: false, error: 'Creator profile not found' };
 
-    return { success: true, models };
-  } catch (error) { 
-    console.error('Error fetching models:', error);
-    return { success: false, error: 'Failed to fetch models' };
-  }
+  const models = await prisma.model.findMany({
+    where: { creatorId: creator.id },
+    include: { script: true },
+  });
+  return { success: true, models };
 }
 
-export async function startDeployment(modelName: string) { 
-  try { 
-    const { userId: clerkId } = await auth();
-    console.log(clerkId + "requested models")
+export async function getModelById(modelId: string) {
+  "use server";
+  const creator = await getLoggedInCreator();
+  if (!creator) return { success: false, error: 'Creator profile not found' };
 
-    if (!clerkId) { 
-      return { success: false, error: 'Unauthorized' };
-    }
-
-    const model = await prisma.model.findUnique({
-      where: { 
-        name: modelName,
-      },
-      include: {
-        script: true, // Include the related ModelScript
-      },
-    });
-
-    if (!model) { 
-      return { success: false, error: 'Model not found' };
-    }
-
-    const deployment = await prisma.deployment.findFirst({
-      where: {
-        modelId: model.id,
-      },
-      select: {
-        id: true,
-        status: true,
-      },
-    });
-
-    if (!deployment) { 
-      return { success: false, error: 'Deployment not found' };
-    }
-
-    if (deployment.status !== DeploymentStatus.NOTDEPLOYED) { 
-      return { success: false, error: 'Deployment already in progress' };
-    }
-
-    //send request to deploy model. 
-    const deploymentApiIP = process.env.DEPLOYMENT_API_IP;
-    const deploymentApiPort = process.env.DEPLOYMENT_API_PORT;
-
-    const response = await fetch(`http://${deploymentApiIP}:${deploymentApiPort}/launch-model`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-          model_type: "AutoModelForCausalLM",
-          model_name: model.name,
-          user_id: clerkId,
-          model_internal_name: model.name,
-          script_content: model.script?.content || null,
-          custom_script: model.script?.content || null,
-        }),
-    });
-
-    console.log(response)
-    if (response.status == 200) { 
-      //Update deployment status to DEPLOYING
-      await prisma.deployment.update({
-        where: { id: deployment.id },
-        data: { status: DeploymentStatus.DEPLOYING },
-      });
-      return { success: true, message: 'Deployment initiated' };
-    }
-    else { 
-      return { success: false, error: 'Failed to deploy model' };
-    }
-  }
-  catch (error) { 
-    console.error('Error deploying model:', error);
-    return { success: false, error: 'Failed to deploy model' };
-  }
+  const model = await prisma.model.findFirst({
+    where: { id: modelId, creatorId: creator.id },
+    include: { script: true },
+  });
+  if (!model) return { success: false, error: 'Model not found' };
+  return { success: true, model };
 }
 
-export async function getActiveDeployments() {
-  try {
-    const { userId: clerkId } = await auth();
-    
-    if (!clerkId) {
-      return { success: false, error: 'Unauthorized' };
-    }
+export async function updateModelWithScript(modelId: string, scriptId: string) {
+  "use server";
+  const creator = await getLoggedInCreator();
+  if (!creator) return { success: false, error: 'Creator profile not found' };
 
-    const deployments = await prisma.deployment.findMany({
-      where: {
-        OR: [
-          { status: DeploymentStatus.DEPLOYING },
-          { status: DeploymentStatus.RUNNING },
-          { status: DeploymentStatus.FAILED }
-        ]
-      },
-      select: {
-        id: true,
-        modelId: true,
-        status: true,
-        deploymentUrl: true,
-        apiKey: true,
-        gpuType: true,
-        createdAt: true,
-        updatedAt: true,
-        model: {
-          select: {
-            name: true,
-            modelType: true,
-          }
-        }
-      }
-    });
+  const model = await prisma.model.update({
+    where: { id: modelId, creatorId: creator.id },
+    data: { scriptId, modelType: 'user-defined' },
+    include: { script: true },
+  });
+  return { success: true, model };
+}
 
-    return { success: true, deployments };
-  } catch (error) {
-    console.error('Error fetching active deployments:', error);
-    return { success: false, error: 'Failed to fetch active deployments' };
+export async function deleteModel(modelId: string) {
+  "use server";
+  const creator = await getLoggedInCreator();
+  if (!creator) return { success: false, error: 'Creator profile not found' };
+
+  const hasDeployment = await prisma.deployment.findFirst({ where: { modelId } });
+  if (hasDeployment) {
+    return { success: false, error: 'Cannot delete a model that has deployments' };
   }
+  await prisma.model.delete({ where: { id: modelId, creatorId: creator.id } });
+  return { success: true };
+}
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 2.  Model scripts ----------------------------------------------------------
+export async function createModelScript(content: string, modelType: string) {
+  "use server";
+  if (!content || !modelType) {
+    throw new Error('Content and model type are required');
+  }
+  const script = await prisma.modelScript.create({ data: { content, modelType } });
+  return { success: true, script };
+}
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 3.  Deployments ------------------------------------------------------------
+export async function deployModel(modelId: string, gpuType: string = 'default') {
+  "use server";
+  const { userId: clerkId } = await auth();
+  if (!clerkId) throw new Error('Unauthorized');
+
+  const model = await prisma.model.findUnique({
+    where: { id: modelId },
+    include: { script: true },
+  });
+  if (!model) throw new Error('Model not found');
+
+  let deployment = await prisma.deployment.findFirst({ where: { modelId } });
+  if (deployment) {
+    deployment = await prisma.deployment.update({
+      where: { id: deployment.id },
+      data: { status: DeploymentStatus.NOTDEPLOYED, gpuType, updatedAt: new Date() },
+    });
+  } else {
+    deployment = await prisma.deployment.create({
+      data: {
+        modelId,
+        status: DeploymentStatus.NOTDEPLOYED,
+        gpuType,
+        apiKey: generateApiKey(model.name),
+      },
+    });
+  }
+
+  const apiUrl = process.env.DEPLOYMENT_API_URL || 'http://localhost:8000';
+  const res = await fetch(`${apiUrl}/deploy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      org_name: model.url?.split('/')[3] || 'default',
+      model_name: model.url?.split('/')[4] || model.name,
+      model_revision: model.revision || 'main',
+      model_unique_name: model.name,
+      param_count: model.parameters,
+      custom_script: model.script?.content || null,
+      user_id: clerkId,
+      api_key: deployment.apiKey,
+    }),
+  }).catch(() => null);
+
+  if (!res || !res.ok) {
+    await prisma.deployment.update({
+      where: { id: deployment.id },
+      data: { status: DeploymentStatus.FAILED, updatedAt: new Date() },
+    });
+    throw new Error('Deployment request failed');
+  }
+
+  const body = await res.json().catch(() => ({}));
+  deployment = await prisma.deployment.update({
+    where: { id: deployment.id },
+    data: {
+      status: DeploymentStatus.RUNNING,
+      deploymentUrl: body.deployment_url || null,
+      updatedAt: new Date(),
+    },
+  });
+
+  return { success: true, deployment, script: model.script?.content || null, response: body };
+}
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 5.  Deployment records CRUD ------------------------------------------------
+export async function getDeployments() {
+  "use server";
+  return {
+    deployments: await prisma.deployment.findMany({
+      include: { model: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+  };
+}
+function randomBytes(size: number): Buffer {
+  if (!Number.isInteger(size) || size <= 0) {
+    throw new Error('Size must be a positive integer');
+  }
+  return nodeRandomBytes(size);
 }
