@@ -391,18 +391,6 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                     onChange={e => setScriptFile(e.target.files?.[0] || null)}
                     className="hidden"
                   />
-                  {/* Show current script if present */}
-                  {(() => {
-                    const model = models.find(m => m.id === selectedModel);
-                    if (model?.script) {
-                      return (
-                        <div className="mt-2 text-blue-300 text-sm">
-                          Current script: <span className="font-semibold">{model.script.id}.py</span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
                   {scriptFile && (
                     <div className="mt-2 text-green-400 text-sm">
                       Selected: {scriptFile.name}

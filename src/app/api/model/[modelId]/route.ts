@@ -6,6 +6,8 @@ export async function POST(
   { params }: { params: Promise<{ modelId: string }> }
 ) {
   const resolvedParams = await params;
+  const startTime = Date.now();
+  
   try {
     // Get API key from Authorization header
     const authHeader = request.headers.get('Authorization');
@@ -17,7 +19,7 @@ export async function POST(
     }
     const apiKey = authHeader.split(' ')[1];
 
-    // Get deployment info
+    // Get deployment info with optimized query
     const deployment = await prisma.deployment.findFirst({
       where: {
         modelId: resolvedParams.modelId,
@@ -47,28 +49,29 @@ export async function POST(
     // Get request body
     const body = await request.json();
 
-    // Start timing
-    const startTime = Date.now();
-
     try {
-      
-      // Make request to deployment URL
+      // Make request to deployment URL with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch(deployment.deploymentUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       const responseData = await response.json();
 
-      // Log API call
-      await prisma.$executeRaw`
+      // Async logging of API call - fire and forget
+      prisma.$executeRaw`
         INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
         VALUES (gen_random_uuid(), ${deployment.modelId}, ${responseTime}, ${response.status}, ${response.ok ? null : responseData.error || 'Unknown error'}, NOW())
-      `;
+      `.catch(console.error);
 
       return NextResponse.json({
         response: responseData,
@@ -76,14 +79,21 @@ export async function POST(
         status_code: response.status,
       });
     } catch (error) {
-      console.error('Error making request:', error);
       const responseTime = Date.now() - startTime;
       
-      // Log failed API call
-      await prisma.$executeRaw`
+      // Async logging of failed API call - fire and forget
+      prisma.$executeRaw`
         INSERT INTO "ModelApiCall" ("id", "modelId", "latency", "statusCode", "errorMessage", "timestamp")
         VALUES (gen_random_uuid(), ${deployment.modelId}, ${responseTime}, 500, ${error instanceof Error ? error.message : 'Unknown error'}, NOW())
-      `;
+      `.catch(console.error);
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        return NextResponse.json({
+          error: 'Request timeout',
+          response_time_ms: responseTime,
+          status_code: 504,
+        });
+      }
 
       return NextResponse.json({
         error: error instanceof Error ? error.message : 'Unknown error',
