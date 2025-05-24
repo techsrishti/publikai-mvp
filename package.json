@@ -9,7 +9,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "lint:fix": "next lint --fix",
-    "validate": "pnpm run type-check && pnpm run lint"
+    "validate": "pnpm run type-check && pnpm run lint",
+    "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
+    "postdeploy": "prisma db seed"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.30.4",
@@ -54,26 +56,27 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.7.4",
     "input-otp": "^1.4.2",
-    "lucide-react": "^0.503.0",
+    "lucide-react": "^0.511.0",
     "next": "15.3.1",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-day-picker": "^9.6.7",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.1",
-    "react-resizable-panels": "^3.0.0",
     "react-hot-toast": "^2.5.2",
+    "react-resizable-panels": "^3.0.0",
     "recharts": "^2.15.3",
     "server": "link:@clerk/nextjs/server",
     "sonner": "^2.0.3",
     "svix": "^1.64.1",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "prisma": "^6.8.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@prisma/client": "6.7.0",
+    "@prisma/client": "6.8.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -84,8 +87,9 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "postcss": "^8",
-    "prisma": "6.7.0",
+    "prisma": "6.8.2",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

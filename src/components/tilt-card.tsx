@@ -73,6 +73,14 @@ export function TiltCard({
     }
   }, [mousePosition, disabled, isHovering])
 
+  useEffect(() => {
+    if (glowRef.current && isHovering) {
+      const { x, y } = mousePosition;
+      glowRef.current.style.setProperty('--mouse-x', `${x}px`);
+      glowRef.current.style.setProperty('--mouse-y', `${y}px`);
+    }
+  }, [mousePosition, isHovering]);
+
   return (
     <div
       ref={cardRef}

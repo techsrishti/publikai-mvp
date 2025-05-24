@@ -48,7 +48,7 @@ export default  function Dashboard() {
       <header className="flex h-16 items-center justify-between border-b border-gray-800 bg-gradient-to-r from-gray-900 to-gray-900/80 px-4 backdrop-blur-sm sm:px-6">
         <div className="flex items-center gap-4 sm:gap-8">
           <AnimatedGradientText
-            text="Publik AI"
+            text="Frito AI"
             className="text-xl font-bold tracking-tight sm:text-2xl"
             mousePosition={mousePosition}
           />
@@ -111,7 +111,7 @@ export default  function Dashboard() {
             >
               <div className="flex h-16 items-center justify-between border-b border-gray-800 px-4">
                 <AnimatedGradientText
-                  text="Publik AI"
+                  text="Frito AI"
                   className="text-xl font-bold tracking-tight"
                   mousePosition={mousePosition}
                 />

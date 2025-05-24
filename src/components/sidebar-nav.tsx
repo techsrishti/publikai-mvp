@@ -1,6 +1,6 @@
 "use client"
 
-import { Layers, BarChart, Settings } from "lucide-react"
+import { Layers, Upload, Server, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Tab = "overview" | "upload" | "deployment" | "management"
@@ -20,12 +20,12 @@ export function SidebarNav({ activeTab, setActiveTab }: SidebarNavProps) {
     {
       title: "Upload",
       value: "upload" as Tab,
-      icon: BarChart,
+      icon: Upload,
     },
     {
       title: "Deployment",
       value: "deployment" as Tab,
-      icon: BarChart,
+      icon: Server,
     },
     {
       title: "Management",

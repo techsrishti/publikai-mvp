@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 
+**/venv
+
 # testing
 /coverage
 
@@ -45,3 +47,5 @@ next-env.d.ts
 
 #vscode
 .vscode
+backend/__pycache__/app.cpython-310.pyc
+backend/__pycache__/vllm_server.cpython-310.pyc

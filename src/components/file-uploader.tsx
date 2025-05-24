@@ -7,9 +7,10 @@ import { Upload, FileText } from "lucide-react"
 
 interface FileUploaderProps {
   onFilesSelected: (files: File[]) => void
+  accept?: string
 }
 
-export function FileUploader({ onFilesSelected }: FileUploaderProps) {
+export function FileUploader({ onFilesSelected, accept }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -56,19 +57,29 @@ export function FileUploader({ onFilesSelected }: FileUploaderProps) {
       onDrop={handleDrop}
       onClick={handleButtonClick}
     >
-      <input type="file" ref={fileInputRef} onChange={handleFileInputChange} multiple className="hidden" />
+      <input type="file" ref={fileInputRef} onChange={handleFileInputChange} multiple className="hidden" accept={accept} />
 
       <div className="flex flex-col items-center justify-center space-y-3">
         <div className="p-3 bg-blue-800/30 rounded-full">
           <Upload className="h-6 w-6 text-blue-300" />
         </div>
         <div className="space-y-1">
-          <p className="text-sm font-medium text-white">Drag and drop your model files here</p>
+          <p className="text-sm font-medium text-white">
+            {accept === ".py" 
+              ? "Drag and drop your Python script here"
+              : "Drag and drop your model files here"
+            }
+          </p>
           <p className="text-xs text-blue-400">Or click to browse your files</p>
         </div>
         <div className="flex items-center justify-center gap-2 text-xs text-blue-300">
           <FileText className="h-3 w-3" />
-          <span>Supports .bin, .pt, .onnx, .safetensors, and other model files</span>
+          <span>
+            {accept === ".py" 
+              ? "Supports Python (.py) files only"
+              : "Supports .bin, .pt, .onnx, .safetensors, and other model files"
+            }
+          </span>
         </div>
       </div>
     </div>
