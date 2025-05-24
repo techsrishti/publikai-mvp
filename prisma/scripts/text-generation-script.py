@@ -42,7 +42,7 @@ def load_model(model_name: str, model_revision: str):
     
     return model, tokenizer
 
-def generate(model, input_text: str) -> str:
+def generate(model_tuple, input_text: str) -> str:
     """
     Generate text using the loaded model.
     
@@ -53,7 +53,7 @@ def generate(model, input_text: str) -> str:
     Returns:
         str: The generated text
     """
-    model, tokenizer = model  # Unpack the model and tokenizer
+    model, tokenizer = model_tuple  # Unpack the model and tokenizer
     
     # Tokenize input
     inputs = tokenizer(
