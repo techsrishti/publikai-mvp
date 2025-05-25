@@ -4,12 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { SourceType, DeploymentStatus } from '@prisma/client';
 import { randomBytes as nodeRandomBytes } from 'crypto';
-interface PrismaError {
-  code?: string;
-  meta?: {
-    target?: string[];
-  };
-}
+
 
 
 
