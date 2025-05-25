@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Loader2, KeyRound as Key, Copy, Check } from "lucide-react"
-import { isUserSubscribedToModel } from "@/app/dashboard/actions"
+import { Loader2, KeyRound as Key, Copy, Check, Trash } from "lucide-react"
+import { isUserSubscribedToModel, deleteCreatedSubscription } from "@/app/dashboard/actions"
 import { useToast } from "@/components/ui/use-toast"
 import { initiateSubscription } from "@/app/dashboard/actions"
 import Script from "next/script"
@@ -32,6 +32,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
   const [isSoftSuccess, setIsSoftSuccess] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
   const [subscribing, setSubscribing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [apiKey, setApiKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
@@ -126,6 +127,35 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
     }
   }
 
+  const handleDeleteSubscription = async () => {
+    try {
+      setDeleting(true)
+      const response = await deleteCreatedSubscription()
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Unreconciled subscription deleted successfully",
+        })
+        setIsSoftSuccess(false)
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to delete subscription",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting subscription:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete subscription",
+        variant: "destructive"
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -197,9 +227,25 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                       Get access to this model's API for ₹{model.price}/month
                     </p>
                     {isSoftSuccess && (
-                      <p className="mt-2 text-sm text-yellow-400">
-                        Previous payment is being reconciled. Please wait...
-                      </p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-sm text-yellow-400">
+                          Previous payment is being reconciled. Please wait...
+                        </p>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDeleteSubscription}
+                          disabled={deleting}
+                          className="gap-2"
+                        >
+                          {deleting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash className="h-4 w-4" />
+                          )}
+                          Delete
+                        </Button>
+                      </div>
                     )}
                   </div>
                   <Button

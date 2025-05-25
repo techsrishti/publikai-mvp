@@ -21,6 +21,7 @@ import { useMobile } from "@/app/hooks/use-mobile"
 import { getModels } from "@/app/dashboard/actions"
 import { ModelDetailsDialog } from "./model-details-dialog"
 
+
 export default function Dashboard() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -39,7 +40,7 @@ export default function Dashboard() {
       try {
         const response = await getModels()
         if (response.success && response.models) {
-          setModels(response.models)
+          setModels(response.models ?? [])
         }
       } catch (error) {
         console.error("Error fetching models:", error)

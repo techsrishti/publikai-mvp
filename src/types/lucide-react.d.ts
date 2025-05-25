@@ -58,5 +58,6 @@ declare module 'lucide-react' {
   export const Key: ComponentType<IconProps>
   export const Copy: ComponentType<IconProps>
   export const KeyRound: ComponentType<IconProps>
+  export const Trash: ComponentType<IconProps>
   // Add other icons as needed
 } 

@@ -14,6 +14,52 @@ export interface InitiateSubscriptionResponse {
   razorpaySubscriptionId?: string; 
 }
 
+export async function deleteCreatedSubscription() { 
+  try { 
+    const { userId: clerkId } = await auth()
+
+    if (!clerkId) { 
+      return {success: false, message: "Unauthorized"}
+    }
+
+    const user = await prisma.user.findUnique({ 
+      where: { 
+        clerkId,
+      },
+      select: { 
+        UserSubscription: { 
+          where: { 
+            status: "created",
+          },
+          select: { 
+            razorpaySubscriptionId: true,
+          }
+        }
+      }
+    })
+
+    if (!user) { 
+      return {success: false, message: "User not found"}
+    }
+
+    if (user.UserSubscription.length == 0) { 
+      return {success: false, message: "User subscription not found"}
+    }
+
+    await prisma.userSubscription.delete({ 
+      where: { 
+        razorpaySubscriptionId: user.UserSubscription[0].razorpaySubscriptionId,
+      }
+    })
+
+    return {success: true, message: "Subscription deleted successfully"}
+
+  } catch (error) { 
+    console.error("Error deleting subscription", error)
+    return {success: false, message: "Error deleting subscription"}
+  }
+}
+
 export async function initiateSubscription(modelId: string): Promise<InitiateSubscriptionResponse> {
   const { userId: clerkId } = await auth()
 
@@ -148,11 +194,22 @@ export async function isUserSubscribedToModel(modelId: string): Promise<IsUserSu
     return {success: false, message: "User not found", isSubscribed: false}
   }
 
+  if (user.UserSubscription.length == 0) { 
+    console.log("User is not subscribed to model")
+    return {success: true, message: "User is not subscribed to model", isSubscribed: false}
+  }
+
   if (user.UserSubscription.length > 0 && user.UserSubscription[0].status == "active") { 
+    console.log("User is already subscribed to model")
     return {success: true, message: "User is subscribed to model", isSubscribed: true}
   }
 
-  return {success: true, message: "User is not subscribed to model", isSubscribed: false, isSoftSuccess: user.UserSubscription[0].isSoftSuccess!}
+  let isSoftSuccess = false
+  if (user.UserSubscription[0].status == "created") {
+    isSoftSuccess = user.UserSubscription[0].isSoftSuccess ?? false
+  }
+
+  return {success: true, message: "User is not subscribed to model", isSubscribed: false, isSoftSuccess: isSoftSuccess}
 }
 
 export interface Model {
