@@ -2,16 +2,17 @@ import {prisma} from "@/lib/prisma";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) { 
-  const razorpay  = await request.json()
+  const body  = await request.json()
+  const event = body.event;
 
-  console.log("Razorpay webhook received", razorpay);
 
-  if (razorpay.event === "subscription.captured") { 
-    const subscription = razorpay
+  if (event === "subscription.charged") { 
+    const subscription = body.payload.subscription;
+    const payment = body.payload.payment;
 
-    console.log('started processing subscription.captured', razorpay.payload.subscription.entity.id)
+    console.log('started processing subscription.captured', subscription.entity.id)
 
-    const userSubscriptionId = razorpay.payload.subscription.entity.id as string
+    const userSubscriptionId = subscription.entity.id as string
     const userSubscription = await prisma.userSubscription.findUnique({ 
       where: { 
         razorpaySubscriptionId: userSubscriptionId, 
@@ -53,22 +54,22 @@ export async function POST(request: NextRequest) {
 
       await prisma.userSubscriptionPayment.create({ 
         data: { 
-          razorpayPaymentsId: razorpay.payload.payment.entity.id,
+          razorpayPaymentsId: payment.entity.id,
           subscriptionId: userSubscription.id,
           paymentDate: new Date(),
           status: 'charged',
-          remainingCount: subscription.payload.subscription.remaining_count,
+          remainingCount: subscription.entity.remaining_count,
         }
       })
 
       return new Response('Webhook received for recurring payment', { status: 200 })
 
-  } else if (razorpay.event === "subscription.halted") { 
-    const subscription = razorpay.payload.subscription
+  } else if (event === "subscription.halted") { 
+    const subscription = body.payload.subscription
 
-    console.log('started processing subscription.cancelled', subscription.payload.subscription.id)
+    console.log('started processing subscription.cancelled', subscription.id)
 
-    const userSubscriptionId = subscription.payload.subscription.id as string
+    const userSubscriptionId = subscription.id as string
 
     const userSubscription = await prisma.userSubscription.findUnique({ 
       where: { 
@@ -92,12 +93,12 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription cancelled', { status: 200 })
-  } else if (razorpay.event === "subscription.cancelled") { 
-    const subscription = razorpay.payload.subscription
+  } else if (event === "subscription.cancelled") { 
+    const subscription = body.payload.subscription
 
-    console.log('started processing subscription.cancelled', subscription.payload.subscription.id)
+    console.log('started processing subscription.cancelled', subscription.entity.id)
 
-    const userSubscriptionId = subscription.payload.subscription.id as string
+    const userSubscriptionId = subscription.entity.id as string
     
     const userSubscription = await prisma.userSubscription.findUnique({ 
       where: { 
@@ -121,12 +122,12 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription cancelled', { status: 200 })
-  } else if (razorpay.event === "subscription.paused") { 
-    const subscription = razorpay.payload.subscription
+  } else if (event === "subscription.paused") { 
+    const subscription = body.payload.subscription
 
-    console.log('started processing subscription.pause', subscription.payload.subscription.id)
+    console.log('started processing subscription.pause', subscription.id)
 
-    const userSubscriptionId = subscription.payload.subscription.id as string
+    const userSubscriptionId = subscription.id as string
     
     const userSubscription = await prisma.userSubscription.findUnique({ 
       where: { 
@@ -150,12 +151,12 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription paused', { status: 200 })
-  } else if (razorpay.event === "subscription.resumed") { 
-    const subscription = razorpay.payload.subscription
+  } else if (event === "subscription.resumed") { 
+    const subscription = body.payload.subscription
 
-    console.log('started processing subscription.resume', subscription.payload.subscription.id)
+    console.log('started processing subscription.resume', subscription.id)
 
-    const userSubscriptionId = subscription.payload.subscription.id as string
+    const userSubscriptionId = subscription.id as string
     
     const userSubscription = await prisma.userSubscription.findUnique({ 
       where: { 
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     return new Response('Subscription resumed', { status: 200 })
   } else {
-    console.log('received webhook for unknown event', razorpay)
+    console.log('received webhook for unknown event', body)
     return new Response('Unknown event', { status: 200 })
   }
 }
