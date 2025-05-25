@@ -238,7 +238,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       }
 
       // Deploy the model using server action
-      const result = await deployModel(selectedModel, "default")
+      const result = await deployModel(selectedModel)
       
       if (result.success) {
         addNotification("success", "Model deployment initiated!")
@@ -441,9 +441,11 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                     <Server className="h-5 w-5 text-green-400" />
                     <span className="font-medium text-gray-200">{dep.model?.name?.toUpperCase() || 'UNKNOWN MODEL'}</span>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
-                    {dep.status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                      {dep.status.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div>

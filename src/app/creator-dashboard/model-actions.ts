@@ -10,7 +10,7 @@ import Razorpay  from 'razorpay';
 
 const rzpClient = new Razorpay({
   key_id: process.env.RAZORPAY_PAYMENTS_APIKEY,
-  key_secret: process.env.RAZORPAY_PAYMENTS_APIKEY,
+  key_secret: process.env.RAZORPAY_PAYMENTS_APISECRET,
 });
 
 
@@ -193,11 +193,18 @@ export async function uploadModelAction(formData: FormData) {
         scriptId: modelScript?.id,
         razorpayPlanId: rzpPlan.id,
         price: subscriptionPrice,
-        creatorId: creator.id,                       // <- use creator from helper
+        creatorId: creator.id,
       },
     });
     
-    return { success: true, model };
+    // Convert Decimal price to number
+    return { 
+      success: true, 
+      model: {
+        ...model,
+        price: Number(model.price)
+      }
+    };
   } catch (error) {
     console.error('Error in uploadModelAction:', error);
     return { success: false, error: 'Failed to create model.' };
@@ -488,7 +495,14 @@ export async function getModels() {
     where: { creatorId: creator.id },
     include: { script: true },
   });
-  return { success: true, models };
+
+  // Convert Decimal price to number
+  const serializedModels = models.map(model => ({
+    ...model,
+    price: Number(model.price)
+  }));
+
+  return { success: true, models: serializedModels };
 }
 
 export async function getModelById(modelId: string) {
@@ -501,7 +515,14 @@ export async function getModelById(modelId: string) {
     include: { script: true },
   });
   if (!model) return { success: false, error: 'Model not found' };
-  return { success: true, model };
+
+  // Convert Decimal price to number
+  const serializedModel = {
+    ...model,
+    price: Number(model.price)
+  };
+
+  return { success: true, model: serializedModel };
 }
 
 export async function updateModelWithScript(modelId: string, scriptId: string) {
@@ -514,7 +535,14 @@ export async function updateModelWithScript(modelId: string, scriptId: string) {
     data: { scriptId, modelType: 'user-defined' },
     include: { script: true },
   });
-  return { success: true, model };
+
+  // Convert Decimal price to number
+  const serializedModel = {
+    ...model,
+    price: Number(model.price)
+  };
+
+  return { success: true, model: serializedModel };
 }
 
 export async function deleteModel(modelId: string) {
@@ -610,6 +638,7 @@ export async function deployModel(modelId: string, gpuType: string = 'default') 
     data: {
       status: DeploymentStatus.RUNNING,
       deploymentUrl: body.deployment_url || null,
+      gpuType: body.gpu_type || null,
       updatedAt: new Date(),
     },
   });
@@ -640,7 +669,7 @@ export async function getMetrics() {
   });
 
   const totalModels   = models.length;
-  const activeModels  = models.filter(m => m.Deployment.some(d => d.status === "success")).length;
+  const activeModels  = models.filter(m => m.Deployment.some(d => d.status.toLowerCase() === "running")).length;
   const pendingModels = totalModels - activeModels;
 
   const modelEarnings = models.map(m => ({
@@ -659,7 +688,7 @@ export async function getMetrics() {
       name            : m.name,
       type            : m.modelType ?? "unknown",
       requests        : `${ok.length} successful, ${failed.length} failed`,
-      status          : m.Deployment.some(d => d.status === "success") ? "Deployed" : "Pending",
+      status          : m.Deployment[0]?.status || "Pending",
       performance     : calls.length ? Math.round((ok.length / calls.length) * 100) : 0,
       avgLatency      : `${avgLat}ms`,
       totalCalls      : calls.length,
@@ -684,13 +713,26 @@ export async function getDeployments() {
   const creator = await getLoggedInCreator();
   if (!creator) return { success: false, error: 'Creator profile not found' };
 
-  return {
-    deployments: await prisma.deployment.findMany({
-      where: { model: { creatorId: creator.id } }, // <- scoped to creator
-      include: { model: true },
-      orderBy: { createdAt: 'desc' },
-    }),
-  };
+  const deployments = await prisma.deployment.findMany({
+    where: { model: { creatorId: creator.id } }, // <- scoped to creator
+    include: { 
+      model: {
+        include: { script: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Convert Decimal price to number in the model data
+  const serializedDeployments = deployments.map(deployment => ({
+    ...deployment,
+    model: {
+      ...deployment.model,
+      price: Number(deployment.model.price)
+    }
+  }));
+
+  return { deployments: serializedDeployments };
 }
 function randomBytes(size: number): Buffer {
   if (!Number.isInteger(size) || size <= 0) {

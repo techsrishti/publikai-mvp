@@ -474,13 +474,13 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                   </div>
 
                   {/* Status - 2 columns */}
-                  <div className="col-span-2 flex items-center text-left pl-2">
+                  <div className="col-span-2 flex items-center text-left">
                     <p className={`text-sm ${
-                      model.status === 'Deployed' 
+                      model.status.toLowerCase() === 'running' 
                         ? 'text-green-400' 
                         : 'text-yellow-400'
                     }`}>
-                      {model.status}
+                      {model.status.toLowerCase().charAt(0).toUpperCase() + model.status.toLowerCase().slice(1)}
                     </p>
                   </div>
 
@@ -494,12 +494,12 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                   </div>
 
                   {/* Latency - 2 columns */}
-                  <div className="col-span-2 flex items-center text-left pl-5">
+                  <div className="col-span-2 flex items-center text-left pl-2">
                     <p className="text-sm text-gray-400">{model.avgLatency}</p>
                   </div>
 
                   {/* Success Rate - 2 columns */}
-                  <div className="col-span-2 flex flex-col items-end justify-center pl-6">
+                  <div className="col-span-2 flex flex-col items-end justify-center pl-1">
                     <div className="w-full">
                       <div className="h-2 rounded-full bg-gray-800">
                         <div
