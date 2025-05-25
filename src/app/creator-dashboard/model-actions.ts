@@ -4,8 +4,14 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { SourceType, DeploymentStatus } from '@prisma/client';
 import { randomBytes as nodeRandomBytes } from 'crypto';
+import Razorpay  from 'razorpay';
 
 
+
+const rzpClient = new Razorpay({
+  key_id: process.env.RAZORPAY_PAYMENTS_APIKEY,
+  key_secret: process.env.RAZORPAY_PAYMENTS_APIKEY,
+});
 
 
 const ELEVATED_ROLE = 'ELEVATED_USER' as const;  // expected creator role
@@ -148,7 +154,30 @@ export async function uploadModelAction(formData: FormData) {
       fileUrl = 'pending-upload-placeholder';
     }
 
+
     // Create model in database with creator relationship
+    const rzpPlan = await rzpClient.plans.create({ 
+      period: "monthly", 
+      interval: 1, 
+      item: { 
+        name: name + " Subscription" + " Monthly",
+        amount: subscriptionPrice * 100,
+        currency: "INR",
+        description: "Subscription for " + name,
+      },
+      notes: { 
+        "model_name": name,
+        "model_type": modelType,
+        "creator_id": creator.id,
+      }
+    })
+
+    if (!rzpPlan.id) { 
+      console.log("Error creating Razorpay plan", rzpPlan);
+      //TODO: In prod email the admin
+      return { success: false, error: "Failed to create Razorpay plan" };
+    }
+
     const model = await prisma.model.create({
       data: {
         name,
@@ -162,7 +191,7 @@ export async function uploadModelAction(formData: FormData) {
         revision,
         subscriptionPrice,
         scriptId: modelScript?.id,
-        razorpayPlanId: "null",
+        razorpayPlanId: rzpPlan.id,
         price: subscriptionPrice,
         creatorId: creator.id,                       // <- use creator from helper
       },
