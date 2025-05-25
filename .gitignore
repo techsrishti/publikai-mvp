@@ -2,6 +2,19 @@
 
 # dependencies
 /node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+**/venv
+.venv/
+
+# testing
+/coverage
 
 .venv/
 .DS_Store
@@ -26,4 +39,16 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+<<<<<<< HEAD
 next-env.d.ts
+=======
+next-env.d.ts
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+#vscode
+.vscode
+backend/__pycache__/app.cpython-310.pyc
+backend/__pycache__/vllm_server.cpython-310.pyc
+>>>>>>> main

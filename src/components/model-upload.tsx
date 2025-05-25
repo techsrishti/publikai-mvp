@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Upload, LinkIcon, X } from "lucide-react"
+import { ArrowRight, X, Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { uploadModelAction } from "@/app/creator-dashboard/model-actions"
 import { FileUploader } from "@/components/file-uploader"
@@ -25,6 +25,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     license: "",
     tags: ["transformer", "nlp", "bert"],
     tagInput: "",
+    parameters: "",
+    subscriptionPrice: "",
     files: [] as File[],
   })
   const [urlFields, setUrlFields] = useState({
@@ -36,10 +38,16 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
     license: "",
     tags: ["transformer", "nlp", "bert"],
     tagInput: "",
+    revision: "",
+    parameters: "",
+    subscriptionPrice: "",
   })
   const uploadBtnRef = useRef<HTMLButtonElement>(null)
+  const urlBtnRef = useRef<HTMLButtonElement>(null)
+  const uploadFormRef = useRef<HTMLFormElement>(null)
+  const urlFormRef = useRef<HTMLFormElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [isHovering, setIsHovering] = useState(false)
+  const [hoverStates, setHoverStates] = useState({ upload: false, url: false })
   const [loadingUpload, setLoadingUpload] = useState(false)
   const [loadingUrl, setLoadingUrl] = useState(false)
 
@@ -90,17 +98,50 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   }
 
   function validateUploadFields() {
-    const { modelName, description, modelType, license } = uploadFields
-    return modelName && description && modelType && license
+    const { modelName, description, modelType, license, parameters, subscriptionPrice } = uploadFields
+    console.log('Validating upload fields:', { modelName, description, modelType, license, parameters, subscriptionPrice })
+    
+    // Validate parameters
+    const parametersNum = parseFloat(parameters)
+    if (isNaN(parametersNum) || parametersNum < 0) {
+      addNotification("error", "Parameters must be a non-negative number.")
+      return false
+    }
+
+    // Validate subscription price
+    const subscriptionPriceNum = parseFloat(subscriptionPrice)
+    if (isNaN(subscriptionPriceNum) || subscriptionPriceNum < 0) {
+      addNotification("error", "Subscription price must be a non-negative number.")
+      return false
+    }
+
+    return modelName && description && modelType && license && parameters && subscriptionPrice
   }
+
   function validateUrlFields() {
-    const { organizationName, modelName, userModelName, description, license } = urlFields
-    return organizationName && modelName && userModelName && description && license
+    const { organizationName, modelName, userModelName, description, license, parameters, subscriptionPrice } = urlFields
+    console.log('Validating URL fields:', { organizationName, modelName, userModelName, description, license, parameters, subscriptionPrice })
+    
+    // Validate parameters
+    const parametersNum = parseFloat(parameters)
+    if (isNaN(parametersNum) || parametersNum < 0) {
+      addNotification("error", "Parameters must be a non-negative number.")
+      return false
+    }
+
+    // Validate subscription price
+    const subscriptionPriceNum = parseFloat(subscriptionPrice)
+    if (isNaN(subscriptionPriceNum) || subscriptionPriceNum < 0) {
+      addNotification("error", "Subscription price must be a non-negative number.")
+      return false
+    }
+
+    return organizationName && modelName && userModelName && description && license && parameters && subscriptionPrice
   }
 
   async function handleUploadAction(formData: FormData) {
     if (!validateUploadFields()) {
-      addNotification("error", "Please fill all required fields.")
+      addNotification("error", "Please fill all required fields including subscription price.")
       return
     }
     setLoadingUpload(true)
@@ -110,13 +151,37 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
       formData.set("modelType", uploadFields.modelType)
       formData.set("license", uploadFields.license)
       formData.set("tags", uploadFields.tags.join(","))
+      formData.set("parameters", uploadFields.parameters)
+      formData.set("subscriptionPrice", uploadFields.subscriptionPrice)
       if (uploadFields.files.length > 0) {
         formData.set("file", uploadFields.files[0])
       }
       formData.set("sourceType", "UPLOAD")
+      console.log('Submitting model with data:', {
+        name: uploadFields.modelName,
+        description: uploadFields.description,
+        modelType: uploadFields.modelType,
+        license: uploadFields.license,
+        tags: uploadFields.tags,
+        parameters: uploadFields.parameters,
+        subscriptionPrice: uploadFields.subscriptionPrice
+      })
       const result = await uploadModelAction(formData)
       if (result.success) {
         addNotification("success", "Model uploaded successfully!")
+        // Reset form and state
+        uploadFormRef.current?.reset()
+        setUploadFields({
+          modelName: "",
+          description: "",
+          modelType: "",
+          license: "",
+          tags: ["transformer", "nlp", "bert"],
+          tagInput: "",
+          files: [],
+          parameters: "",
+          subscriptionPrice: "",
+        })
       } else {
         addNotification("error", result.error || "Failed to upload model.")
       }
@@ -129,30 +194,62 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
 
   async function handleUrlAction(formData: FormData) {
     if (!validateUrlFields()) {
-      addNotification("error", "Please fill all required fields.")
+      addNotification("error", "Please fill all required fields including subscription price.")
       return
     }
+    
     setLoadingUrl(true)
+    
     try {
-      const fullUrl = urlFields.organizationName && urlFields.modelName
-        ? `https://huggingface.co/${urlFields.organizationName}/${urlFields.modelName}`
-        : ""
+      // Format the model name properly for Hugging Face
+      const organizationName = urlFields.organizationName.trim()
+      const modelName = urlFields.modelName.trim()
+      
+      if (!organizationName || !modelName) {
+        addNotification("error", "Please provide both organization name and model name.")
+        setLoadingUrl(false)
+        return
+      }
+
+      const fullUrl = `https://huggingface.co/${organizationName}/${modelName}`
       formData.set("url", fullUrl)
+      formData.set("hfOrganizationName", organizationName)
+      formData.set("hfModelName", modelName)
       formData.set("description", urlFields.description)
-      formData.set("modelName", urlFields.modelName)
-      formData.set("name", urlFields.userModelName) // Ensure 'name' is set for backend compatibility
-      formData.set("urlModelType", urlFields.modelType)
-      formData.set("modelType", urlFields.modelType) // Ensure 'modelType' is set for backend compatibility
+      formData.set("modelName", modelName)
+      formData.set("name", urlFields.userModelName)
+      formData.set("modelType", urlFields.modelType)
       formData.set("license", urlFields.license)
       formData.set("tags", urlFields.tags.join(","))
+      formData.set("parameters", urlFields.parameters)
+      formData.set("subscriptionPrice", urlFields.subscriptionPrice)
       formData.set("sourceType", "URL")
+      formData.set("revision", urlFields.revision || "main")
+      
       const result = await uploadModelAction(formData)
+      
       if (result.success) {
-        addNotification("success", "Model URL registered successfully!")
+        addNotification("success", "Model added successfully!")
+        // Reset form and state
+        urlFormRef.current?.reset()
+        setUrlFields({
+          organizationName: "",
+          modelName: "",
+          userModelName: "",
+          description: "",
+          modelType: "",
+          license: "",
+          tags: ["transformer", "nlp", "bert"],
+          tagInput: "",
+          revision: "",
+          parameters: "",
+          subscriptionPrice: "",
+        })
       } else {
-        addNotification("error", result.error || "Failed to register model URL.")
+        addNotification("error", result.error || "Failed to add model.")
       }
-    } catch {
+    } catch (error) {
+      console.error("Error in handleUrlAction:", error)
       addNotification("error", "Network error.")
     } finally {
       setLoadingUrl(false)
@@ -160,33 +257,227 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
   }
 
   useEffect(() => {
-    if (uploadBtnRef.current && isHovering) {
-      const btnElement = uploadBtnRef.current
-      const glowElement = btnElement.querySelector(".glow-effect") as HTMLElement
+    const updateGlowEffect = (isHovering: boolean, btnRef: React.RefObject<HTMLButtonElement | null>) => {
+      if (!isHovering || !btnRef.current) return
+      
+      const glowElement = btnRef.current.querySelector(".glow-effect") as HTMLElement
       if (glowElement) {
         glowElement.style.left = `${mousePosition.x}px`
         glowElement.style.top = `${mousePosition.y}px`
       }
     }
-  }, [mousePosition, isHovering])
+
+    updateGlowEffect(hoverStates.upload, uploadBtnRef)
+    updateGlowEffect(hoverStates.url, urlBtnRef)
+  }, [mousePosition, hoverStates])
 
   return (
     <div className="space-y-4">
-      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg w-[75%] max-w-5xl mx-auto">
+      <Card className="bg-blue-950/40 border-blue-900 backdrop-blur-sm rounded-xl shadow-lg w-[90%] max-w-7xl mx-auto">
         <CardContent className="p-6">
-          <Tabs defaultValue="upload" className="w-full">
+          <Tabs defaultValue="url" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-blue-900/30 rounded-lg overflow-hidden">
-              <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Model
-              </TabsTrigger>
               <TabsTrigger value="url" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
-                <LinkIcon className="mr-2 h-4 w-4" />
                 Use Model URL
               </TabsTrigger>
+              <TabsTrigger value="upload" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white transition-colors duration-200">
+                Upload Model
+              </TabsTrigger>
             </TabsList>
+            <TabsContent value="url">
+              <form 
+                ref={urlFormRef} 
+                className="space-y-5" 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await handleUrlAction(new FormData(e.currentTarget));
+                }}
+              >
+                <input type="hidden" name="name" value={urlFields.userModelName} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="model-url" className="text-blue-200 text-xs mb-1">Hugging Face Model URL</label>
+                    <Input
+                      id="model-url"
+                      value={urlFields.organizationName + "/" + urlFields.modelName}
+                      onChange={(e) => {
+                        const parts = e.target.value.split("/")
+                        handleUrlChange("organizationName", parts[0] || "")
+                        handleUrlChange("modelName", parts[1] || "")
+                      }}
+                      placeholder="orgname/modelname"
+                      className="w-full max-w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="user-model-name" className="text-blue-200 text-xs mb-1">Unique Model Name</label>
+                    <Input
+                      id="user-model-name"
+                      value={urlFields.userModelName}
+                      onChange={(e) => handleUrlChange("userModelName", e.target.value)}
+                      placeholder="Unique Model Name"
+                      className="w-full max-w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-parameters" className="text-blue-200 text-xs mb-1">Parameters (in billions) <span className="text-red-400">*</span></label>
+                    <Input
+                      id="url-parameters"
+                      type="number"
+                      value={urlFields.parameters}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUrlChange("parameters", value);
+                        }
+                      }}
+                      placeholder="e.g., 1 for 1B, 0.1 for 100M, 1.7 for 1.7B"
+                      className="w-full max-w-full"
+                      min="0"
+                      step="0.1"
+                      required
+                    />
+                    <span className="text-xs text-blue-300 mt-1">Examples: 0.1 = 100 million, 1 = 1 billion, 1.7 = 1.7 billion</span>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-subscription-price" className="text-blue-200 text-xs mb-1">Monthly Subscription Price (INR) <span className="text-red-400">*</span></label>
+                    <Input
+                      id="url-subscription-price"
+                      type="number"
+                      value={urlFields.subscriptionPrice}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUrlChange("subscriptionPrice", value);
+                        }
+                      }}
+                      placeholder="Enter monthly subscription price in Rupees"
+                      className="w-full max-w-full"
+                      min="0"
+                      step="1"
+                      required
+                    />
+                    <span className="text-xs text-blue-300 mt-1">You will receive 70% of the subscription revenue</span>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-revision" className="text-blue-200 text-xs mb-1">Model Revision <span className="text-blue-400">(optional, defaults to &apos;main&apos;)</span></label>
+                    <Input
+                      id="url-revision"
+                      value={urlFields.revision}
+                      onChange={(e) => handleUrlChange("revision", e.target.value)}
+                      placeholder="main"
+                      className="w-full max-w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label className="text-blue-200 text-xs mb-1">Tags</label>
+                    <Input
+                      value={urlFields.tagInput}
+                      onChange={(e) => handleUrlChange("tagInput", e.target.value)}
+                      onKeyDown={handleUrlTagInputKeyDown}
+                      placeholder="Add tags (press Enter)"
+                      className="w-full max-w-full"
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {urlFields.tags.map((tag, index) => (
+                        <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
+                          {tag}
+                          <X
+                            size={12}
+                            className="cursor-pointer opacity-70 hover:opacity-100"
+                            onClick={() => removeUrlTag(tag)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-start">
+                  <label htmlFor="url-model-description" className="text-blue-200 text-xs mb-1">Description</label>
+                  <Textarea
+                    id="url-model-description"
+                    value={urlFields.description}
+                    onChange={(e) => handleUrlChange("description", e.target.value)}
+                    placeholder="Model description..."
+                    className="w-full max-w-full"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-model-type" className="text-blue-200 text-xs mb-1">Model Type</label>
+                    <Select value={urlFields.modelType} onValueChange={(v) => handleUrlChange("modelType", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="Model Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text-classification">Text Classification</SelectItem>
+                        <SelectItem value="token-classification">Token Classification</SelectItem>
+                        <SelectItem value="question-answering">Question Answering</SelectItem>
+                        <SelectItem value="translation">Translation</SelectItem>
+                        <SelectItem value="summarization">Summarization</SelectItem>
+                        <SelectItem value="text-generation">Text Generation</SelectItem>
+                        <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
+                        <SelectItem value="image-classification">Image Classification</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="url-license" className="text-blue-200 text-xs mb-1">License</label>
+                    <Select value={urlFields.license} onValueChange={(v) => handleUrlChange("license", v)}>
+                      <SelectTrigger className="w-full max-w-full">
+                        <SelectValue placeholder="License" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mit">MIT</SelectItem>
+                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
+                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
+                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
+                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
+                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <Button
+                    ref={urlBtnRef}
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
+                    onMouseMove={handleMouseMove}
+                    onMouseEnter={() => setHoverStates(prev => ({ ...prev, url: true }))}
+                    onMouseLeave={() => setHoverStates(prev => ({ ...prev, url: false }))}
+                    disabled={loadingUrl}
+                  >
+                    <span className="relative z-10 flex items-center justify-center">
+                      {loadingUrl ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 animate-spin" />
+                          Registering...
+                        </>
+                      ) : (
+                        <>
+                          Register Model URL <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </span>
+                    <span
+                      className="glow-effect absolute w-[100px] h-[100px] rounded-full pointer-events-none"
+                      style={{
+                        background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
+                        transform: "translate(-50%, -50%)",
+                        pointerEvents: "none",
+                        left: `${mousePosition.x}px`,
+                        top: `${mousePosition.y}px`,
+                      }}
+                    />
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
             <TabsContent value="upload">
-              <form className="space-y-5" action={handleUploadAction}>
+              <form ref={uploadFormRef} className="space-y-5" action={handleUploadAction}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
                     <label htmlFor="model-name" className="text-blue-200 text-xs mb-1">Model Name</label>
@@ -194,7 +485,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                       id="model-name"
                       value={uploadFields.modelName}
                       onChange={(e) => handleUploadChange("modelName", e.target.value)}
-                      placeholder="Model Name"
                       className="w-full max-w-full"
                     />
                   </div>
@@ -211,6 +501,7 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                         <SelectItem value="translation">Translation</SelectItem>
                         <SelectItem value="summarization">Summarization</SelectItem>
                         <SelectItem value="text-generation">Text Generation</SelectItem>
+                        <SelectItem value="masked-language-modeling">Masked Language Modeling</SelectItem>
                         <SelectItem value="image-classification">Image Classification</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
@@ -226,6 +517,46 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     placeholder="Model description..."
                     className="w-full max-w-full"
                   />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="parameters" className="text-blue-200 text-xs mb-1">Parameters (billions)</label>
+                    <Input
+                      id="parameters"
+                      value={uploadFields.parameters}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUploadChange("parameters", value);
+                        }
+                      }}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      className="w-full max-w-full"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <label htmlFor="subscription-price" className="text-blue-200 text-xs mb-1">Monthly Subscription Price (INR)</label>
+                    <Input
+                      id="subscription-price"
+                      value={uploadFields.subscriptionPrice}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value === "" || parseFloat(value) >= 0) {
+                          handleUploadChange("subscriptionPrice", value);
+                        }
+                      }}
+                      type="number"
+                      step="1"
+                      min="0"
+                      className="w-full max-w-full"
+                      required
+                      placeholder="Enter monthly subscription price in Rupees"
+                    />
+                    <span className="text-xs text-blue-300 mt-1">You will receive 70% of the subscription revenue</span>
+                  </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col items-start">
@@ -291,8 +622,8 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                     type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
                     onMouseMove={handleMouseMove}
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
+                    onMouseEnter={() => setHoverStates(prev => ({ ...prev, upload: true }))}
+                    onMouseLeave={() => setHoverStates(prev => ({ ...prev, upload: false }))}
                     disabled={loadingUpload}
                   >
                     <span className="relative z-10">
@@ -308,128 +639,6 @@ export function ModelUpload({ addNotification }: ModelUploadProps) {
                         top: `${mousePosition.y}px`,
                       }}
                     />
-                  </Button>
-                </div>
-              </form>
-            </TabsContent>
-            <TabsContent value="url">
-              <form className="space-y-5" action={async (formData) => {
-                if (!formData.get("name")) {
-                  formData.set("name", formData.get("userModelName") || "")
-                }
-                await handleUrlAction(formData)
-              }}>
-                <input type="hidden" name="name" value={urlFields.userModelName} />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="org-name" className="text-blue-200 text-xs mb-1">Organization Name</label>
-                    <Input
-                      id="org-name"
-                      value={urlFields.organizationName}
-                      onChange={(e) => handleUrlChange("organizationName", e.target.value)}
-                      placeholder="Organization Name"
-                      className="w-full max-w-full"
-                    />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="url-model-name" className="text-blue-200 text-xs mb-1">Hugging Face Model Name</label>
-                    <Input
-                      id="url-model-name"
-                      value={urlFields.modelName}
-                      onChange={(e) => handleUrlChange("modelName", e.target.value)}
-                      placeholder="Model Name from Hugging Face"
-                      className="w-full max-w-full"
-                    />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="user-model-name" className="text-blue-200 text-xs mb-1">Your Model Name</label>
-                    <Input
-                      id="user-model-name"
-                      value={urlFields.userModelName}
-                      onChange={(e) => handleUrlChange("userModelName", e.target.value)}
-                      placeholder="Your Model Name"
-                      className="w-full max-w-full"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col items-start">
-                  <label htmlFor="url-model-description" className="text-blue-200 text-xs mb-1">Description</label>
-                  <Textarea
-                    id="url-model-description"
-                    value={urlFields.description}
-                    onChange={(e) => handleUrlChange("description", e.target.value)}
-                    placeholder="Model description..."
-                    className="w-full max-w-full"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="url-model-type" className="text-blue-200 text-xs mb-1">Model Type</label>
-                    <Select value={urlFields.modelType} onValueChange={(v) => handleUrlChange("modelType", v)}>
-                      <SelectTrigger className="w-full max-w-full">
-                        <SelectValue placeholder="Model Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="text-classification">Text Classification</SelectItem>
-                        <SelectItem value="token-classification">Token Classification</SelectItem>
-                        <SelectItem value="question-answering">Question Answering</SelectItem>
-                        <SelectItem value="translation">Translation</SelectItem>
-                        <SelectItem value="summarization">Summarization</SelectItem>
-                        <SelectItem value="text-generation">Text Generation</SelectItem>
-                        <SelectItem value="image-classification">Image Classification</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <label htmlFor="url-license" className="text-blue-200 text-xs mb-1">License</label>
-                    <Select value={urlFields.license} onValueChange={(v) => handleUrlChange("license", v)}>
-                      <SelectTrigger className="w-full max-w-full">
-                        <SelectValue placeholder="License" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mit">MIT</SelectItem>
-                        <SelectItem value="apache-2.0">Apache 2.0</SelectItem>
-                        <SelectItem value="gpl-3.0">GPL 3.0</SelectItem>
-                        <SelectItem value="cc-by-4.0">CC BY 4.0</SelectItem>
-                        <SelectItem value="cc-by-sa-4.0">CC BY-SA 4.0</SelectItem>
-                        <SelectItem value="cc-by-nc-4.0">CC BY-NC 4.0</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex flex-col items-start">
-                  <label className="text-blue-200 text-xs mb-1">Tags</label>
-                  <Input
-                    value={urlFields.tagInput}
-                    onChange={(e) => handleUrlChange("tagInput", e.target.value)}
-                    onKeyDown={handleUrlTagInputKeyDown}
-                    placeholder="Add tags (press Enter)"
-                    className="w-full max-w-full"
-                  />
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {urlFields.tags.map((tag, index) => (
-                      <Badge key={index} className="bg-blue-700 hover:bg-blue-600 flex items-center gap-1 text-xs">
-                        {tag}
-                        <X
-                          size={12}
-                          className="cursor-pointer opacity-70 hover:opacity-100"
-                          onClick={() => removeUrlTag(tag)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white relative overflow-hidden rounded-lg shadow-md transition-transform duration-150 active:scale-95"
-                    disabled={loadingUrl}
-                  >
-                    <span className="relative z-10">
-                      {loadingUrl ? "Registering..." : "Register Model URL"} <ArrowRight className="ml-2 h-4 w-4 inline" />
-                    </span>
                   </Button>
                 </div>
               </form>

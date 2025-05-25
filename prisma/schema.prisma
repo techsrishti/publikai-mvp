@@ -1,11 +1,13 @@
 generator client {
   provider = "prisma-client-js"
- }
+  seed     = "ts-node prisma/seed.ts"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 enum UserRole {
   USER
   CREATOR
@@ -16,6 +18,22 @@ enum UserRole {
 enum SourceType {
   URL
   UPLOAD
+}
+
+enum CloudProvider {
+  AWS
+  GCP
+  AZURE
+}
+
+enum DeploymentStatus {
+  PENDING
+  NOTDEPLOYED
+  INITIATED
+  DEPLOYING
+  RUNNING
+  FAILED
+  STOPPED
 }
 
 enum RazorpayFundAccountType { 
@@ -72,25 +90,26 @@ model UserSubscriptionPayment {
 
 
 model Creator {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id])
-  experienceLevel   String
-  specialization    String[]
-  aiFrameworks      String[]
-  modelTypes        String[]
-  developmentGoals  String
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  experienceLevel    String
+  specialization     String[]
+  aiFrameworks       String[]
+  modelTypes         String[]
+  developmentGoals   String
   projectDescription String
-  portfolioUrl      String?
-  githubUrl         String?
+  portfolioUrl       String?
+  githubUrl          String?
+  models             Model[]  @relation("CreatorToModels")
   razorpayCreatorId String
   razorpayFaId      String?  //razorpay fund acc. id.
   razorpayFaType    RazorpayFundAccountType?
   outstandingAmount Decimal? 
   totalPaidAmount   Decimal?
   totalEarnedAmount Decimal?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   CreatorPayouts    CreatorPayout[]
 }
 
@@ -107,18 +126,56 @@ model CreatorPayout {
 }
 
 model Model {
-  id          String     @id @default(cuid())
-  name        String     @unique
+  id          String       @id @default(cuid())
+  name        String       @unique
   description String
   modelType   String
   license     String
   sourceType  SourceType
-  url         String?    // Optional URL for Hugging Face models
-  tags        String[]   // Tags as array of strings
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  url         String? // Optional URL for Hugging Face models
+  tags        String[] // Tags as array of strings
+  revision    String? // Optional model revision (e.g., 'main')
+  parameters  Float // Number of parameters in billions
+  subscriptionPrice Float // Monthly subscription price in USD
+  script      ModelScript? @relation(fields: [scriptId], references: [id])
+  scriptId    String?
+  creatorId   String
+  creator     Creator      @relation("CreatorToModels", fields: [creatorId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   price       Decimal
   razorpayPlanId  String 
 
   UserSubscription  UserSubscription[]  
+  Deployment  Deployment[]
+  apiCalls    ModelApiCall[]
+}
+
+model ModelScript {
+  id          String   @id @default(cuid())
+  content     String   // Base64 encoded script content
+  modelType   String   // Type of model this script is for
+  models      Model[]  // Changed to one-to-many relation
+}
+
+model ModelApiCall {
+  id            String   @id @default(cuid())
+  modelId       String
+  model         Model    @relation(fields: [modelId], references: [id])
+  latency       Int      // Response time in milliseconds
+  statusCode    Int      // HTTP status code
+  errorMessage  String?  // Error message if any
+  timestamp     DateTime @default(now())
+}
+
+model Deployment {
+  id            String   @id @default(cuid())
+  modelId       String
+  model         Model    @relation(fields: [modelId], references: [id])
+  status        String
+  deploymentUrl String?
+  apiKey        String?
+  gpuType       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
