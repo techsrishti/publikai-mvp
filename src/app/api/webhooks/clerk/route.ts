@@ -78,8 +78,8 @@ export async function POST(req: Request) {
               email: primaryEmail,
               clerkId, // This is required in the schema
               role: 'USER', 
-              firstName: evt.data.first_name,
-              lastName: evt.data.last_name
+              firstName: evt.data.first_name || '',
+              lastName: evt.data.last_name || ''
             },
             select: {
               id: true,

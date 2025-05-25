@@ -89,7 +89,7 @@ export async function uploadModelAction(formData: FormData) {
       }
 
       // Check if model exists on Hugging Face -------------------------------
-      try {
+      try { 
         const checkPayload = {
           model_name: hfModelName,
           org_name: hfOrganizationName,
@@ -162,6 +162,8 @@ export async function uploadModelAction(formData: FormData) {
         revision,
         subscriptionPrice,
         scriptId: modelScript?.id,
+        razorpayPlanId: "null",
+        price: subscriptionPrice,
         creatorId: creator.id,                       // <- use creator from helper
       },
     });
