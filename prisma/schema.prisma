@@ -72,6 +72,7 @@ model UserSubscription {
   lastPaymentDate  DateTime
   nextPaymentDate  DateTime?
   status    String
+  isSoftSuccess   Boolean?  //updated to facilitate delayed webhooks
   razorpayPlanId  String  
   razorpaySubscriptionId  String  @unique
   UserSubscriptionPayments UserSubscriptionPayment[]
