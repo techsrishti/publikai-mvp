@@ -36,7 +36,7 @@ export function CreatorDashboard() {
       <div className="flex flex-1 overflow-hidden">
         <SidebarNav activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="flex-1 overflow-y-auto p-6">
-          {activeTab === "overview" && <ModelOverview />}
+          {activeTab === "overview" && <ModelOverview addNotification={addNotification} />}
           {activeTab === "upload" && <ModelUpload addNotification={addNotification} />}
           {activeTab === "deployment" && <ModelDeployment addNotification={addNotification} />}
           {activeTab === "management" && <ModelManagement addNotification={addNotification} />}

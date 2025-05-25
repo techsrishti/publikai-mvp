@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'PublikAI - Deploy & Monetize AI Models',
+  title: 'FritoAI - Deploy & Monetize AI Models',
   description: 'The first India-focused platform for AI developers to host, manage, and monetize their fine-tuned models via API',
 }
 
