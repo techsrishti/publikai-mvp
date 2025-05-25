@@ -83,7 +83,7 @@ export async function initiateSubscription(modelId: string): Promise<InitiateSub
   if (subscriptionResponse.id) {
     console.log("razorpay subscription created successfully", subscriptionResponse.id)
 
-    const userSubscription =await prisma.userSubscription.create({ 
+    await prisma.userSubscription.create({ 
       data: { 
         userId: user.id, 
         modelId: modelId, 
