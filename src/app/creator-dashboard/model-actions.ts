@@ -303,6 +303,65 @@ export async function deployModel(modelId: string, gpuType: string = 'default') 
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
+// 4.  Metrics ---------------------------------------------------------------
+export async function getMetrics() {
+  "use server";
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return { success: false, error: "Unauthorized" };
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { role: true, creator: true },
+  });
+  if (!user?.creator || user.role !== ELEVATED_ROLE)
+    return { success: false, error: "Creator profile not found" };
+
+  const creatorId = user.creator.id;
+
+  const models = await prisma.model.findMany({
+    where: { creatorId },
+    include: { Deployment: true, apiCalls: true },
+  });
+
+  const totalModels   = models.length;
+  const activeModels  = models.filter(m => m.Deployment.some(d => d.status === "success")).length;
+  const pendingModels = totalModels - activeModels;
+
+  const modelEarnings = models.map(m => ({
+    name: m.name,
+    earnings: "₹0",           // ← plug real earnings when ready
+    percentage: 0,
+    trend: "0%",
+  }));
+
+  const modelPerformance = models.map(m => {
+    const calls   = m.apiCalls;
+    const ok      = calls.filter(c => c.statusCode >= 200 && c.statusCode < 300);
+    const failed  = calls.filter(c => c.statusCode >= 400);
+    const avgLat  = ok.length ? Math.round(ok.reduce((a, b) => a + b.latency, 0) / ok.length) : 0;
+    return {
+      name            : m.name,
+      type            : m.modelType ?? "unknown",
+      requests        : `${ok.length} successful, ${failed.length} failed`,
+      status          : m.Deployment.some(d => d.status === "success") ? "Deployed" : "Pending",
+      performance     : calls.length ? Math.round((ok.length / calls.length) * 100) : 0,
+      avgLatency      : `${avgLat}ms`,
+      totalCalls      : calls.length,
+      successfulCalls : ok.length,
+      failedCalls     : failed.length,
+    };
+  });
+
+  return {
+    success         : true,
+    totalModels,
+    activeModels,
+    pendingModels,
+    modelEarnings,
+    modelPerformance,
+  };
+}
+// ---------------------------------------------------------------------------
 // 5.  Deployment records CRUD ------------------------------------------------
 export async function getDeployments() {
   "use server";
