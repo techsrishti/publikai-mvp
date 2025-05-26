@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
         id: true,
         status: true, 
         razorpayPlanId: true, 
+        modelId: true,
         UserSubscriptionPayments: {
           select: {
             id: true,
@@ -40,7 +41,25 @@ export async function POST(request: NextRequest) {
       return new Response('No user subscription found', { status: 200 })
     }
 
-      //this is from the subsequest payment. records will be created by the webhook only
+    const model = await prisma.model.findUnique({ 
+      where: { 
+        id: userSubscription.modelId,
+      },
+      select: { 
+        price: true,
+        creatorId: true,
+      }
+    })
+
+    if (!model) { 
+      //TODO: send email to admin.
+      console.log('no model found', userSubscription.modelId)
+      return new Response('No model found', { status: 200 })
+    }
+
+
+
+      //records will be created by the webhook only
       console.log(" payment")
       await prisma.userSubscription.update({ 
         where: { 
@@ -59,6 +78,16 @@ export async function POST(request: NextRequest) {
           paymentDate: new Date(),
           status: 'charged',
           remainingCount: subscription.entity.remaining_count,
+        }
+      })
+      //add 70% of the amount to the creator's balance
+      await prisma.creator.update({ 
+        where: { 
+          id: model.creatorId,
+        },
+        data: { 
+          outstandingAmount: { increment: Number(model.price) * 0.7 },
+          totalEarnedAmount: { increment: Number(model.price) * 0.7 },
         }
       })
 

@@ -39,8 +39,8 @@ async function getLoggedInCreator() {
 // ---------------------------------------------------------------------------
 
 export interface LinkBankAccountOrVpa {
-  vpa: string; 
-  bankAccount: { 
+  vpa?: string; 
+  bankAccount?: { 
     name: string; 
     bankAccountNumber: string; 
     bankIfscCode: string; 
@@ -258,9 +258,9 @@ export async function linkBankAccountOrVpa(data: LinkBankAccountOrVpa): Promise<
           ? { vpa: { address: vpa } }
           : {
               bank_account: {
-                name: bankAccount.name,
-                ifsc: bankAccount.bankIfscCode,
-                account_number: bankAccount.bankAccountNumber
+                name: bankAccount!.name,
+                ifsc: bankAccount!.bankIfscCode,
+                account_number: bankAccount!.bankAccountNumber
               }
             })
       })
@@ -303,9 +303,9 @@ export interface GetLinkedBankAccountOrVpaResponse {
       name: string; 
       account_number: string; 
       bank_name: string;
-    }
+    },
     vpa?: { 
-      address: string;
+      address?: string;
     }
   } | null;
   message: string;
