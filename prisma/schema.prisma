@@ -75,6 +75,7 @@ model UserSubscription {
   isSoftSuccess   Boolean?  //updated to facilitate delayed webhooks
   razorpayPlanId  String  
   razorpaySubscriptionId  String  @unique
+  apiKey    String?  @unique
   UserSubscriptionPayments UserSubscriptionPayment[]
   @@unique([userId, modelId])
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2, KeyRound as Key, Copy, Check, Trash } from "lucide-react"
-import { isUserSubscribedToModel, deleteCreatedSubscription } from "@/app/dashboard/actions"
+import { isUserSubscribedToModel, deleteCreatedSubscription, getApiKey, createApiKey } from "@/app/dashboard/actions"
 import { useToast } from "@/components/ui/use-toast"
 import { initiateSubscription } from "@/app/dashboard/actions"
 import Script from "next/script"
@@ -34,7 +34,11 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
   const [subscribing, setSubscribing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [apiKey, setApiKey] = useState<string | null>(null)
+  const [apiKeyLoading, setApiKeyLoading] = useState(false)
+  const [creatingApiKey, setCreatingApiKey] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [endpointCopied, setEndpointCopied] = useState(false)
+  const [curlCopied, setCurlCopied] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -42,6 +46,12 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
       checkSubscription()
     }
   }, [open, model.id])
+
+  useEffect(() => {
+    if (isSubscribed) {
+      checkApiKey()
+    }
+  }, [isSubscribed])
 
   const checkSubscription = async () => {
     try {
@@ -60,6 +70,56 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkApiKey = async () => {
+    try {
+      setApiKeyLoading(true)
+      const response = await getApiKey(model.id)
+      if (response.success && response.apiKey) {
+        setApiKey(response.apiKey)
+      } else {
+        setApiKey(null)
+      }
+    } catch (error) {
+      console.error("Error checking API key:", error)
+      toast({
+        title: "Error",
+        description: "Failed to check API key status",
+        variant: "destructive"
+      })
+    } finally {
+      setApiKeyLoading(false)
+    }
+  }
+
+  const handleCreateApiKey = async () => {
+    try {
+      setCreatingApiKey(true)
+      const response = await createApiKey(model.id)
+      if (response.success && response.apiKey) {
+        setApiKey(response.apiKey)
+        toast({
+          title: "Success",
+          description: "API key created successfully",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to create API key",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error creating API key:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create API key",
+        variant: "destructive"
+      })
+    } finally {
+      setCreatingApiKey(false)
     }
   }
 
@@ -123,6 +183,34 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
       toast({
         title: "Success",
         description: "API key copied to clipboard",
+      })
+    }
+  }
+
+  const copyEndpoint = () => {
+    const endpoint = `frito.ai/api/models/${model.id}`
+    navigator.clipboard.writeText(endpoint)
+    setEndpointCopied(true)
+    setTimeout(() => setEndpointCopied(false), 2000)
+    toast({
+      title: "Success",
+      description: "API endpoint copied to clipboard",
+    })
+  }
+
+  const copyCurl = () => {
+    if (apiKey) {
+      const curlCommand = `curl -X POST "https://frito.ai/api/models/${model.id}" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "Your prompt here"}'`
+      
+      navigator.clipboard.writeText(curlCommand)
+      setCurlCopied(true)
+      setTimeout(() => setCurlCopied(false), 2000)
+      toast({
+        title: "Success",
+        description: "cURL command copied to clipboard",
       })
     }
   }
@@ -194,28 +282,106 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium">API Key</h3>
+                  {apiKey ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-2"
+                      onClick={copyApiKey}
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      {copied ? "Copied" : "Copy"}
+                    </Button>
+                  ) : null}
+                </div>
+                {apiKeyLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : apiKey ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 p-3">
+                    <Key className="h-4 w-4 text-gray-400" />
+                    <code className="flex-1 text-sm text-gray-300">
+                      {apiKey}
+                    </code>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between rounded-lg bg-gray-800/50 p-3">
+                    <p className="text-sm text-gray-400">No API key generated yet</p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCreateApiKey}
+                      disabled={creatingApiKey}
+                      className="gap-2"
+                    >
+                      {creatingApiKey ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : null}
+                      Generate API Key
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* API Endpoint Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium">API Endpoint</h3>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-8 gap-2"
-                    onClick={copyApiKey}
-                    disabled={!apiKey}
+                    onClick={copyEndpoint}
                   >
-                    {copied ? (
+                    {endpointCopied ? (
                       <Check className="h-4 w-4" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
-                    {copied ? "Copied" : "Copy"}
+                    {endpointCopied ? "Copied" : "Copy"}
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 p-3">
-                  <Key className="h-4 w-4 text-gray-400" />
                   <code className="flex-1 text-sm text-gray-300">
-                    {apiKey || "Loading API key..."}
+                    frito.ai/api/models/{model.id}
                   </code>
                 </div>
               </div>
+
+              {/* cURL Example Section */}
+              {apiKey && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">Example Request</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-2"
+                      onClick={copyCurl}
+                    >
+                      {curlCopied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      {curlCopied ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                  <div className="rounded-lg bg-gray-800/50 p-3">
+                    <pre className="text-sm text-gray-300 whitespace-pre-wrap">
+                      <code>{`curl -X POST "https://frito.ai/api/models/${model.id}" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "Your prompt here"}'`}</code>
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -224,7 +390,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                   <div>
                     <h3 className="font-medium">Subscribe to Access</h3>
                     <p className="text-sm text-gray-400">
-                      Get access to this model's API for ₹{model.price}/month
+                      Get access to this model&apos;s API for ₹{model.price}/month
                     </p>
                     {isSoftSuccess && (
                       <div className="mt-2 flex items-center justify-between">

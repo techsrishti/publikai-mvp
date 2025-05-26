@@ -20,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getAllPayouts, getCreatorPayoutStats } from "@/app/creator-dashboard/model-actions"
+import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getCreatorPayoutStats } from "@/app/creator-dashboard/model-actions"
 
 interface ModelEarning {
   name: string;
@@ -72,7 +72,7 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
 
   const [isVPA, setIsVPA] = useState(false)
   const [hasLinkedAccount, setHasLinkedAccount] = useState(false)
-  const [linkedAccountDetails, setLinkedAccountDetails] = useState<any>(null)
+  const [linkedAccountDetails, setLinkedAccountDetails] = useState<GetLinkedBankAccountOrVpaResponse["data"] | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoadingBankDetails, setIsLoadingBankDetails] = useState(true)

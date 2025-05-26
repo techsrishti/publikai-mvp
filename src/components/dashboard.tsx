@@ -20,14 +20,15 @@ import { TiltCard } from "./tilt-card"
 import { useMobile } from "@/app/hooks/use-mobile"
 import { getModels } from "@/app/dashboard/actions"
 import { ModelDetailsDialog } from "./model-details-dialog"
+import { Model } from "@/app/dashboard/actions"
 
 
 export default function Dashboard() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [models, setModels] = useState<any[]>([])
+  const [models, setModels] = useState<Model[] | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedModel, setSelectedModel] = useState<any | null>(null)
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const isMobile = useMobile()
   const router = useRouter()
 
@@ -40,7 +41,7 @@ export default function Dashboard() {
       try {
         const response = await getModels()
         if (response.success && response.models) {
-          setModels(response.models ?? [])
+          setModels(response.models)
         }
       } catch (error) {
         console.error("Error fetching models:", error)
@@ -255,7 +256,7 @@ export default function Dashboard() {
                   <div className="col-span-full flex justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                   </div>
-                ) : models.length > 0 ? (
+                ) : models && models.length > 0 ? (
                   models.map((model) => (
                     <TiltCard 
                       key={model.id} 

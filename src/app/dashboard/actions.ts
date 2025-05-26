@@ -235,7 +235,13 @@ export interface Model {
   };
 }
 
-export async function getModels(): Promise<{ success: boolean; message: string; models?: Model[] }> {
+export interface GetModelsResponse { 
+  success: boolean; 
+  message: string; 
+  models?: Model[]; 
+}
+
+export async function getModels(): Promise<GetModelsResponse> {
   try {
     const models = await prisma.model.findMany({
       select: {
@@ -349,4 +355,113 @@ export async function updateSoftSuccess(razorpaySubscriptionId: string) {
     return {success: false, message: "Error updating soft success"}
   }
   
+}
+
+export interface GetApiKeyResponse { 
+  success: boolean; 
+  message: string; 
+  apiKey?: string; 
+}
+
+export async function getApiKey(modelId: string): Promise<GetApiKeyResponse> { 
+
+  try { 
+    const { userId: clerkId } = await auth()
+
+    if (!clerkId) { 
+      return {success: false, message: "Unauthorized"}
+    }
+    
+    const user = await prisma.user.findUnique({ 
+      where: { 
+        clerkId,
+      },
+      select: { 
+        UserSubscription: { 
+          where: { 
+            modelId: modelId,
+          },
+          select: { 
+            apiKey: true,
+          }
+        }
+      }
+    })
+
+    if (!user) { 
+      return {success: false, message: "User not found"}
+    }
+
+    if (user.UserSubscription.length == 0) { 
+      return {success: false, message: "User subscription not found"}
+    }
+
+    if (user.UserSubscription[0].apiKey) { 
+      return {success: true, message: "API key found", apiKey: user.UserSubscription[0].apiKey}
+    }
+
+    return {success: false, message: "API key not found. Create one now."}
+
+  } catch (error) { 
+    console.error("Error getting API key", error)
+    return {success: false, message: "Error getting API key"}
+  }
+
+} 
+
+export interface CreateApiKeyResponse { 
+  success: boolean; 
+  message: string; 
+  apiKey?: string; 
+}
+
+export async function createApiKey(modelId: string): Promise<CreateApiKeyResponse> { 
+
+  try { 
+    const { userId: clerkId } = await auth()
+
+    if (!clerkId) { 
+      return {success: false, message: "Unauthorized"}
+    }
+
+    const user = await prisma.user.findUnique({ 
+      where: { 
+        clerkId,
+      },
+      select: { 
+        UserSubscription: { 
+          where: { 
+            modelId: modelId,
+          },
+          select: { 
+            id: true,
+            apiKey: true,
+          }
+        }
+      }
+    })
+
+    if (!user) { 
+      return {success: false, message: "User not found"}
+    }
+
+    if (user.UserSubscription.length == 0) { 
+      return {success: false, message: "User subscription not found"}
+    }
+
+    const apiKey = await prisma.userSubscription.update({ 
+      where: { 
+        id: user.UserSubscription[0].id,
+      },
+      data: { 
+        apiKey: crypto.randomUUID(), 
+      }
+    })
+
+    return {success: true, message: "API key created", apiKey: apiKey.apiKey!}
+
+  } catch (error) { 
+    console.error("Error creating API key", error)
+    return {success: false, message: "Error creating API key"}
+  }
 }
