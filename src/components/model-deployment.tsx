@@ -380,6 +380,9 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
                   <p className="text-sm text-blue-200">
                     We provide default files for all model types except &quot;other&quot;. If your deployment fails, it might be because the model is unsupported by the default files. In such cases, please upload custom files.
                   </p>
+                  <p className="text-sm text-blue-200 mt-2">
+                    Note: If your Hugging Face model repository requires an API key for access, you must provide the API key along with your custom script. Otherwise, the deployment will fail due to authentication issues.
+                  </p>
                 </div>
                 <div
                   className="border-2 border-dashed border-blue-500 rounded-lg p-6 flex-1 flex flex-col items-center justify-center text-center bg-blue-950/40 cursor-pointer w-full"
