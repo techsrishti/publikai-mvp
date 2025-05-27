@@ -69,7 +69,7 @@ export function WaitlistForm({ className = '', buttonText = 'Join Private Beta',
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Enter your work email"
-        className={`w-full sm:w-[400px] px-6 py-3 rounded-lg bg-white/5 backdrop-blur-sm border text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500 transition-all duration-300 ${
+        className={`w-full sm:w-[400px] px-4 sm:px-6 py-2 sm:py-3 rounded-lg bg-white/5 backdrop-blur-sm border text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500 transition-all duration-300 ${
           isHighlighted 
             ? 'border-purple-500 ring-2 ring-purple-500/50 transform scale-105' 
             : 'border-white/10'
@@ -79,7 +79,7 @@ export function WaitlistForm({ className = '', buttonText = 'Join Private Beta',
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full sm:w-[180px] bg-white text-black px-1 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-white/25 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full sm:w-[180px] bg-white text-black px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-white/25 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
       >
         {isLoading ? 'Joining...' : buttonText}
       </button>

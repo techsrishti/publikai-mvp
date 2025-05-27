@@ -11,8 +11,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'PublikAI - Deploy & Monetize AI Models',
+  title: 'Frito - Deploy & Monetize AI Models',
   description: 'The first India-focused platform for AI developers to host, manage, and monetize their fine-tuned models via API',
+  icons: {
+    icon: '/icons/frito_icon.png' 
+  }
 }
 
 export default function RootLayout({

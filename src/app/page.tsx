@@ -8,8 +8,8 @@ import { TiltCard } from "@/components/tilt-card";
 import { ReviewsSection } from "@/components/reviews-section";
 import { PainpointsSection } from "@/components/painpoints-section";
 import Image from 'next/image'
-import { WaitlistForm } from "@/components/WaitlistForm";
 import { ContactForm } from "@/components/ContactForm";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 interface ButtonProps {
   children: ReactNode;
@@ -53,7 +53,7 @@ const ComingSoonLink = ({ children, className = "" }: ButtonProps) => {
 export default function Home() {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMounted, setIsMounted] = useState(false);
-   const [highlightForm, setHighlightForm] = useState(false);
+  const { user, isLoaded } = useUser();
 
   useEffect(() => {
     setIsMounted(true);
@@ -77,9 +77,6 @@ export default function Home() {
   }
 
   const scrollToWaitlist = () => {
-     setHighlightForm(true);
-    // Reset highlight after animation
-    setTimeout(() => setHighlightForm(false), 2000);
     const heroSection = document.getElementById('hero-section');
     if (heroSection) {
       heroSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -87,27 +84,51 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-[#0A0A0A] text-white w-full max-w-full overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-              Frito
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl w-full">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 py-2">
+          <div className="flex flex-wrap items-center justify-between min-w-0">
+            <Link href="/" className="flex items-center gap-2 min-w-0 h-14 md:h-16">
+              <Image 
+                src="/icons/frito_icon.png" 
+                alt="Frito Logo" 
+                width={120} 
+                height={120} 
+                className="object-contain w-10 h-15 md:w-12 md:h-15"
+              />
+              <span className="text-[1.35rem] md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 leading-[2.5rem] md:leading-[3rem] -mt-0.5 truncate flex items-center h-14 md:h-16">
+                Frito
+              </span>
             </Link>
-            <div className="flex items-center gap-4 md:gap-8">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 md:gap-8 min-w-0 h-14 md:h-16">
               <ComingSoonLink>
-                <span className="text-xs md:text-sm text-white/70 hover:text-white transition-colors">Documentation</span>
+                <span className="flex items-center h-14 md:h-16 px-2 text-xs md:text-sm text-white/70 hover:text-white transition-colors truncate">Docs</span>
               </ComingSoonLink>
               <ComingSoonLink>
-                <span className="text-xs md:text-sm text-white/70 hover:text-white transition-colors">Pricing</span>
+                <span className="flex items-center h-14 md:h-16 px-2 text-xs md:text-sm text-white/70 hover:text-white transition-colors truncate">Pricing</span>
               </ComingSoonLink>
-              <WaitlistButton 
-                className="bg-white hover:bg-white/90 transition-colors text-black text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 rounded-lg"
-                onClick={scrollToWaitlist}
-              >
-                Join Waitlist
-              </WaitlistButton>
+              {!isLoaded ? (
+                <div className="flex items-center h-14 md:h-16 px-2 text-xs md:text-sm text-white/70">
+                  Loading...
+                </div>
+              ) : user ? (
+                <>
+                  <Link href="/dashboard" className="flex items-center h-14 md:h-16 px-2 text-xs md:text-sm text-white/70 hover:text-white transition-colors truncate">
+                    Dashboard
+                  </Link>
+                  <UserButton afterSignOutUrl="/" />
+                </>
+              ) : (
+                <>
+                  <Link href="/sign-in" className="flex items-center h-14 md:h-16 px-2 text-xs md:text-sm text-white/70 hover:text-white transition-colors truncate">
+                    Sign in
+                  </Link>
+                  <Link href="/sign-up" className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-xs md:text-sm px-2 md:px-4 py-1 md:py-2 rounded-lg transition-all duration-200 transform hover:scale-105">
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -124,7 +145,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent animate-gradient-flow"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] bg-center opacity-10"></div>
         
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 relative z-10">
           <motion.div 
             className="max-w-4xl mx-auto text-center mb-16"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -158,11 +179,12 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
             >
-              <WaitlistForm 
-                className="w-full max-w-lg" 
-                buttonText="Join Private Beta"
-                highlight={highlightForm}
-              />
+              <Link 
+                href="/sign-up" 
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-lg px-8 py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+              >
+                Get Started for Free
+              </Link>
             </motion.div>
 
             <p className="text-sm text-white/50">
@@ -266,7 +288,7 @@ export default function Home() {
       {/* We're Building Something Unique Section */}
       <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent"></div>
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -324,7 +346,7 @@ export default function Home() {
             >
               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM10 9V7a4 4 0 018 0v2h-8z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2zM10 9V7a4 4 0 018 0v2h-8z" />
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-3">Enterprise-grade security</h3>
@@ -387,7 +409,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-purple-500/5 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] bg-center opacity-5"></div>
         
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -527,13 +549,10 @@ export default function Home() {
             className="text-center mt-16"
           >
             <WaitlistButton 
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
               onClick={scrollToWaitlist}
             >
               Start Building
-              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
             </WaitlistButton>
           </motion.div>
         </div>
@@ -547,7 +566,7 @@ export default function Home() {
 
       {/* Enhanced CTA Section */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-4">
           <div className="relative overflow-hidden rounded-2xl">
             {/* Animated background */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-pink-500/20 animate-gradient-flow"></div>
@@ -631,13 +650,10 @@ export default function Home() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                   
-                    <WaitlistButton 
-                      className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
-                      onClick={scrollToWaitlist}
-                    >
+             
+                    <Link href="/sign-up" className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25">
                       Get Early Access
-                    </WaitlistButton>
+                    </Link>
                   </div>
                 </motion.div>
               </div>
@@ -649,7 +665,7 @@ export default function Home() {
       {/* Contact Section */}
       <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent"></div>
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -723,11 +739,20 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto w-full px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex items-center gap-8">
-              <Link href="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-                Frito
+              <Link href="/" className="flex items-center gap-2">
+                <Image 
+                  src="/icons/frito_icon.png" 
+                  alt="Frito Logo" 
+                  width={100} 
+                  height={100} 
+                  className="object-contain"
+                />
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                  Frito
+                </span>
               </Link>
               <div className="flex gap-6 text-sm text-white/50">
                 <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
@@ -736,17 +761,13 @@ export default function Home() {
               </div>
             </div>
             <div className="flex gap-6">
-              <a href="https://twitter.com/frito" className="text-white/50 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
                 </svg>
-              </a>
-              <a href="https://github.com/frito" className="text-white/50 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.463 2 11.97c0 4.404 2.865 8.14 6.839 9.458.5.092.682-.216.682-.48 0-.236-.008-.864-.013-1.695-2.782.602-3.369-1.337-3.369-1.337-.454-1.151-1.11-1.458-1.11-1.458-.908-.618.069-.606.069-.606 1.003.07 1.531 1.027 1.531 1.027.892 1.524 2.341 1.084 2.91.828.092-.643.35-1.083.636-1.332-2.22-.251-4.555-1.107-4.555-4.927 0-1.088.39-1.979 1.029-2.675-.103-.252-.446-1.266.098-2.638 0 0 .84-.268 2.75 1.022A9.606 9.606 0 0112 6.82c.85.004 1.705.114 2.504.336 1.909-1.29 2.747-1.022 2.747-1.022.546 1.372.202 2.386.1 2.638.64.696 1.028 1.587 1.028 2.675 0 3.83-2.339 4.673-4.566 4.92.359.307.678.915.678 1.846 0 1.332-.012 2.407-.012 2.734 0 .267.18.577.688.48C19.137 20.107 22 16.373 22 11.969 22 6.463 17.522 2 12 2z"/>
                 </svg>
-              </a>
-            </div>
+             </div>
           </div>
         </div>
       </footer>

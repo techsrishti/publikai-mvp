@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      GOOGLE_CONTACT_SPREADSHEET_ID: ${{ secrets.GOOGLE_CONTACT_SPREADSHEET_ID }}
+
 
     steps:
     - uses: actions/checkout@v3
