@@ -11,16 +11,20 @@ const isQuestionnaireRoute = createRouteMatcher([
   '/creator/questionnaire(.*)'
 ])
 
-const isExternalWebhookRoute = createRouteMatcher([
-  '/api/webhooks(.*)'
+const isWebhookRoute = createRouteMatcher([
+  '/api/webhooks/clerk',
+  '/api/webhooks/razorpay/subscriptions',
+  '/api/webhooks/razorpay/x',
 ])
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  const { userId, sessionClaims, redirectToSignIn } = await auth()
-
-  if (isExternalWebhookRoute(req)) {
+  // Skip auth for webhook routes
+  if (isWebhookRoute(req)) {
+    console.log('Webhook route detected:', req.url)
     return NextResponse.next()
   }
+
+  const { userId, sessionClaims, redirectToSignIn } = await auth()
 
   //no session and protected route so block 
   if (!userId && isProtectedRoute(req)){
