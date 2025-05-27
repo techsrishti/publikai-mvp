@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight, Info, Copy } from "lucide-react"
+import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight, Copy } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { formatRelativeTime, getFormattedDeploymentUrl } from "@/lib/utils"
 import { deployModel, getDeployments, createModelScript } from "@/app/creator-dashboard/model-actions"
@@ -378,7 +378,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
               <div className="space-y-4 flex-1 flex flex-col">
                 <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-4 mb-4">
                   <p className="text-sm text-blue-200">
-                    We provide default files for all model types except "other". If your deployment fails, it might be because the model is unsupported by the default files. In such cases, please upload custom files.
+                    We provide default files for all model types except &quot;other&quot;. If your deployment fails, it might be because the model is unsupported by the default files. In such cases, please upload custom files.
                   </p>
                 </div>
                 <div
