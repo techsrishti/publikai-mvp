@@ -11,8 +11,16 @@ const isQuestionnaireRoute = createRouteMatcher([
   '/creator/questionnaire(.*)'
 ])
 
+const isExternalWebhookRoute = createRouteMatcher([
+  '/api/webhooks(.*)'
+])
+
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { userId, sessionClaims, redirectToSignIn } = await auth()
+
+  if (isExternalWebhookRoute(req)) {
+    return NextResponse.next()
+  }
 
   //no session and protected route so block 
   if (!userId && isProtectedRoute(req)){
