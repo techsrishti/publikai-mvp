@@ -20,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getCreatorPayoutStats } from "@/app/creator-dashboard/model-actions"
+import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getCreatorPayoutStats, getTotalSubscribedUsers } from "@/app/creator-dashboard/model-actions"
 
 interface ModelEarning {
   name: string;
@@ -77,6 +77,8 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoadingBankDetails, setIsLoadingBankDetails] = useState(true)
   const [isLoadingPayoutStats, setIsLoadingPayoutStats] = useState(true)
+  const [isLoadingSubscribedUsers, setIsLoadingSubscribedUsers] = useState(true)
+  const [totalSubscribedUsers, setTotalSubscribedUsers] = useState(0)
   const [payoutStats, setPayoutStats] = useState({
     totalEarned: 0,
     outstandingAmount: 0,
@@ -164,6 +166,24 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
 
     fetchPayoutStats();
   }, []);
+
+  useEffect(() => {
+    const fetchSubscribedUsers = async () => {
+      setIsLoadingSubscribedUsers(true)
+      try {
+        const response = await getTotalSubscribedUsers()
+        if (response?.success) {
+          setTotalSubscribedUsers(response.totalSubscribedUsers)
+        }
+      } catch (error) {
+        console.error('Error fetching subscribed users:', error)
+      } finally {
+        setIsLoadingSubscribedUsers(false)
+      }
+    }
+
+    fetchSubscribedUsers()
+  }, [])
 
   const handleBankDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -300,8 +320,17 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-purple-300 font-cabinet-grotesk">Paid Users</p>
-              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">42</h3>
-              <p className="text-xs text-purple-400 mt-1">+5 this week</p>
+              {isLoadingSubscribedUsers ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />
+                  <span className="text-sm text-purple-400">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">{totalSubscribedUsers}</h3>
+                  <p className="text-xs text-purple-400 mt-1">Active subscribers</p>
+                </>
+              )}
             </div>
           </div>
         </Card>

@@ -740,3 +740,111 @@ function randomBytes(size: number): Buffer {
   }
   return nodeRandomBytes(size);
 }
+
+
+export async function getEarningsForAllCreatorModels() {
+  try { 
+      const { userId: clerkId } = await auth();
+
+      if (!clerkId) { 
+          throw new Error('Unauthorized');
+      }
+      
+      const creator = await prisma.creator.findUnique({ 
+          where: { userId: clerkId },
+          select: { 
+              id: true,
+          }
+      })
+      
+      if (!creator) { 
+          throw new Error('Creator not found');
+      }
+      
+      const models = await prisma.model.findMany({
+          where: {
+            creatorId: creator.id,
+          },
+          select: {
+            id: true,
+            name: true,
+            UserSubscription: {
+              select: {
+                amount: true,
+              },
+            },
+          },
+        });
+        
+        const earningsPerModel = models.map(model => {
+          const totalEarnings = model.UserSubscription.reduce(
+            (sum, sub) => sum + Number(sub.amount),
+            0
+          );
+        
+          return {
+            modelId: model.id,
+            modelName: model.name,
+            totalEarnings,
+          };
+        });
+
+        return earningsPerModel;
+  } catch (error) { 
+      console.error('Error getting earnings for all creator models:', error);
+      return { 
+          success: false, 
+          message: "Failed to get earnings for all creator models",
+          messageTitle: "Error",
+      }
+  }
+} 
+
+
+export async function getTotalSubscribedUsers() { 
+  try { 
+    const { userId: clerkId } = await auth();
+    if (!clerkId) { 
+      throw new Error('Unauthorized');
+    }
+
+    const user = await prisma.user.findUnique({ 
+      where: { clerkId },
+    })
+
+    if (!user) { 
+      throw new Error('User not found');
+    }
+
+    const creator = await prisma.creator.findUnique({ 
+      where: { userId: user.id },
+    })
+
+    if (!creator) { 
+      throw new Error('Creator not found');
+    }
+
+    const subscriptions = await prisma.userSubscription.groupBy({
+      by: ['userId'],
+      where: {
+        model: {
+          creatorId: creator.id,
+        },
+      },
+    });
+    
+    const totalSubscribedUsers = subscriptions.length;
+    
+    return { 
+      success: true,
+      totalSubscribedUsers,
+    }
+  } catch (error) { 
+    console.error('Error getting total subscribed users:', error);
+    return { 
+      success: false,
+      error: 'Failed to get total subscribed users',
+      totalSubscribedUsers: 0,
+    }
+  }
+}
