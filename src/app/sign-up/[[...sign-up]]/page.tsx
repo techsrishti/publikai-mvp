@@ -34,13 +34,12 @@ export default function SignUpPage() {
                 height={100} 
                 className="object-contain"
               />
-              
             </Link>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 mb-2">
-              Create your account
+              Create an account
             </h1>
             <p className="text-white/70">
-              Join the future of AI deployment
+              Sign up to get started
             </p>
           </div>
           
@@ -48,7 +47,8 @@ export default function SignUpPage() {
             <SignUp.Root routing="path" path="/sign-up">
               <SignUp.Step name="start">
                 <Clerk.GlobalError className="block text-sm text-rose-400" />
-                <Clerk.Field name="email_address" className="space-y-2">
+                
+                <Clerk.Field name="emailAddress" className="space-y-2">
                   <Clerk.Label className="text-sm font-medium text-white/90">
                     Email address
                   </Clerk.Label>
@@ -59,6 +59,7 @@ export default function SignUpPage() {
                   />
                   <Clerk.FieldError className="block text-sm text-red-400" />
                 </Clerk.Field>
+
                 <Clerk.Field name="password" className="space-y-2 mt-4">
                   <Clerk.Label className="text-sm font-medium text-white/90">
                     Password
@@ -121,7 +122,7 @@ export default function SignUpPage() {
                   </Clerk.Link>
                 </p>
               </SignUp.Step>
-              
+
               <SignUp.Step name="verifications">
                 <header className="text-center mb-6">
                   <h2 className="text-xl font-medium text-white">
@@ -145,18 +146,9 @@ export default function SignUpPage() {
                     submit
                     className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-medium rounded-md py-2 px-4 shadow-[0_1px_0_0_theme(colors.white/10%)_inset,0_0_0_1px_theme(colors.white/5%)] relative before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-white/5 before:opacity-0 hover:before:opacity-100 focus-visible:outline-[1.5px] focus-visible:outline-offset-2 focus-visible:outline-purple-400 active:text-white/70 mt-6 cursor-pointer transition-all duration-200 transform hover:scale-105"
                   >
-                    Continue
+                    Verify Email
                   </SignUp.Action>
                 </SignUp.Strategy>
-                <p className="text-center text-sm text-white/50 mt-4">
-                  Already have an account?{' '}
-                  <Clerk.Link
-                    navigate="sign-in"
-                    className="font-medium text-purple-400 decoration-purple-400/20 underline-offset-4 outline-none hover:underline focus-visible:underline"
-                  >
-                    Sign in
-                  </Clerk.Link>
-                </p>
               </SignUp.Step>
             </SignUp.Root>
           </div>

@@ -17,17 +17,6 @@ interface ButtonProps {
   onClick?: () => void;
 }
 
-const WaitlistButton = ({ children, className = "", onClick }: ButtonProps) => {
-  return (
-    <button 
-      className={`${className} transition-all duration-300 hover:scale-105`}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-};
-
 const ComingSoonLink = ({ children, className = "" }: ButtonProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
@@ -75,13 +64,6 @@ export default function Home() {
   if (!isMounted) {
     return null;
   }
-
-  const scrollToWaitlist = () => {
-    const heroSection = document.getElementById('hero-section');
-    if (heroSection) {
-      heroSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white w-full max-w-full overflow-x-hidden">
@@ -540,21 +522,6 @@ export default function Home() {
               </TiltCard>
             </motion.div>
           </div>
-
-          {/* Bottom CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mt-16"
-          >
-            <WaitlistButton 
-              className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
-              onClick={scrollToWaitlist}
-            >
-              Start Building
-            </WaitlistButton>
-          </motion.div>
         </div>
       </section>
 
@@ -774,4 +741,3 @@ export default function Home() {
     </div>
   );
 }
-

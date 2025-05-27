@@ -2,6 +2,12 @@
 const nextConfig = {
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'img.clerk.com',
+      },
+    ],
   },
   webpack: (config) => {
     config.resolve.alias = {

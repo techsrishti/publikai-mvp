@@ -4,8 +4,20 @@ import * as Clerk from '@clerk/elements/common'
 import * as SignIn from '@clerk/elements/sign-in'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 
 export default function SignInPage() {
+  const router = useRouter()
+  const { isSignedIn } = useAuth()
+
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push('/dashboard')
+    }
+  }, [isSignedIn, router])
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10"></div>
@@ -22,7 +34,6 @@ export default function SignInPage() {
                 height={100} 
                 className="object-contain"
               />
-            
             </Link>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 mb-2">
               Welcome back
@@ -47,26 +58,12 @@ export default function SignInPage() {
                   />
                   <Clerk.FieldError className="block text-sm text-red-400" />
                 </Clerk.Field>
-                <Clerk.Field name="password" className="space-y-2 mt-4">
-                  <Clerk.Label className="text-sm font-medium text-white/90">
-                    Password
-                  </Clerk.Label>
-                  <Clerk.Input
-                    type="password"
-                    required
-                    className="w-full rounded-md bg-white/5 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-inset ring-white/10 hover:ring-white/20 focus:bg-white/5 focus:ring-[1.5px] focus:ring-purple-400 data-[invalid]:ring-red-400"
-                  />
-                  <Clerk.FieldError className="block text-sm text-red-400" />
-                </Clerk.Field>
 
-                {/* CAPTCHA element */}
-                <div id="clerk-captcha" className="mt-4" data-clerk-captcha></div>
-                
                 <SignIn.Action
                   submit
                   className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-medium rounded-md py-2 px-4 shadow-[0_1px_0_0_theme(colors.white/10%)_inset,0_0_0_1px_theme(colors.white/5%)] relative before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-white/5 before:opacity-0 hover:before:opacity-100 focus-visible:outline-[1.5px] focus-visible:outline-offset-2 focus-visible:outline-purple-400 active:text-white/70 mt-6 cursor-pointer transition-all duration-200 transform hover:scale-105"
                 >
-                  Sign In
+                  Continue
                 </SignIn.Action>
                 
                 <div className="relative flex py-3 items-center my-4">
@@ -109,18 +106,21 @@ export default function SignInPage() {
                   </Clerk.Link>
                 </p>
               </SignIn.Step>
-              
+
               <SignIn.Step name="verifications">
-                <header className="text-center mb-6">
-                  <h2 className="text-xl font-medium text-white">
-                    Verify your code
-                  </h2>
-                </header>
-                <Clerk.GlobalError className="block text-sm text-rose-400" />
-                <SignIn.Strategy name="phone_code">
+                <SignIn.Strategy name="email_code">
+                  <header className="text-center mb-6">
+                    <h2 className="text-xl font-medium text-white">
+                      Check your email
+                    </h2>
+                    <p className="text-sm text-white/70 mt-2">
+                      We sent a code to <SignIn.SafeIdentifier />
+                    </p>
+                  </header>
+                  <Clerk.GlobalError className="block text-sm text-rose-400" />
                   <Clerk.Field name="code" className="space-y-2">
                     <Clerk.Label className="text-sm font-medium text-white/90">
-                      Phone code
+                      Email code
                     </Clerk.Label>
                     <Clerk.Input
                       type="otp"
@@ -136,15 +136,98 @@ export default function SignInPage() {
                     Continue
                   </SignIn.Action>
                 </SignIn.Strategy>
-                <p className="text-center text-sm text-white/50 mt-4">
-                  No account?{' '}
-                  <Clerk.Link
-                    navigate="sign-up"
-                    className="font-medium text-purple-400 decoration-purple-400/20 underline-offset-4 outline-none hover:underline focus-visible:underline"
-                  >
-                    Create an account
-                  </Clerk.Link>
-                </p>
+
+                <SignIn.Strategy name="password">
+                  <header className="text-center mb-6">
+                    <h2 className="text-xl font-medium text-white">
+                      Enter your password
+                    </h2>
+                  </header>
+                  <Clerk.GlobalError className="block text-sm text-rose-400" />
+                  <Clerk.Field name="password" className="space-y-2">
+                    <Clerk.Label className="text-sm font-medium text-white/90">
+                      Password
+                    </Clerk.Label>
+                    <Clerk.Input
+                      type="password"
+                      required
+                      className="w-full rounded-md bg-white/5 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-inset ring-white/10 hover:ring-white/20 focus:bg-white/5 focus:ring-[1.5px] focus:ring-purple-400 data-[invalid]:ring-red-400"
+                    />
+                    <Clerk.FieldError className="block text-sm text-red-400" />
+                  </Clerk.Field>
+                  <div className="flex flex-col gap-4 mt-6">
+                    <SignIn.Action
+                      submit
+                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-medium rounded-md py-2 px-4 shadow-[0_1px_0_0_theme(colors.white/10%)_inset,0_0_0_1px_theme(colors.white/5%)] relative before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-white/5 before:opacity-0 hover:before:opacity-100 focus-visible:outline-[1.5px] focus-visible:outline-offset-2 focus-visible:outline-purple-400 active:text-white/70 cursor-pointer transition-all duration-200 transform hover:scale-105"
+                    >
+                      Continue
+                    </SignIn.Action>
+                    <SignIn.Action
+                      navigate="forgot-password"
+                      className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      Forgot password?
+                    </SignIn.Action>
+                  </div>
+                </SignIn.Strategy>
+              </SignIn.Step>
+
+              <SignIn.Step name="forgot-password">
+                <header className="text-center mb-6">
+                  <h2 className="text-xl font-medium text-white">
+                    Forgot your password?
+                  </h2>
+                </header>
+                <div className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-medium rounded-md py-2 px-4 shadow-[0_1px_0_0_theme(colors.white/10%)_inset,0_0_0_1px_theme(colors.white/5%)] relative before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-white/5 before:opacity-0 hover:before:opacity-100 focus-visible:outline-[1.5px] focus-visible:outline-offset-2 focus-visible:outline-purple-400 active:text-white/70 cursor-pointer transition-all duration-200 transform hover:scale-105">
+                  <SignIn.SupportedStrategy name="reset_password_email_code">
+                    Reset password
+                  </SignIn.SupportedStrategy>
+                </div>
+                <SignIn.Action
+                  navigate="previous"
+                  className="mt-4 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  Go back
+                </SignIn.Action>
+              </SignIn.Step>
+
+              <SignIn.Step name="reset-password">
+                <header className="text-center mb-6">
+                  <h2 className="text-xl font-medium text-white">
+                    Reset your password
+                  </h2>
+                </header>
+                <Clerk.GlobalError className="block text-sm text-rose-400" />
+                <Clerk.Field name="password" className="space-y-2">
+                  <Clerk.Label className="text-sm font-medium text-white/90">
+                    New password
+                  </Clerk.Label>
+                  <Clerk.Input
+                    type="password"
+                    required
+                    className="w-full rounded-md bg-white/5 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-inset ring-white/10 hover:ring-white/20 focus:bg-white/5 focus:ring-[1.5px] focus:ring-purple-400 data-[invalid]:ring-red-400"
+                  />
+                  <Clerk.FieldError className="block text-sm text-red-400" />
+                </Clerk.Field>
+
+                <Clerk.Field name="confirmPassword" className="space-y-2 mt-4">
+                  <Clerk.Label className="text-sm font-medium text-white/90">
+                    Confirm password
+                  </Clerk.Label>
+                  <Clerk.Input
+                    type="password"
+                    required
+                    className="w-full rounded-md bg-white/5 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-inset ring-white/10 hover:ring-white/20 focus:bg-white/5 focus:ring-[1.5px] focus:ring-purple-400 data-[invalid]:ring-red-400"
+                  />
+                  <Clerk.FieldError className="block text-sm text-red-400" />
+                </Clerk.Field>
+
+                <SignIn.Action
+                  submit
+                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-medium rounded-md py-2 px-4 shadow-[0_1px_0_0_theme(colors.white/10%)_inset,0_0_0_1px_theme(colors.white/5%)] relative before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-white/5 before:opacity-0 hover:before:opacity-100 focus-visible:outline-[1.5px] focus-visible:outline-offset-2 focus-visible:outline-purple-400 active:text-white/70 mt-6 cursor-pointer transition-all duration-200 transform hover:scale-105"
+                >
+                  Reset password
+                </SignIn.Action>
               </SignIn.Step>
             </SignIn.Root>
           </div>

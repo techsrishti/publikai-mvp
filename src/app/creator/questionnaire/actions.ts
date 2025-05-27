@@ -26,21 +26,40 @@ export async function createCreatorProfile(experienceLevel: string, specializati
             throw new Error('User not found');
         }
 
-        //Create creator profile and update user role in a transaction
+        // Check if creator profile already exists
+        const existingCreator = await prisma.creator.findUnique({
+            where: { userId: user.id }
+        });
+
+        //Create or update creator profile and update user role in a transaction
         await prisma.$transaction([
-            prisma.creator.create({
-                data: { 
-                    userId: user.id,
-                    experienceLevel: experienceLevel,
-                    developmentGoals: developmentGoals,
-                    projectDescription: projectDescription,
-                    specialization: specialization,
-                    aiFrameworks: aiFrameworks,
-                    modelTypes: modelTypes,
-                    portfolioUrl: portfolioUrl || null,
-                    githubUrl: githubUrl || null,
-                }
-            }),
+            existingCreator 
+                ? prisma.creator.update({
+                    where: { userId: user.id },
+                    data: { 
+                        experienceLevel: experienceLevel,
+                        developmentGoals: developmentGoals,
+                        projectDescription: projectDescription,
+                        specialization: specialization,
+                        aiFrameworks: aiFrameworks,
+                        modelTypes: modelTypes,
+                        portfolioUrl: portfolioUrl || null,
+                        githubUrl: githubUrl || null,
+                    }
+                })
+                : prisma.creator.create({
+                    data: { 
+                        userId: user.id,
+                        experienceLevel: experienceLevel,
+                        developmentGoals: developmentGoals,
+                        projectDescription: projectDescription,
+                        specialization: specialization,
+                        aiFrameworks: aiFrameworks,
+                        modelTypes: modelTypes,
+                        portfolioUrl: portfolioUrl || null,
+                        githubUrl: githubUrl || null,
+                    }
+                }),
             prisma.user.update({
                 where: { clerkId },
                 data: {
@@ -59,16 +78,16 @@ export async function createCreatorProfile(experienceLevel: string, specializati
         
         return { 
             success: true, 
-            message: "Creator profile created successfully", 
+            message: existingCreator ? "Creator profile updated successfully" : "Creator profile created successfully", 
             messageTitle: "Success",  
         }
 
         
     } catch (error) {
-        console.error('Error creating creator profile:', error);
+        console.error('Error creating/updating creator profile:', error);
         return { 
             success: false, 
-            message: "Failed to create creator profile",
+            message: "Failed to create/update creator profile",
             messageTitle: "Error",
         }
     }

@@ -168,7 +168,7 @@ export default function CreatorQuestionnaire() {
       </div>
       <div className="w-full bg-white/10 rounded-full h-2.5 mb-6">
         <div
-          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-300"
+          className="bg-gradient-to-r from-blue-500 to-violet-500 h-2.5 rounded-full transition-all duration-300"
           style={{ width: `${(currentStep / totalSteps) * 100}%` }}
         />
       </div>
@@ -191,8 +191,8 @@ export default function CreatorQuestionnaire() {
                   }}
                   className={`p-4 rounded-lg border transition-all duration-300 text-left ${
                     formData.experienceLevel === level.value
-                      ? 'border-purple-500 bg-purple-500/20'
-                      : 'border-white/10 hover:border-purple-500/50 bg-white/5 hover:bg-white/10'
+                      ? 'border-blue-500 bg-blue-500/20'
+                      : 'border-white/20 hover:border-blue-500/50 bg-white/5 hover:bg-white/10'
                   }`}
                 >
                   <h3 className="font-medium text-white">{level.label}</h3>
@@ -215,8 +215,8 @@ export default function CreatorQuestionnaire() {
                   onClick={() => handleMultiSelect('specialization', spec.value)}
                   className={`p-4 rounded-lg border transition-all duration-300 ${
                     formData.specialization.includes(spec.value)
-                      ? 'border-purple-500 bg-purple-500/20'
-                      : 'border-white/10 hover:border-purple-500/50 bg-white/5 hover:bg-white/10'
+                      ? 'border-blue-500 bg-blue-500/20'
+                      : 'border-white/20 hover:border-blue-500/50 bg-white/5 hover:bg-white/10'
                   }`}
                 >
                   {spec.label}
@@ -238,8 +238,8 @@ export default function CreatorQuestionnaire() {
                   onClick={() => handleMultiSelect('aiFrameworks', framework.value)}
                   className={`p-4 rounded-lg border transition-all duration-300 ${
                     formData.aiFrameworks.includes(framework.value)
-                      ? 'border-purple-500 bg-purple-500/20'
-                      : 'border-white/10 hover:border-purple-500/50 bg-white/5 hover:bg-white/10'
+                      ? 'border-blue-500 bg-blue-500/20'
+                      : 'border-white/20 hover:border-blue-500/50 bg-white/5 hover:bg-white/10'
                   }`}
                 >
                   {framework.label}
@@ -261,8 +261,8 @@ export default function CreatorQuestionnaire() {
                   onClick={() => handleMultiSelect('modelTypes', type.value)}
                   className={`p-4 rounded-lg border transition-all duration-300 ${
                     formData.modelTypes.includes(type.value)
-                      ? 'border-purple-500 bg-purple-500/20'
-                      : 'border-white/10 hover:border-purple-500/50 bg-white/5 hover:bg-white/10'
+                      ? 'border-blue-500 bg-blue-500/20'
+                      : 'border-white/20 hover:border-blue-500/50 bg-white/5 hover:bg-white/10'
                   }`}
                 >
                   {type.label}
@@ -288,7 +288,7 @@ export default function CreatorQuestionnaire() {
                     setFormData(prev => ({ ...prev, developmentGoals: e.target.value }));
                     setError('');
                   }}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 text-white py-2 px-3 shadow-sm focus:border-purple-500 focus:ring-purple-500 backdrop-blur-sm"
+                  className="w-full rounded-md border border-white/20 bg-white/10 text-white py-2 px-3 shadow-sm focus:border-blue-500 focus:ring-blue-500 backdrop-blur-sm"
                   rows={3}
                   placeholder="What do you want to achieve as an AI model creator?"
                 />
@@ -305,7 +305,7 @@ export default function CreatorQuestionnaire() {
                     setFormData(prev => ({ ...prev, projectDescription: e.target.value }));
                     setError('');
                   }}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 text-white py-2 px-3 shadow-sm focus:border-purple-500 focus:ring-purple-500 backdrop-blur-sm"
+                  className="w-full rounded-md border border-white/20 bg-white/10 text-white py-2 px-3 shadow-sm focus:border-blue-500 focus:ring-blue-500 backdrop-blur-sm"
                   rows={3}
                   placeholder="Tell us about the AI model/project you want to publish"
                 />
@@ -320,7 +320,7 @@ export default function CreatorQuestionnaire() {
                   id="portfolioUrl"
                   value={formData.portfolioUrl}
                   onChange={(e) => setFormData(prev => ({ ...prev, portfolioUrl: e.target.value }))}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 text-white py-2 px-3 shadow-sm focus:border-purple-500 focus:ring-purple-500 backdrop-blur-sm"
+                  className="w-full rounded-md border border-white/20 bg-white/10 text-white py-2 px-3 shadow-sm focus:border-blue-500 focus:ring-blue-500 backdrop-blur-sm"
                   placeholder="https://your-portfolio.com"
                 />
               </div>
@@ -334,7 +334,7 @@ export default function CreatorQuestionnaire() {
                   id="githubUrl"
                   value={formData.githubUrl}
                   onChange={(e) => setFormData(prev => ({ ...prev, githubUrl: e.target.value }))}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 text-white py-2 px-3 shadow-sm focus:border-purple-500 focus:ring-purple-500 backdrop-blur-sm"
+                  className="w-full rounded-md border border-white/20 bg-white/10 text-white py-2 px-3 shadow-sm focus:border-blue-500 focus:ring-blue-500 backdrop-blur-sm"
                   placeholder="https://github.com/yourusername"
                 />
               </div>
@@ -348,13 +348,12 @@ export default function CreatorQuestionnaire() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white w-full max-w-full overflow-x-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent animate-gradient-flow"></div>
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] bg-center opacity-10"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
       
       <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="backdrop-blur-sm bg-black/30 border border-white/10 rounded-xl p-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 mb-6">
+        <div className="backdrop-blur-lg bg-gradient-to-br from-slate-900/50 via-purple-900/50 to-slate-900/50 shadow-xl border border-white/20 rounded-lg p-8">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 mb-6">
             Complete Your Creator Profile
           </h1>
           
@@ -362,7 +361,7 @@ export default function CreatorQuestionnaire() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-md">
+              <div className="p-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-md">
                 {error}
               </div>
             )}
@@ -374,7 +373,7 @@ export default function CreatorQuestionnaire() {
                 <button
                   type="button"
                   onClick={handlePrevious}
-                  className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
                 >
                   Previous
                 </button>
@@ -385,7 +384,7 @@ export default function CreatorQuestionnaire() {
                   type="button"
                   onClick={handleNext}
                   disabled={!validateCurrentStep()}
-                  className="ml-auto px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-auto px-6 py-2 bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white rounded-md transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                 </button>
@@ -393,7 +392,7 @@ export default function CreatorQuestionnaire() {
                 <button
                   type="submit"
                   disabled={loading || !validateCurrentStep()}
-                  className="ml-auto px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-auto px-6 py-2 bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white rounded-md transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Submitting...' : 'Submit Application'}
                 </button>
