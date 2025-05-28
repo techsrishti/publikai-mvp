@@ -188,7 +188,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
   }
 
   const copyEndpoint = () => {
-    const endpoint = `frito.ai/api/models/${model.id}`
+    const endpoint = `${process.env.NEXT_PUBLIC_APP_URL}/api/model/${model.name}`
     navigator.clipboard.writeText(endpoint)
     setEndpointCopied(true)
     setTimeout(() => setEndpointCopied(false), 2000)
@@ -200,7 +200,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
 
   const copyCurl = () => {
     if (apiKey) {
-      const curlCommand = `curl -X POST "https://frito.ai/api/models/${model.id}" \\
+      const curlCommand = `curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/model/${model.name}" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "Your prompt here"}'`
@@ -348,7 +348,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 p-3">
                   <code className="flex-1 text-sm text-gray-300">
-                    frito.ai/api/models/{model.id}
+                    {`${process.env.NEXT_PUBLIC_APP_URL}/api/models/${model.id}`}
                   </code>
                 </div>
               </div>
@@ -374,7 +374,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                   </div>
                   <div className="rounded-lg bg-gray-800/50 p-3">
                     <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                      <code>{`curl -X POST "https://frito.ai/api/models/${model.id}" \\
+                      <code>{`curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/models/${model.id}" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "Your prompt here"}'`}</code>
