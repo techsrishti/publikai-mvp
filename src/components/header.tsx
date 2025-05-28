@@ -1,7 +1,6 @@
 import { Bell, Menu, Search, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { UserButton } from "@clerk/nextjs"
+ import { UserButton } from "@clerk/nextjs"
 import Image from "next/image"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState } from "react"

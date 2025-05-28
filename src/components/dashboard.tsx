@@ -11,7 +11,6 @@ import { UserButton } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/clerk-react";
 import Image from "next/image"
-import { AnimatedGradientText } from "./animated-gradient-text"
 import { TrendingIcon } from "./icons/trending-icon"
 import { ModelCard } from "./model-card"
 import { ModelsButton } from "./models-button"
