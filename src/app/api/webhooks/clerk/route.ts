@@ -39,6 +39,8 @@ export async function POST(req: Request) {
     if (evt.type === 'user.created' ) {
       const { id: clerkId, email_addresses } = evt.data;
       const primaryEmail = email_addresses[0]?.email_address;
+      const first_name = evt.data.first_name;
+      const last_name = evt.data.last_name;
 
       if (!primaryEmail) {
         return NextResponse.json({ error: 'No email address found' }, { status: 400 });
@@ -52,7 +54,9 @@ export async function POST(req: Request) {
             id: true,
             email: true,
             clerkId: true,
-            role: true
+            role: true,
+            firstName: true,
+            lastName: true
           }
         });
 
@@ -67,7 +71,9 @@ export async function POST(req: Request) {
               id: true,
               email: true,
               clerkId: true,
-              role: true
+              role: true,
+              firstName: true,
+              lastName: true
             }
           });
         } else {
@@ -77,7 +83,9 @@ export async function POST(req: Request) {
             data: {
               email: primaryEmail,
               clerkId, // This is required in the schema
-              role: 'USER'
+              role: 'USER',
+              firstName: first_name || '',
+              lastName: last_name || ''
             },
             select: {
               id: true,

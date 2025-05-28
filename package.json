@@ -9,7 +9,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "lint:fix": "next lint --fix",
-    "validate": "pnpm run type-check && pnpm run lint"
+    "validate": "pnpm run type-check && pnpm run lint",
+    "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
+    "postdeploy": "prisma db seed"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.30.4",
@@ -48,6 +50,7 @@
     "@radix-ui/react-toggle-group": "^1.1.7",
     "@radix-ui/react-tooltip": "^1.2.4",
     "autoprefixer": "^10.4.21",
+    "btoa": "^1.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -59,7 +62,8 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.503.0",
     "next": "15.3.2",
-    "next-themes": "^0.4.6",
+      "next-themes": "^0.4.6",
+    "razorpay": "^2.9.6",
     "react": "^19.0.0",
     "react-day-picker": "^9.6.7",
     "react-dom": "^19.0.0",
@@ -73,12 +77,14 @@
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "valibot": "^1.1.0",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+     "prisma": "^6.8.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@prisma/client": "6.7.0",
+    "@prisma/client": "6.8.2",
     "@tailwindcss/postcss": "^4",
+    "@types/btoa": "^1.2.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -88,8 +94,9 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "postcss": "^8",
-    "prisma": "6.7.0",
+    "prisma": "6.8.2",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

@@ -16,6 +16,14 @@ const nextConfig = {
     }
     return config
   },
+  async rewrites() {
+    return [
+      {
+        source: '/webhooks/:path*',
+        destination: '/api/webhooks/:path*',
+      },
+    ];
+  },
 }
 
 export default nextConfig

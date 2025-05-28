@@ -46,5 +46,18 @@ declare module 'lucide-react' {
   export const Star: ComponentType<IconProps>
   export const Layers: ComponentType<IconProps>
   export type LucideIcon = ComponentType<IconProps>
+  export const IndianRupee: ComponentType<IconProps>
+  export const TrendingUp: ComponentType<IconProps>
+  export const Calendar: ComponentType<IconProps>
+  export const Pencil: ComponentType<IconProps>
+  export const RefreshCw: ComponentType<IconProps>
+  export const CalendarDays: ComponentType<IconProps>
+  export const Users: ComponentType<IconProps>
+  export const TrendingUp: ComponentType<IconProps>
+  export const TrendingUp: ComponentType<IconProps>
+  export const Key: ComponentType<IconProps>
+  export const Copy: ComponentType<IconProps>
+  export const KeyRound: ComponentType<IconProps>
+  export const Trash: ComponentType<IconProps>
   // Add other icons as needed
 } 

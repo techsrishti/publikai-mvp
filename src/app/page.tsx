@@ -456,7 +456,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative mb-24 md:w-1/2 md:pr-12"
             >
-              <div className="absolute left-0 md:right-[-1.5rem] md:left-auto top-0 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
+              <div className="absolute left-0 md:right-[-1.5rem] md:left-auto top-1/2 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7M13 17l6-6M9 17l6-6M5 9l6 6" />
                 </svg>
@@ -490,7 +490,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative md:ml-auto md:w-1/2 md:pl-12"
             >
-              <div className="absolute left-0 md:-left-6 top-0 w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+              <div className="absolute left-0 md:-left-6 bottom-0 w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>

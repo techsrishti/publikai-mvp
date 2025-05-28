@@ -1,27 +1,104 @@
-import { Bell, Settings } from "lucide-react"
+import { Bell, Menu, Search, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { UserButton } from "@clerk/nextjs"
-import Logo from "@/components/logo"
+import Image from "next/image"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useState } from "react"
 
 export function Header() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-800/50 bg-black/80 backdrop-blur-xl h-12 md:h-16">
-      <div className="h-full w-full">
-        <div className="flex items-center justify-between h-full px-3 md:px-4">
-          <div className="flex items-center gap-2">
-            <Logo showText={false} href="/dashboard" className="flex-shrink-0" />
-            <h1 className="text-xs md:text-base font-medium text-white/90 truncate">Creator Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-1 md:gap-3">
-            <Button variant="ghost" size="icon" className="h-7 w-7 md:h-9 md:w-9 text-white/70 hover:text-white">
-              <Bell className="h-3.5 w-3.5 md:h-5 md:w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 md:h-9 md:w-9 text-white/70 hover:text-white">
-              <Settings className="h-3.5 w-3.5 md:h-5 md:w-5" />
-            </Button>
-            <UserButton afterSignOutUrl="/" />
-          </div>
+    <header className="flex h-16 items-center justify-between border-b border-white/5 bg-black/80 backdrop-blur-xl px-4 sm:px-6 relative z-50">
+      <div className="flex items-center gap-4 sm:gap-8">
+        <div className="flex items-center gap-2">
+          <Image 
+            src="/icons/frito_icon.png" 
+            alt="Frito Logo" 
+            width={120} 
+            height={120} 
+            className="object-contain w-10 h-15 md:w-12 md:h-15"
+          />
+          <span className="text-[1.35rem] md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 leading-[2.5rem] md:leading-[3rem] -mt-0.5 truncate flex items-center h-14 md:h-16">
+            Frito
+          </span>
         </div>
+      </div>
+
+  
+
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full text-white/40 lg:hidden"
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-white/40">
+          <Bell className="h-5 w-5" />
+        </Button>
+
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-white/40">
+          <Settings className="h-5 w-5" />
+        </Button>
+
+        <UserButton afterSignOutUrl="/" />
+
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="w-[80%] border-white/5 bg-black/80 backdrop-blur-xl p-0 sm:max-w-xs relative z-50"
+          >
+            <div className="flex h-16 items-center justify-between border-b border-white/5 px-4">
+              <div className="flex items-center gap-2">
+                <Image 
+                  src="/icons/frito_icon.png" 
+                  alt="Frito Logo" 
+                  width={120} 
+                  height={120} 
+                  className="object-contain w-10 h-15 md:w-12 md:h-15"
+                />
+                <span className="text-[1.35rem] md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 leading-[2.5rem] md:leading-[3rem] -mt-0.5 truncate flex items-center h-14 md:h-16">
+                  Frito
+                </span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="p-4">
+              <div className="mb-6 flex flex-col items-center">
+                <UserButton afterSignOutUrl="/" />
+              </div>
+
+              <div className="space-y-4">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 border-white/10 bg-white/5 text-white/70"
+                >
+                  <Bell className="h-5 w-5" />
+                  Notifications
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 border-white/10 bg-white/5 text-white/70"
+                >
+                  <Settings className="h-5 w-5" />
+                  Settings
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   )

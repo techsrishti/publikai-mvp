@@ -18,16 +18,42 @@ import { ModelsButton } from "./models-button"
 import { SidebarNavItem } from "./sidebar-nav-item"
 import { TiltCard } from "./tilt-card"
 import { useMobile } from "@/app/hooks/use-mobile"
+import { getModels } from "@/app/dashboard/actions"
+import { ModelDetailsDialog } from "./model-details-dialog"
+import { Model } from "@/app/dashboard/actions"
+import Link from "next/link"
 
-export default  function Dashboard() {
+
+export default function Dashboard() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [models, setModels] = useState<Model[] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const isMobile = useMobile()
   const router = useRouter()
 
-  const {  user, isLoaded } = useUser();
+  const { user, isLoaded } = useUser();
 
   const onboardingComplete = (user?.publicMetadata as { onboardingComplete: boolean })?.onboardingComplete
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const response = await getModels()
+        if (response.success && response.models) {
+          setModels(response.models)
+        }
+      } catch (error) {
+        console.error("Error fetching models:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchModels()
+  }, [])
+
   const handleMouseMove = useCallback((e: MouseEvent) => {
     // Using requestAnimationFrame to throttle updates
     requestAnimationFrame(() => {
@@ -43,25 +69,32 @@ export default  function Dashboard() {
   }, [handleMouseMove])
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-gray-900 via-purple-950 to-blue-950">
+    <div className="flex h-screen flex-col bg-[#0A0A0A] text-white w-full max-w-full overflow-x-hidden">
       {/* Navbar */}
-      <header className="flex h-16 items-center justify-between border-b border-gray-800 bg-gradient-to-r from-gray-900 to-gray-900/80 px-4 backdrop-blur-sm sm:px-6">
+      <header className="flex h-16 items-center justify-between border-b border-white/5 bg-black/80 backdrop-blur-xl px-4 sm:px-6 relative z-50">
         <div className="flex items-center gap-4 sm:gap-8">
-          <AnimatedGradientText
-            text="Publik AI"
-            className="text-xl font-bold tracking-tight sm:text-2xl"
-            mousePosition={mousePosition}
-          />
+          <Link href="/" className="flex items-center gap-2">
+            <Image 
+              src="/icons/frito_icon.png" 
+              alt="Frito Logo" 
+              width={120} 
+              height={120} 
+              className="object-contain w-10 h-15 md:w-12 md:h-15"
+            />
+            <span className="text-[1.35rem] md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 leading-[2.5rem] md:leading-[3rem] -mt-0.5 truncate flex items-center h-14 md:h-16">
+              Frito
+            </span>
+          </Link>
           <div className="hidden md:block">
             <ModelsButton mousePosition={mousePosition} />
           </div>
         </div>
 
         <div className="relative hidden w-96 lg:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
           <Input
             placeholder="Search models, organizations..."
-            className="h-10 border-gray-700 bg-gray-800/50 pl-10 text-sm font-medium text-gray-200 focus-visible:ring-purple-400"
+            className="h-10 border-white/10 bg-white/5 pl-10 text-sm font-medium text-white/70 focus-visible:ring-purple-400"
           />
         </div>
 
@@ -69,7 +102,7 @@ export default  function Dashboard() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-full text-gray-400 lg:hidden"
+            className="h-9 w-9 rounded-full text-white/40 lg:hidden"
             onClick={() => setMobileMenuOpen(true)}
           >
             <Search className="h-5 w-5" />
@@ -82,7 +115,7 @@ export default  function Dashboard() {
           ) : onboardingComplete ? (
             <Button
               variant="secondary"
-              className="hidden sm:flex"
+              className="hidden sm:flex bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
               onClick={() => router.push('/creator-dashboard')}
             >
               Creator Dashboard
@@ -90,7 +123,7 @@ export default  function Dashboard() {
           ) : (
             <Button
               variant="secondary"
-              className="hidden sm:flex"
+              className="hidden sm:flex bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
               onClick={() => router.push('/creator/questionnaire')}
             >
               Become a creator
@@ -107,14 +140,21 @@ export default  function Dashboard() {
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-[80%] border-gray-800 bg-gradient-to-b from-indigo-950 to-purple-950 p-0 sm:max-w-xs"
+              className="w-[80%] border-white/5 bg-black/80 backdrop-blur-xl p-0 sm:max-w-xs relative z-50"
             >
-              <div className="flex h-16 items-center justify-between border-b border-gray-800 px-4">
-                <AnimatedGradientText
-                  text="Publik AI"
-                  className="text-xl font-bold tracking-tight"
-                  mousePosition={mousePosition}
-                />
+              <div className="flex h-16 items-center justify-between border-b border-white/5 px-4">
+                <div className="flex items-center gap-2">
+                  <Image 
+                    src="/icons/frito_icon.png" 
+                    alt="Frito Logo" 
+                    width={120} 
+                    height={120} 
+                    className="object-contain w-10 h-15 md:w-12 md:h-15"
+                  />
+                  <span className="text-[1.35rem] md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 leading-[2.5rem] md:leading-[3rem] -mt-0.5 truncate flex items-center h-14 md:h-16">
+                    Frito
+                  </span>
+                </div>
                 <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
                   <X className="h-5 w-5" />
                 </Button>
@@ -130,7 +170,7 @@ export default  function Dashboard() {
                   ) : !onboardingComplete && (
                     <Button
                       variant="secondary"
-                      className="mt-4 w-full"
+                      className="mt-4 w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
                       onClick={() => {
                         setMobileMenuOpen(false)
                         router.push('/creator/questionnaire')
@@ -141,12 +181,12 @@ export default  function Dashboard() {
                   )}
                 </div>
 
-                <Separator className="my-4 bg-gray-700/50" />
+                <Separator className="my-4 bg-white/5" />
 
                 <div className="mb-4">
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-2 border-gray-700 bg-gray-800/50 text-gray-200"
+                    className="w-full justify-start gap-2 border-white/10 bg-white/5 text-white/70"
                   >
                     <ModelsButton mousePosition={mousePosition} />
                   </Button>
@@ -166,7 +206,7 @@ export default  function Dashboard() {
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         {/* Left Panel - Hidden on mobile */}
-        <div className="hidden w-56 flex-col border-r border-gray-800 bg-gradient-to-b from-indigo-950 to-purple-950 p-4 md:flex">
+        <div className="hidden w-56 flex-col border-r border-white/5 bg-black/80 backdrop-blur-xl p-4 md:flex relative z-40">
           <div className="mb-6 flex flex-col items-center">
             <UserButton afterSignOutUrl="/" />
             {!isLoaded ? (
@@ -176,15 +216,15 @@ export default  function Dashboard() {
             ) : !onboardingComplete && (
               <Button
                 variant="secondary"
-                className="mt-4 w-full"
-                onClick={() => router.push('/creator/questionnaire')
-              }>
+                className="mt-4 w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                onClick={() => router.push('/creator/questionnaire')}
+              >
                 Become a creator
               </Button>
             )}
           </div>
 
-          <Separator className="my-4 bg-gray-700/50" />
+          <Separator className="my-4 bg-white/5" />
 
           <nav className="space-y-1">
             <SidebarNavItem icon={User} label="Profile" mousePosition={mousePosition} />
@@ -194,31 +234,34 @@ export default  function Dashboard() {
         </div>
 
         {/* Center Panel */}
-        <div className="flex-1 overflow-auto bg-gradient-to-b from-gray-900 via-gray-900 to-blue-950 p-4 sm:p-6">
-          <Tabs defaultValue="all" className="w-full">
+        <div className="flex-1 overflow-auto bg-[#0A0A0A] p-4 sm:p-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] bg-center opacity-10 pointer-events-none"></div>
+          
+          <Tabs defaultValue="all" className="w-full relative z-10">
             <div className="overflow-x-auto pb-2">
-              <TabsList className="mx-auto w-fit rounded-full bg-gray-800/50 p-1 shadow-md backdrop-blur-sm">
+              <TabsList className="mx-auto w-fit rounded-full bg-white/5 backdrop-blur-sm p-1 shadow-md">
                 <TabsTrigger
                   value="all"
-                  className="rounded-full px-3 py-1.5 text-sm text-gray-300 data-[state=active]:bg-gray-700 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
+                  className="rounded-full px-3 py-1.5 text-sm text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
                 >
                   All
                 </TabsTrigger>
                 <TabsTrigger
                   value="models"
-                  className="rounded-full px-3 py-1.5 text-sm text-gray-300 data-[state=active]:bg-gray-700 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
+                  className="rounded-full px-3 py-1.5 text-sm text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
                 >
                   Models
                 </TabsTrigger>
                 <TabsTrigger
                   value="liked"
-                  className="rounded-full px-3 py-1.5 text-sm text-gray-300 data-[state=active]:bg-gray-700 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
+                  className="rounded-full px-3 py-1.5 text-sm text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
                 >
                   Liked
                 </TabsTrigger>
                 <TabsTrigger
                   value="saved"
-                  className="rounded-full px-3 py-1.5 text-sm text-gray-300 data-[state=active]:bg-gray-700 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
+                  className="rounded-full px-3 py-1.5 text-sm text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-sm sm:px-6 sm:py-2 sm:text-base"
                 >
                   Saved
                 </TabsTrigger>
@@ -227,114 +270,56 @@ export default  function Dashboard() {
 
             <TabsContent value="all" className="mt-4 sm:mt-6">
               <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[
-                  {
-                    name: "gpt-4",
-                    company: "OpenAI",
-                    icon: "/icons/openai.svg",
-                    description: "Advanced language model with improved reasoning and context handling.",
-                    runs: "12.5M",
-                    updatedAgo: "2d"
-                  },
-                  {
-                    name: "claude-3",
-                    company: "Anthropic",
-                    icon: "/icons/anthropic.svg",
-                    description: "State-of-the-art AI assistant with enhanced safety features.",
-                    runs: "8.2M",
-                    updatedAgo: "1d"
-                  },
-                  {
-                    name: "gemini-pro",
-                    company: "Google",
-                    icon: "/icons/google.svg",
-                    description: "Multimodal model excelling at reasoning and code generation.",
-                    runs: "10.1M",
-                    updatedAgo: "3d"
-                  },
-                  {
-                    name: "llama-2",
-                    company: "Meta",
-                    icon: "/icons/meta.svg",
-                    description: "Open-source LLM with strong performance across various tasks.",
-                    runs: "15.3M",
-                    updatedAgo: "5d"
-                  },
-                  {
-                    name: "mistral-large",
-                    company: "Mistral AI",
-                    icon: "/icons/mistral.svg",
-                    description: "Efficient language model with impressive reasoning capabilities.",
-                    runs: "6.8M",
-                    updatedAgo: "1d"
-                  },
-                  {
-                    name: "titan",
-                    company: "Amazon",
-                    icon: "/icons/amazon.svg",
-                    description: "Enterprise-ready model optimized for AWS integration.",
-                    runs: "5.4M",
-                    updatedAgo: "4d"
-                  },
-                  {
-                    name: "palm-2",
-                    company: "Google",
-                    icon: "/icons/google.svg",
-                    description: "Versatile model with strong multilingual capabilities.",
-                    runs: "7.9M",
-                    updatedAgo: "6d"
-                  },
-                  {
-                    name: "claude-2",
-                    company: "Anthropic",
-                    icon: "/icons/anthropic.svg",
-                    description: "Reliable model focused on truthful and helpful responses.",
-                    runs: "9.2M",
-                    updatedAgo: "7d"
-                  },
-                  {
-                    name: "gpt-3.5-turbo",
-                    company: "OpenAI",
-                    icon: "/icons/openai.svg",
-                    description: "Fast and cost-effective model for various applications.",
-                    runs: "20.1M",
-                    updatedAgo: "4d"
-                  }
-                ].map((model, i) => (
-                  <TiltCard key={i} mousePosition={mousePosition} disabled={isMobile}>
-                    <div className="p-4 sm:p-6">
-                      <div className="mb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-900/50">
-                            <Image 
-                              src={model.icon} 
-                              alt={`${model.company} logo`} 
-                              width={20} 
-                              height={20} 
-                              className="h-5 w-5" 
-                            />
+                {loading ? (
+                  <div className="col-span-full flex justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+                  </div>
+                ) : models && models.length > 0 ? (
+                  models.map((model) => (
+                    <TiltCard 
+                      key={model.id} 
+                      mousePosition={mousePosition} 
+                      disabled={isMobile}
+                      onClick={() => setSelectedModel(model)}
+                    >
+                      <div className="p-4 sm:p-6">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
+                              <Image 
+                                src={`/icons/${model.modelType.toLowerCase()}.svg`} 
+                                alt={`${model.modelType} icon`} 
+                                width={20} 
+                                height={20} 
+                                className="h-5 w-5" 
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-white/90 transition-colors duration-300 group-hover:text-yellow-300">
+                                {`${model.creator.user.firstName.toLowerCase()}/${model.name}`}
+                              </span>
+                              <span className="text-xs text-white/50">{model.modelType}</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-gray-200 transition-colors duration-300 group-hover:text-yellow-300">
-                              {`${model.company.toLowerCase()}/${model.name}`}
-                            </span>
-                            <span className="text-xs text-gray-400">{model.company}</span>
-                          </div>
+                          <button className="group h-8 w-8 rounded-full text-white/40 transition-colors hover:text-pink-400">
+                            <Heart className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                          </button>
                         </div>
-                        <button className="group h-8 w-8 rounded-full text-gray-400 transition-colors hover:text-pink-400">
-                          <Heart className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                        </button>
+                        <p className="mb-4 text-sm text-white/60">
+                          {model.description}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-white/40">
+                          <span>{model.parameters}B parameters</span>
+                          <span>₹{model.price}/month</span>
+                        </div>
                       </div>
-                      <p className="mb-4 text-sm text-gray-400">
-                        {model.description}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{model.runs} runs</span>
-                        <span>Updated {model.updatedAgo} ago</span>
-                      </div>
-                    </div>
-                  </TiltCard>
-                ))}
+                    </TiltCard>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center text-white/40">
+                    No models found
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -359,10 +344,10 @@ export default  function Dashboard() {
         </div>
 
         {/* Right Panel - Shown as bottom section on mobile */}
-        <div className="border-t border-gray-800 bg-gradient-to-b from-blue-950 to-purple-950 p-4 md:w-72 md:border-l md:border-t-0">
+        <div className="border-t border-white/5 bg-black/80 backdrop-blur-xl p-4 md:w-72 md:border-l md:border-t-0">
           <div className="mb-4 flex items-center gap-1.5">
             <TrendingIcon className="h-4 w-4 text-purple-400" />
-            <h3 className="font-medium text-gray-200">Trending</h3>
+            <h3 className="font-medium text-white/90">Trending</h3>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1 md:gap-5">
             <ModelCard
@@ -408,7 +393,15 @@ export default  function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
 
+      {/* Model Details Dialog */}
+      {selectedModel && (
+        <ModelDetailsDialog
+          model={selectedModel}
+          open={!!selectedModel}
+          onOpenChange={(open) => !open && setSelectedModel(null)}
+        />
+      )}
+    </div>
   )
 }

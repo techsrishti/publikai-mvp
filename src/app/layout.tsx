@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Frito - Deploy & Monetize AI Models',
+  title: 'FritoAI - Deploy & Monetize AI Models',
   description: 'The first India-focused platform for AI developers to host, manage, and monetize their fine-tuned models via API',
   icons: {
     icon: '/icons/frito_icon.png' 
@@ -24,14 +24,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={`${inter.variable} antialiased`}>
+    <html lang="en">
+      <body className={`${inter.variable} antialiased`}>
+        <ClerkProvider>
           {children}
           <Toaster position="top-right" />
-        </body>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
+    </html>
   )
 }

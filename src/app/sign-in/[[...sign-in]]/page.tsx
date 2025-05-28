@@ -36,7 +36,7 @@ export default function SignInPage() {
               />
             </Link>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 mb-2">
-              Welcome back
+               FritoAI
             </h1>
             <p className="text-white/70">
               Sign in to your account

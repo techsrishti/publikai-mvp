@@ -348,12 +348,13 @@ export default function CreatorQuestionnaire() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+    <div className="min-h-screen bg-[#0A0A0A] text-white w-full max-w-full overflow-x-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] bg-center opacity-10"></div>
       
       <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="backdrop-blur-lg bg-gradient-to-br from-slate-900/50 via-purple-900/50 to-slate-900/50 shadow-xl border border-white/20 rounded-lg p-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 mb-6">
+        <div className="backdrop-blur-xl bg-black/80 border border-white/10 rounded-xl p-8">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 mb-6">
             Complete Your Creator Profile
           </h1>
           

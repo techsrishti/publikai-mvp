@@ -48,7 +48,33 @@ export default function SignUpPage() {
               <SignUp.Step name="start">
                 <Clerk.GlobalError className="block text-sm text-rose-400" />
                 
-                <Clerk.Field name="emailAddress" className="space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <Clerk.Field name="firstName" className="space-y-2">
+                    <Clerk.Label className="text-sm font-medium text-white/90">
+                      First name
+                    </Clerk.Label>
+                    <Clerk.Input
+                      type="text"
+                      required
+                      className="w-full rounded-md bg-white/5 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-inset ring-white/10 hover:ring-white/20 focus:bg-white/5 focus:ring-[1.5px] focus:ring-purple-400 data-[invalid]:ring-red-400"
+                    />
+                    <Clerk.FieldError className="block text-sm text-red-400" />
+                  </Clerk.Field>
+
+                  <Clerk.Field name="lastName" className="space-y-2">
+                    <Clerk.Label className="text-sm font-medium text-white/90">
+                      Last name
+                    </Clerk.Label>
+                    <Clerk.Input
+                      type="text"
+                      required
+                      className="w-full rounded-md bg-white/5 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-inset ring-white/10 hover:ring-white/20 focus:bg-white/5 focus:ring-[1.5px] focus:ring-purple-400 data-[invalid]:ring-red-400"
+                    />
+                    <Clerk.FieldError className="block text-sm text-red-400" />
+                  </Clerk.Field>
+                </div>
+
+                <Clerk.Field name="emailAddress" className="space-y-2 mt-4">
                   <Clerk.Label className="text-sm font-medium text-white/90">
                     Email address
                   </Clerk.Label>
@@ -72,8 +98,12 @@ export default function SignUpPage() {
                   <Clerk.FieldError className="block text-sm text-red-400" />
                 </Clerk.Field>
 
-                {/* CAPTCHA element */}
-                <div id="clerk-captcha" className="mt-4" data-clerk-captcha></div>
+                <div className="mt-4">
+                  <Clerk.Field name="captcha">
+                    <div id="clerk-captcha" data-clerk-captcha></div>
+                    <Clerk.FieldError className="block text-sm text-red-400" />
+                  </Clerk.Field>
+                </div>
                 
                 <SignUp.Action
                   submit
