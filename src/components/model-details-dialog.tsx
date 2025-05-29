@@ -203,7 +203,13 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
       const curlCommand = `curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/model/${model.name}" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{"prompt": "Your prompt here"}'`
+  -d '{
+    "messages": [
+        {
+            "content": "Your prompt here"
+        }
+    ]
+}'`
       
       navigator.clipboard.writeText(curlCommand)
       setCurlCopied(true)
@@ -348,7 +354,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 p-3">
                   <code className="flex-1 text-sm text-gray-300">
-                    {`${process.env.NEXT_PUBLIC_APP_URL}/api/models/${model.id}`}
+                    {`${process.env.NEXT_PUBLIC_APP_URL}/api/models/${model.name}`}
                   </code>
                 </div>
               </div>
@@ -374,10 +380,16 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                   </div>
                   <div className="rounded-lg bg-gray-800/50 p-3">
                     <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                      <code>{`curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/models/${model.id}" \\
+                      <code>{`curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/model/${model.name}" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{"prompt": "Your prompt here"}'`}</code>
+  -d '{
+    "messages": [
+        {
+            "content": "Your prompt here"
+        }
+    ]
+}'`}</code>
                     </pre>
                   </div>
                 </div>
