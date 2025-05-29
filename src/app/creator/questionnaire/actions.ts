@@ -29,6 +29,14 @@ export async function createCreatorProfile(experienceLevel: string, specializati
             throw new Error('User not found');
         }
 
+        // Sanitize name for Razorpay (remove special characters and ensure it's not empty)
+        const sanitizeName = (name: string) => name.replace(/[^a-zA-Z\s]/g, '').trim();
+        const fullName = `${sanitizeName(user.firstName || '')} ${sanitizeName(user.lastName || '')}`.trim();
+        
+        if (!fullName) {
+            throw new Error('User must have a valid first name or last name to create a creator profile');
+        }
+
         // Create Razorpay contact
         const response = await fetch("https://api.razorpay.com/v1/contacts", {
             method: "POST",
@@ -38,7 +46,7 @@ export async function createCreatorProfile(experienceLevel: string, specializati
             },
             body: JSON.stringify({
               email: user.email,
-              name: `${user.firstName} ${user.lastName}`,
+              name: fullName,
               type: "vendor"
             })
         });

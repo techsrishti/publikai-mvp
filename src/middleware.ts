@@ -44,12 +44,12 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     return redirectToSignIn()
   }
 
- 
-    //visiting questionnaire route and already completed onboarding so redirect to creator dashboard
-    if (isCreatorDashboardRoute(req) && (sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete) {
-      console.log('User has already completed the questionnaire')
-      return NextResponse.redirect(new URL('/creator-dashboard', req.url))
-    }
+  // Redirect to creator dashboard if user has completed onboarding and is on questionnaire
+  if (isCreatorDashboardRoute(req) && !(sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete) {
+    console.log('User has not completed the questionnaire')
+    return NextResponse.redirect(new URL('/creator/questionnaire', req.url))
+  }
+
   return NextResponse.next()
 })
 
