@@ -1,6 +1,7 @@
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
+import process from 'process'; // provide Node typings for `process`
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
@@ -77,7 +78,9 @@ export async function POST(req: Request) {
             data: {
               email: primaryEmail,
               clerkId, // This is required in the schema
-              role: 'USER'
+              role: 'USER', 
+              firstName: evt.data.first_name || '',
+              lastName: evt.data.last_name || ''
             },
             select: {
               id: true,
@@ -101,7 +104,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Handle other webhook types if needed
     return NextResponse.json({ message: 'Webhook processed' }, { status: 200 });
 
   } catch (error) {

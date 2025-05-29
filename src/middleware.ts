@@ -11,7 +11,19 @@ const isQuestionnaireRoute = createRouteMatcher([
   '/creator/questionnaire(.*)'
 ])
 
+const isWebhookRoute = createRouteMatcher([
+  '/api/webhooks/clerk',
+  '/api/webhooks/razorpay/subscriptions',
+  '/api/webhooks/razorpay/x',
+])
+
 export default clerkMiddleware(async (auth, req: NextRequest) => {
+  // Skip auth for webhook routes
+  if (isWebhookRoute(req)) {
+    console.log('Webhook route detected:', req.url)
+    return NextResponse.next()
+  }
+
   const { userId, sessionClaims, redirectToSignIn } = await auth()
 
   //no session and protected route so block 

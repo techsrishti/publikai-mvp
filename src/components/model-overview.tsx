@@ -20,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getMetrics } from "@/app/creator-dashboard/model-actions"
+import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getCreatorPayoutStats, getTotalSubscribedUsers } from "@/app/creator-dashboard/model-actions"
 
 interface ModelEarning {
   name: string;
@@ -63,14 +63,27 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
   });
 
   const [bankDetails, setBankDetails] = useState({
-    accountHolderName: "John Doe",
-    accountNumber: "4567",
-    ifsc: "HDFC0001234",
-    bankName: "HDFC Bank",
+    accountHolderName: "",
+    accountNumber: "",
+    ifsc: "",
+    bankName: "",
     vpa: "",
   })
 
   const [isVPA, setIsVPA] = useState(false)
+  const [hasLinkedAccount, setHasLinkedAccount] = useState(false)
+  const [linkedAccountDetails, setLinkedAccountDetails] = useState<GetLinkedBankAccountOrVpaResponse["data"] | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isLoadingBankDetails, setIsLoadingBankDetails] = useState(true)
+  const [isLoadingPayoutStats, setIsLoadingPayoutStats] = useState(true)
+  const [isLoadingSubscribedUsers, setIsLoadingSubscribedUsers] = useState(true)
+  const [totalSubscribedUsers, setTotalSubscribedUsers] = useState(0)
+  const [payoutStats, setPayoutStats] = useState({
+    totalEarned: 0,
+    outstandingAmount: 0,
+    totalPaidAmount: 0
+  })
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -96,27 +109,129 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
     fetchMetrics();
   }, [addNotification]);
 
+  useEffect(() => {
+    const fetchBankDetails = async () => {
+      setIsLoadingBankDetails(true)
+      try {
+        const response = await getLinkedBankAccountOrVpa() as GetLinkedBankAccountOrVpaResponse;
+        if (response.success && response.data) {
+          const data = response.data;
+          if (!data) {
+            return;
+          }
+          setHasLinkedAccount(true);
+          setLinkedAccountDetails(data);
+          if (data.vpa) {
+            setIsVPA(true);
+            setBankDetails(prev => ({ ...prev, vpa: data.vpa!.address ?? ""}));
+          } else if (data.account_type === 'bank_account' && data.bank_account) {
+            setIsVPA(false);
+            setBankDetails(prev => ({
+              ...prev,
+              accountHolderName: data.bank_account!.name,
+              accountNumber: data.bank_account!.account_number,
+              ifsc: data.bank_account!.ifsc,
+              bankName: data.bank_account!.bank_name,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching bank details:', error);
+      } finally {
+        setIsLoadingBankDetails(false)
+      }
+    };
+
+    fetchBankDetails();
+  }, []);
+
+  useEffect(() => {
+    const fetchPayoutStats = async () => {
+      setIsLoadingPayoutStats(true)
+      try {
+        const stats = await getCreatorPayoutStats();
+        if (stats.success) {
+          setPayoutStats({
+            totalEarned: stats.totalEarned || 0,
+            outstandingAmount: stats.outstandingAmount || 0,
+            totalPaidAmount: stats.totalPaidAmount || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching payout stats:', error);
+      } finally {
+        setIsLoadingPayoutStats(false)
+      }
+    };
+
+    fetchPayoutStats();
+  }, []);
+
+  useEffect(() => {
+    const fetchSubscribedUsers = async () => {
+      setIsLoadingSubscribedUsers(true)
+      try {
+        const response = await getTotalSubscribedUsers()
+        if (response?.success) {
+          setTotalSubscribedUsers(response.totalSubscribedUsers)
+        }
+      } catch (error) {
+        console.error('Error fetching subscribed users:', error)
+      } finally {
+        setIsLoadingSubscribedUsers(false)
+      }
+    }
+
+    fetchSubscribedUsers()
+  }, [])
+
   const handleBankDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
     try {
-      const response = await fetch('/api/creator/bank-details', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bankDetails)
-      });
-
-      if (response.ok) {
-        const updatedBankDetails = await response.json();
-        setBankDetails(updatedBankDetails);
-        addNotification("success", "Bank details updated successfully!");
-      } else {
-        addNotification("error", "Failed to update bank details.");
+      if (isVPA) { 
+        const response = await linkBankAccountOrVpa({
+          vpa: bankDetails.vpa
+        });
+        if (response.success) {
+          addNotification("success", "Bank details updated successfully!");
+          setHasLinkedAccount(true);
+          // Refresh bank details
+          const updatedDetails = await getLinkedBankAccountOrVpa() as GetLinkedBankAccountOrVpaResponse;
+          if (updatedDetails.success && updatedDetails.data) {
+            setLinkedAccountDetails(updatedDetails.data);
+          }
+          setIsDialogOpen(false);
+        } else {
+          addNotification("error", response.error || "Failed to update bank details.");
+        }
+      } else { 
+        const response = await linkBankAccountOrVpa({
+          bankAccount: { 
+            name: bankDetails.accountHolderName,
+            bankAccountNumber: bankDetails.accountNumber,
+            bankIfscCode: bankDetails.ifsc,
+            bankName: bankDetails.bankName,
+          }
+        });
+        if (response.success) {
+          addNotification("success", "Bank details updated successfully!");
+          setHasLinkedAccount(true);
+          // Refresh bank details
+          const updatedDetails = await getLinkedBankAccountOrVpa() as GetLinkedBankAccountOrVpaResponse;
+          if (updatedDetails.success && updatedDetails.data) {
+            setLinkedAccountDetails(updatedDetails.data);
+          }
+          setIsDialogOpen(false);
+        } else {
+          addNotification("error", response.error || "Failed to update bank details.");
+        }
       }
     } catch (error) {
       console.error("Error updating bank details:", error);
       addNotification("error", "An error occurred while updating bank details.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -131,11 +246,24 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
     const currentMonth = today.getMonth()
     const currentYear = today.getFullYear()
     
-    // If we're past the 24th, get next month's date
-    const settlementMonth = currentDay > 24 ? currentMonth + 1 : currentMonth
+    // If we're past the 5th, get next month's date
+    const settlementMonth = currentDay > 5 ? currentMonth + 1 : currentMonth
     const settlementYear = settlementMonth > 11 ? currentYear + 1 : currentYear
     
-    return new Date(settlementYear, settlementMonth, 24)
+    return new Date(settlementYear, settlementMonth, 5)
+  }
+
+  const getPreviousSettlementDate = () => {
+    const today = new Date()
+    const currentDay = today.getDate()
+    const currentMonth = today.getMonth()
+    const currentYear = today.getFullYear()
+    
+    // If we're past the 5th, use current month, otherwise use previous month
+    const settlementMonth = currentDay > 5 ? currentMonth : currentMonth - 1
+    const settlementYear = settlementMonth < 0 ? currentYear - 1 : currentYear
+    
+    return new Date(settlementYear, settlementMonth < 0 ? 11 : settlementMonth, 6)
   }
 
   const formatDate = (date: Date) => {
@@ -170,8 +298,17 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-green-300 font-cabinet-grotesk">Total Earnings</p>
-              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">₹2,45,000</h3>
-              <p className="text-xs text-green-400 mt-1">+₹32,000 this month</p>
+              {isLoadingPayoutStats ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <RefreshCw className="w-5 h-5 text-green-400 animate-spin" />
+                  <span className="text-sm text-green-400">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">₹{payoutStats.totalEarned.toLocaleString('en-IN')}</h3>
+                  <p className="text-xs text-green-400 mt-1">+₹{payoutStats.outstandingAmount.toLocaleString('en-IN')} this month</p>
+                </>
+              )}
             </div>
           </div>
         </Card>
@@ -183,8 +320,17 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-purple-300 font-cabinet-grotesk">Paid Users</p>
-              <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">42</h3>
-              <p className="text-xs text-purple-400 mt-1">+5 this week</p>
+              {isLoadingSubscribedUsers ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />
+                  <span className="text-sm text-purple-400">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">{totalSubscribedUsers}</h3>
+                  <p className="text-xs text-purple-400 mt-1">Active subscribers</p>
+                </>
+              )}
             </div>
           </div>
         </Card>
@@ -197,7 +343,7 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
             <div>
               <p className="text-sm font-medium text-amber-300 font-cabinet-grotesk">Next Settlement</p>
               <h3 className="text-2xl font-medium text-white mt-1 font-cabinet-grotesk">{formatDate(getNextSettlementDate())}</h3>
-              <p className="text-xs text-amber-400 mt-1">24th of every month</p>
+              <p className="text-xs text-amber-400 mt-1">5th of every month</p>
             </div>
           </div>
         </Card>
@@ -278,27 +424,34 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                   <RefreshCw className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-medium text-white">₹1,85,000</p>
-                <TooltipProvider delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-gray-500 hover:text-gray-400 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="right" 
-                      className="bg-gray-800 border-gray-700 text-gray-300 p-3 shadow-lg z-50"
-                    >
-                      <div className="space-y-1">
-                        <p className="font-medium">Dynamic Outstanding Amount</p>
-                        <p className="text-sm">This amount includes all earnings until today</p>
-                        <p className="text-sm text-gray-400">Any new model purchases before the next payout date (March 31, 2024) will be added to this amount</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-sm text-gray-400 mt-1">Pending since March 1, 2024</p>
+              {isLoadingPayoutStats ? (
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-medium text-white">₹{payoutStats.outstandingAmount.toLocaleString('en-IN')}</p>
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-500 hover:text-gray-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent 
+                        side="right" 
+                        className="bg-gray-800 border-gray-700 text-gray-300 p-3 shadow-lg z-50"
+                      >
+                        <div className="space-y-1">
+                          <p className="font-medium">Dynamic Outstanding Amount</p>
+                          <p className="text-sm">This amount includes all earnings until today</p>
+                          <p className="text-sm text-gray-400">Any new model purchases before the next payout date ({formatDate(getNextSettlementDate())}) will be added to this amount</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+              <p className="text-sm text-gray-400 mt-1">Pending since {formatDate(getPreviousSettlementDate())}</p>
             </div>
 
             <div className="p-4 rounded-xl bg-gray-900/50 border border-gray-800/50">
@@ -307,103 +460,129 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                   <CreditCard className="w-5 h-5 text-green-400" />
                   <h3 className="font-medium text-white">Bank Details</h3>
                 </div>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-800">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">Edit Bank Details</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleBankDetailsSubmit} className="space-y-4 mt-4">
-                      <div className="flex items-center space-x-2 mb-4">
-                        <input
-                          type="checkbox"
-                          id="useVPA"
-                          checked={isVPA}
-                          onChange={(e) => setIsVPA(e.target.checked)}
-                          className="rounded border-gray-600 bg-gray-800"
-                        />
-                        <Label htmlFor="useVPA" className="text-gray-300">Use UPI VPA instead</Label>
-                      </div>
+                {!hasLinkedAccount && (
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-800">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Add Bank Details</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleBankDetailsSubmit} className="space-y-4 mt-4">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <input
+                            type="checkbox"
+                            id="useVPA"
+                            checked={isVPA}
+                            onChange={(e) => setIsVPA(e.target.checked)}
+                            className="rounded border-gray-600 bg-gray-800"
+                          />
+                          <Label htmlFor="useVPA" className="text-gray-300">Use UPI VPA instead</Label>
+                        </div>
 
-                      {isVPA ? (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="vpa" className="text-gray-300">UPI VPA Address</Label>
-                            <Input
-                              id="vpa"
-                              value={bankDetails.vpa}
-                              onChange={(e) => setBankDetails({ ...bankDetails, vpa: e.target.value })}
-                              placeholder="example@upi"
-                              className="bg-gray-800 border-gray-700 text-white"
-                            />
+                        {isVPA ? (
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="vpa" className="text-gray-300">UPI VPA Address</Label>
+                              <Input
+                                id="vpa"
+                                value={bankDetails.vpa}
+                                onChange={(e) => setBankDetails({ ...bankDetails, vpa: e.target.value })}
+                                placeholder="example@upi"
+                                className="bg-gray-800 border-gray-700 text-white"
+                                required
+                              />
+                            </div>
                           </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="accountHolderName" className="text-gray-300">Account Holder Name</Label>
+                              <Input
+                                id="accountHolderName"
+                                value={bankDetails.accountHolderName}
+                                onChange={(e) => setBankDetails({ ...bankDetails, accountHolderName: e.target.value })}
+                                className="bg-gray-800 border-gray-700 text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="accountNumber" className="text-gray-300">Account Number</Label>
+                              <Input
+                                id="accountNumber"
+                                value={bankDetails.accountNumber}
+                                onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
+                                className="bg-gray-800 border-gray-700 text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="ifsc" className="text-gray-300">IFSC Code</Label>
+                              <Input
+                                id="ifsc"
+                                value={bankDetails.ifsc}
+                                onChange={(e) => setBankDetails({ ...bankDetails, ifsc: e.target.value })}
+                                className="bg-gray-800 border-gray-700 text-white"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="bankName" className="text-gray-300">Bank Name</Label>
+                              <Input
+                                id="bankName"
+                                value={bankDetails.bankName}
+                                onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
+                                className="bg-gray-800 border-gray-700 text-white"
+                                required
+                              />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button 
+                            type="submit" 
+                            className="bg-blue-600 hover:bg-blue-700"
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              'Save Changes'
+                            )}
+                          </Button>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="accountHolderName" className="text-gray-300">Account Holder Name</Label>
-                            <Input
-                              id="accountHolderName"
-                              value={bankDetails.accountHolderName}
-                              onChange={(e) => setBankDetails({ ...bankDetails, accountHolderName: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="accountNumber" className="text-gray-300">Account Number</Label>
-                            <Input
-                              id="accountNumber"
-                              value={bankDetails.accountNumber}
-                              onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="ifsc" className="text-gray-300">IFSC Code</Label>
-                            <Input
-                              id="ifsc"
-                              value={bankDetails.ifsc}
-                              onChange={(e) => setBankDetails({ ...bankDetails, ifsc: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="bankName" className="text-gray-300">Bank Name</Label>
-                            <Input
-                              id="bankName"
-                              value={bankDetails.bankName}
-                              onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                            />
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex justify-end space-x-2 pt-4">
-                        <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                          Save Changes
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
               <div className="space-y-2">
-                {isVPA ? (
-                  <p className="text-sm text-gray-400">UPI VPA: {bankDetails.vpa || "Not set"}</p>
+                {isLoadingBankDetails ? (
+                  <div className="flex items-center justify-center py-4">
+                    <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+                  </div>
+                ) : hasLinkedAccount && linkedAccountDetails ? (
+                  linkedAccountDetails.account_type === 'vpa' ? (
+                    <p className="text-sm text-gray-400">UPI VPA: {linkedAccountDetails.vpa?.address}</p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-400">Account Holder: {linkedAccountDetails.bank_account?.name}</p>
+                      <p className="text-sm text-gray-400">Bank: {linkedAccountDetails.bank_account?.bank_name}</p>
+                      <p className="text-sm text-gray-400">Account: **** {linkedAccountDetails.bank_account?.account_number?.slice(-4)}</p>
+                      <p className="text-sm text-gray-400">IFSC: {linkedAccountDetails.bank_account?.ifsc}</p>
+                    </>
+                  )
                 ) : (
-                  <>
-                    <p className="text-sm text-gray-400">Account Holder: {bankDetails.accountHolderName}</p>
-                    <p className="text-sm text-gray-400">Bank: {bankDetails.bankName}</p>
-                    <p className="text-sm text-gray-400">Account: **** {bankDetails.accountNumber}</p>
-                    <p className="text-sm text-gray-400">IFSC: {bankDetails.ifsc}</p>
-                  </>
+                  <p className="text-sm text-gray-400">No bank account or UPI VPA linked</p>
                 )}
                 <div className="flex items-center gap-2">
-                  <p className="text-sm text-gray-400">Total Payouts: ₹4,85,000</p>
+                  <p className="text-sm text-gray-400">Total Paid: ₹{payoutStats.totalPaidAmount.toLocaleString('en-IN')}</p>
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -474,13 +653,13 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                   </div>
 
                   {/* Status - 2 columns */}
-                  <div className="col-span-2 flex items-center text-left pl-2">
+                  <div className="col-span-2 flex items-center text-left">
                     <p className={`text-sm ${
-                      model.status === 'Deployed' 
+                      model.status.toLowerCase() === 'running' 
                         ? 'text-green-400' 
                         : 'text-yellow-400'
                     }`}>
-                      {model.status}
+                      {model.status.toLowerCase().charAt(0).toUpperCase() + model.status.toLowerCase().slice(1)}
                     </p>
                   </div>
 
@@ -494,12 +673,12 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                   </div>
 
                   {/* Latency - 2 columns */}
-                  <div className="col-span-2 flex items-center text-left pl-5">
+                  <div className="col-span-2 flex items-center text-left pl-2">
                     <p className="text-sm text-gray-400">{model.avgLatency}</p>
                   </div>
 
                   {/* Success Rate - 2 columns */}
-                  <div className="col-span-2 flex flex-col items-end justify-center pl-6">
+                  <div className="col-span-2 flex flex-col items-end justify-center pl-1">
                     <div className="w-full">
                       <div className="h-2 rounded-full bg-gray-800">
                         <div
@@ -523,15 +702,24 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
           {/* Top 25% section */}
           <div className="absolute top-0 left-0 w-full h-1/4 bg-gradient-to-br from-blue-700/50 to-blue-900/50 backdrop-blur-sm">
             <div className="p-4">
-              <p className="text-sm font-medium text-blue-200">Total Payout</p>
+              <p className="text-sm font-medium text-blue-200">Total Paid</p>
             </div>
           </div>
           
           {/* Bottom 75% section */}
           <div className="absolute bottom-0 left-0 w-full h-3/4 flex items-center justify-center">
             <div className="text-center">
-              <p className="text-4xl font-medium text-white">₹4,85,000</p>
-              <p className="text-sm text-blue-200 mt-2">Last updated: {formatDate(new Date())}</p>
+              {isLoadingPayoutStats ? (
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-6 h-6 text-white animate-spin" />
+                  <span className="text-sm text-blue-200">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-4xl font-medium text-white">₹{payoutStats.totalPaidAmount.toLocaleString('en-IN')}</p>
+                  <p className="text-sm text-blue-200 mt-2">Last updated: {formatDate(new Date())}</p>
+                </>
+              )}
             </div>
           </div>
 
