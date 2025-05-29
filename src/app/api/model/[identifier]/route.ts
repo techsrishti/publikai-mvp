@@ -10,14 +10,18 @@ export async function POST(
   
   try {
     // Get API key from Authorization header
+    console.log('All headers:', Object.fromEntries(request.headers.entries()));
     const authHeader = request.headers.get('Authorization');
+    console.log('Authorization header:', authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Invalid auth header format:', authHeader);
       return NextResponse.json(
         { error: 'Missing or invalid authorization header' },
         { status: 401 }
       );
     }
     const apiKey = authHeader.split(' ')[1];
+    console.log('Extracted API key:', apiKey);
 
     // Check if identifier is a model ID (direct deployment access)
     let deployment = await prisma.deployment.findFirst({
