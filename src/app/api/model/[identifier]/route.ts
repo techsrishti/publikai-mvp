@@ -11,8 +11,38 @@ export async function POST(
   try {
     // Get API key from Authorization header
     console.log('All headers:', Object.fromEntries(request.headers.entries()));
-    const authHeader = request.headers.get('Authorization');
-    console.log('Authorization header:', authHeader);
+    
+    // Try multiple possible locations for the Authorization header
+    let authHeader = null;
+    
+    // 1. Try Vercel's proxy headers
+    const vercelScHeaders = request.headers.get('x-vercel-sc-headers');
+    if (vercelScHeaders) {
+      try {
+        const headers = JSON.parse(vercelScHeaders);
+        authHeader = headers.Authorization;
+        console.log('Found Authorization in Vercel headers:', authHeader);
+      } catch (e) {
+        console.error('Error parsing Vercel headers:', e);
+      }
+    }
+    
+    // 2. Try direct Authorization header
+    if (!authHeader) {
+      authHeader = request.headers.get('Authorization');
+      console.log('Found Authorization in direct header:', authHeader);
+    }
+    
+    // 3. Try Vercel's proxy signature as fallback
+    if (!authHeader) {
+      const proxySignature = request.headers.get('x-vercel-proxy-signature');
+      if (proxySignature && proxySignature.startsWith('Bearer ')) {
+        authHeader = proxySignature;
+        console.log('Found Authorization in proxy signature:', authHeader);
+      }
+    }
+    
+    console.log('Final Authorization header:', authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('Invalid auth header format:', authHeader);
       return NextResponse.json(
