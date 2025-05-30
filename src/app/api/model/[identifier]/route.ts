@@ -9,49 +9,17 @@ export async function POST(
   const startTime = Date.now();
   
   try {
-    // Get API key from Authorization header
-    console.log('All headers:', Object.fromEntries(request.headers.entries()));
+    // Get API key from x-api-key header
+    let apiKey = request.headers.get('x-api-key');
+    console.log('API key from x-api-key header:', apiKey);
 
-    let authHeader: string | null = null;
-
-    // 1. Try Vercel's proxy headers
-    const vercelScHeaders = request.headers.get('x-vercel-sc-headers');
-    if (vercelScHeaders) {
-      try {
-        const headers = JSON.parse(vercelScHeaders);
-        console.log('Vercel SC headers:', headers);
-        authHeader = headers['authorization'] || headers['Authorization'] || null;
-        console.log('Found Authorization in x-vercel-sc-headers:', authHeader);
-      } catch (e) {
-        console.error('Error parsing x-vercel-sc-headers:', e);
-      }
-    }
-
-    // 2. Try direct Authorization header
-    if (!authHeader) {
-      authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
-      console.log('Found Authorization in direct header:', authHeader);
-    }
-
-    // 3. Try Vercel's proxy signature as fallback
-    if (!authHeader) {
-      const proxySignature = request.headers.get('x-vercel-proxy-signature');
-      if (proxySignature?.startsWith('Bearer ')) {
-        authHeader = proxySignature;
-        console.log('Found Authorization in x-vercel-proxy-signature:', authHeader);
-      }
-    }
-
-    console.log('Final Authorization header:', authHeader);
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Invalid auth header format:', authHeader);
+    if (!apiKey) {
+      console.log('No API key found in x-api-key header');
       return NextResponse.json(
-        { error: 'Missing or invalid authorization header' },
+        { error: 'Missing API key' },
         { status: 401 }
       );
     }
-    const apiKey = authHeader.split(' ')[1];
-    console.log('Extracted API key:', apiKey);
 
     // Check if identifier is a model ID (direct deployment access)
     let deployment = await prisma.deployment.findFirst({
