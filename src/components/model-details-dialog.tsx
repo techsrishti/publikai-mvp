@@ -201,7 +201,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
   const copyCurl = () => {
     if (apiKey) {
       const curlCommand = `curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/model/${model.name}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
+  -H "x-api-key: ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "messages": [
@@ -381,7 +381,7 @@ export function ModelDetailsDialog({ model, open, onOpenChange }: ModelDetailsDi
                   <div className="rounded-lg bg-gray-800/50 p-3">
                     <pre className="text-sm text-gray-300 whitespace-pre-wrap">
                       <code>{`curl -X POST "${process.env.NEXT_PUBLIC_APP_URL}/api/model/${model.name}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
+  -H "x-api-key: ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "messages": [
