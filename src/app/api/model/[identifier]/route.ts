@@ -9,8 +9,10 @@ export async function POST(
   const startTime = Date.now();
   
   try {
+    console.log('All headers:', Object.fromEntries(request.headers.entries()));
+    
     // Get API key from x-api-key header
-    let apiKey = request.headers.get('x-api-key');
+    const apiKey = request.headers.get('x-api-key');
     console.log('API key from x-api-key header:', apiKey);
 
     if (!apiKey) {
