@@ -88,20 +88,21 @@ export async function POST(request: NextRequest) {
             remainingCount: subscription.entity.remaining_count,
           }
         })
+
+        console.log('awaiting creator update');
+        //add 70% of the amount to the creator's balance
+        await prisma.creator.update({ 
+          where: { 
+            id: model.creatorId,
+          },
+          data: { 
+            outstandingAmount: { increment: Number(model.price) * 0.7 },
+            totalEarnedAmount: { increment: Number(model.price) * 0.7 },
+          }
+        })
       } else {
         console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
       }
-      console.log('awaiting creator update');
-      //add 70% of the amount to the creator's balance
-      await prisma.creator.update({ 
-        where: { 
-          id: model.creatorId,
-        },
-        data: { 
-          outstandingAmount: { increment: Number(model.price) * 0.7 },
-          totalEarnedAmount: { increment: Number(model.price) * 0.7 },
-        }
-      })
 
       return new Response('Webhook received for recurring payment', { status: 200 })
 
