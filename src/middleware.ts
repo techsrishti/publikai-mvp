@@ -1,51 +1,60 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { clerkMiddleware } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/creator/questionnaire(.*)',
-  '/creator-dashboard(.*)'
-])
+const isProtectedRoute = (req: NextRequest) => {
+  const path = req.nextUrl.pathname
+  return (
+    path.startsWith('/dashboard') ||
+    path.startsWith('/creator/questionnaire') ||
+    path.startsWith('/creator-dashboard')
+  )
+}
 
-const isQuestionnaireRoute = createRouteMatcher([
-  '/creator/questionnaire(.*)'
-])
+const isQuestionnaireRoute = (req: NextRequest) => {
+  return req.nextUrl.pathname.startsWith('/creator/questionnaire')
+}
 
-const isWebhookRoute = createRouteMatcher([
-  '/api/webhooks/clerk',
-  '/api/webhooks/razorpay/subscriptions',
-  '/api/webhooks/razorpay/x',
-])
+const isWebhookRoute = (req: NextRequest) => {
+  const path = req.nextUrl.pathname
+  return (
+    path.startsWith('/api/webhooks/clerk') ||
+    path.startsWith('/api/webhooks/razorpay/')
+  )
+}
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  // Skip auth for webhook routes
+  // ✅ Skip auth for webhook routes
   if (isWebhookRoute(req)) {
-    console.log('Webhook route detected:', req.url)
+    console.log('Bypassing auth for webhook route:', req.nextUrl.pathname)
     return NextResponse.next()
   }
 
   const { userId, sessionClaims, redirectToSignIn } = await auth()
 
-  //no session and protected route so block 
-  if (!userId && isProtectedRoute(req)){
-    console.log('User is not authenticated')
+  // 🚫 Protected route without auth: redirect to sign in
+  if (!userId && isProtectedRoute(req)) {
+    console.log('Blocked unauthenticated access to:', req.nextUrl.pathname)
     return redirectToSignIn()
   }
 
-  //visiting questionnaire route and already completed onboarding so redirect to creator dashboard
-  if (isQuestionnaireRoute(req) && (sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete) {
-    console.log('User has already completed the questionnaire')
+  // ✅ Redirect if user has already completed questionnaire
+  if (
+    isQuestionnaireRoute(req) &&
+    (sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete
+  ) {
+    console.log('Redirecting completed user from questionnaire to dashboard')
     return NextResponse.redirect(new URL('/creator-dashboard', req.url))
   }
 
   return NextResponse.next()
 })
 
+// ✅ Updated matcher to ensure webhook routes are included explicitly
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
     '/(api|trpc)(.*)',
+    '/api/webhooks/clerk',
+    '/api/webhooks/razorpay/:path*',
   ],
 }
