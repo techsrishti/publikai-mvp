@@ -61,15 +61,6 @@ export async function POST(request: NextRequest) {
 
       //records will be created by the webhook only
       console.log(" payment")
-      await prisma.userSubscription.update({ 
-        where: { 
-          id: userSubscription.id,
-        },
-        data: { 
-          status: 'active',
-          lastPaymentDate: new Date(),
-        }
-      })
 
       // Check if payment record already exists
       const existingPayment = await prisma.userSubscriptionPayment.findUnique({
@@ -79,27 +70,36 @@ export async function POST(request: NextRequest) {
       });
 
       if (!existingPayment) {
-        await prisma.userSubscriptionPayment.create({ 
-          data: { 
-            razorpayPaymentsId: payment.entity.id,
-            subscriptionId: userSubscription.id,
-            paymentDate: new Date(),
-            status: 'charged',
-            remainingCount: subscription.entity.remaining_count,
-          }
-        })
-
-        console.log('awaiting creator update');
-        //add 70% of the amount to the creator's balance
-        await prisma.creator.update({ 
-          where: { 
-            id: model.creatorId,
-          },
-          data: { 
-            outstandingAmount: { increment: Number(model.price) * 0.7 },
-            totalEarnedAmount: { increment: Number(model.price) * 0.7 },
-          }
-        })
+        // Update subscription status and create payment record in a transaction
+        await prisma.$transaction([
+          prisma.userSubscription.update({ 
+            where: { 
+              id: userSubscription.id,
+            },
+            data: { 
+              status: 'active',
+              lastPaymentDate: new Date(),
+            }
+          }),
+          prisma.userSubscriptionPayment.create({ 
+            data: { 
+              razorpayPaymentsId: payment.entity.id,
+              subscriptionId: userSubscription.id,
+              paymentDate: new Date(),
+              status: 'charged',
+              remainingCount: subscription.entity.remaining_count,
+            }
+          }),
+          prisma.creator.update({ 
+            where: { 
+              id: model.creatorId,
+            },
+            data: { 
+              outstandingAmount: { increment: Number(model.price) * 0.7 },
+              totalEarnedAmount: { increment: Number(model.price) * 0.7 },
+            }
+          })
+        ]);
       } else {
         console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
       }
