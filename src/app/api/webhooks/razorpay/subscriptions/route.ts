@@ -71,15 +71,26 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      await prisma.userSubscriptionPayment.create({ 
-        data: { 
+      // Check if payment record already exists
+      const existingPayment = await prisma.userSubscriptionPayment.findUnique({
+        where: {
           razorpayPaymentsId: payment.entity.id,
-          subscriptionId: userSubscription.id,
-          paymentDate: new Date(),
-          status: 'charged',
-          remainingCount: subscription.entity.remaining_count,
-        }
-      })
+        },
+      });
+
+      if (!existingPayment) {
+        await prisma.userSubscriptionPayment.create({ 
+          data: { 
+            razorpayPaymentsId: payment.entity.id,
+            subscriptionId: userSubscription.id,
+            paymentDate: new Date(),
+            status: 'charged',
+            remainingCount: subscription.entity.remaining_count,
+          }
+        })
+      } else {
+        console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
+      }
       console.log('awaiting creator update');
       //add 70% of the amount to the creator's balance
       await prisma.creator.update({ 
@@ -94,7 +105,8 @@ export async function POST(request: NextRequest) {
 
       return new Response('Webhook received for recurring payment', { status: 200 })
 
-  } else if (event === "subscription.halted") { 
+  } 
+  else if (event === "subscription.halted") { 
     const subscription = body.payload.subscription
 
     console.log('started processing subscription.cancelled', subscription.id)
@@ -123,7 +135,8 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription cancelled', { status: 200 })
-  } else if (event === "subscription.cancelled") { 
+  } 
+  else if (event === "subscription.cancelled") { 
     const subscription = body.payload.subscription
 
     console.log('started processing subscription.cancelled', subscription.entity.id)
@@ -152,7 +165,8 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription cancelled', { status: 200 })
-  } else if (event === "subscription.paused") { 
+  } 
+  else if (event === "subscription.paused") { 
     const subscription = body.payload.subscription
 
     console.log('started processing subscription.pause', subscription.id)
@@ -181,7 +195,8 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription paused', { status: 200 })
-  } else if (event === "subscription.resumed") { 
+  } 
+  else if (event === "subscription.resumed") { 
     const subscription = body.payload.subscription
 
     console.log('started processing subscription.resume', subscription.id)
@@ -220,7 +235,8 @@ export async function POST(request: NextRequest) {
     })
 
     return new Response('Subscription resumed', { status: 200 })
-  } else {
+  } 
+  else {
     console.log('received webhook for unknown event', body)
     return new Response('Unknown event', { status: 200 })
   }
