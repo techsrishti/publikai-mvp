@@ -108,6 +108,16 @@ export async function POST(request: NextRequest) {
     } 
     else {
       console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
+      // Update creator amounts even if payment record exists
+      await prisma.creator.update({ 
+        where: { 
+          id: model.creatorId,
+        },
+        data: { 
+          outstandingAmount: { increment: Number(model.price) * 0.7 },
+          totalEarnedAmount: { increment: Number(model.price) * 0.7 },
+        }
+      });
     }
 
     return new Response('Webhook received for recurring payment', { status: 200 })
