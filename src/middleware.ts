@@ -7,14 +7,8 @@ const isProtectedRoute = createRouteMatcher([
   '/creator-dashboard(.*)'
 ])
 
-const isCreatorDashboardRoute = createRouteMatcher([
-  '/creator-dashboard(.*)'
-])
-
-const isAuthRoute = createRouteMatcher([
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/'
+const isQuestionnaireRoute = createRouteMatcher([
+  '/creator/questionnaire(.*)'
 ])
 
 const isWebhookRoute = createRouteMatcher([
@@ -32,22 +26,16 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
   const { userId, sessionClaims, redirectToSignIn } = await auth()
 
-  // Redirect authenticated users to dashboard if they're on auth pages
-  if (userId && isAuthRoute(req)) {
-    console.log('Authenticated user accessing auth route, redirecting to dashboard')
-    return NextResponse.redirect(new URL('/dashboard', req.url))
-  }
-
   //no session and protected route so block 
   if (!userId && isProtectedRoute(req)){
     console.log('User is not authenticated')
     return redirectToSignIn()
   }
 
-  // Redirect to creator dashboard if user has completed onboarding and is on questionnaire
-  if (isCreatorDashboardRoute(req) && !(sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete) {
-    console.log('User has not completed the questionnaire')
-    return NextResponse.redirect(new URL('/creator/questionnaire', req.url))
+  //visiting questionnaire route and already completed onboarding so redirect to creator dashboard
+  if (isQuestionnaireRoute(req) && (sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete) {
+    console.log('User has already completed the questionnaire')
+    return NextResponse.redirect(new URL('/creator-dashboard', req.url))
   }
 
   return NextResponse.next()
