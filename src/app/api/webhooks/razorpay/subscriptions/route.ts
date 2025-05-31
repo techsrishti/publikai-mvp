@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         } 
       }
     })
+    console.log("userSubscription", userSubscription)
 
     if (!userSubscription) {
       // TODO: send email to admin.
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
         creatorId: true,
       }
     })
+    console.log("model", model)
 
     if (!model) { 
       //TODO: send email to admin.
@@ -57,54 +59,54 @@ export async function POST(request: NextRequest) {
       return new Response('No model found', { status: 200 })
     }
 
+    //records will be created by the webhook only
+    console.log(" payment")
 
+    // Check if payment record already exists
+    const existingPayment = await prisma.userSubscriptionPayment.findUnique({
+      where: {
+        razorpayPaymentsId: payment.entity.id,
+      },
+    });
+    console.log("existingPayment", existingPayment)
 
-      //records will be created by the webhook only
-      console.log(" payment")
+    if (!existingPayment) {
+      // Update subscription status and create payment record in a transaction
+      await prisma.$transaction([
+        prisma.userSubscription.update({ 
+          where: { 
+            id: userSubscription.id,
+          },
+          data: { 
+            status: 'active',
+            lastPaymentDate: new Date(),
+          }
+        }),
+        prisma.userSubscriptionPayment.create({ 
+          data: { 
+            razorpayPaymentsId: payment.entity.id,
+            subscriptionId: userSubscription.id,
+            paymentDate: new Date(),
+            status: 'charged',
+            remainingCount: subscription.entity.remaining_count,
+          }
+        }),
+        prisma.creator.update({ 
+          where: { 
+            id: model.creatorId,
+          },
+          data: { 
+            outstandingAmount: { increment: Number(model.price) * 0.7 },
+            totalEarnedAmount: { increment: Number(model.price) * 0.7 },
+          }
+        })
+      ]);
+    } 
+    else {
+      console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
+    }
 
-      // Check if payment record already exists
-      const existingPayment = await prisma.userSubscriptionPayment.findUnique({
-        where: {
-          razorpayPaymentsId: payment.entity.id,
-        },
-      });
-
-      if (!existingPayment) {
-        // Update subscription status and create payment record in a transaction
-        await prisma.$transaction([
-          prisma.userSubscription.update({ 
-            where: { 
-              id: userSubscription.id,
-            },
-            data: { 
-              status: 'active',
-              lastPaymentDate: new Date(),
-            }
-          }),
-          prisma.userSubscriptionPayment.create({ 
-            data: { 
-              razorpayPaymentsId: payment.entity.id,
-              subscriptionId: userSubscription.id,
-              paymentDate: new Date(),
-              status: 'charged',
-              remainingCount: subscription.entity.remaining_count,
-            }
-          }),
-          prisma.creator.update({ 
-            where: { 
-              id: model.creatorId,
-            },
-            data: { 
-              outstandingAmount: { increment: Number(model.price) * 0.7 },
-              totalEarnedAmount: { increment: Number(model.price) * 0.7 },
-            }
-          })
-        ]);
-      } else {
-        console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
-      }
-
-      return new Response('Webhook received for recurring payment', { status: 200 })
+    return new Response('Webhook received for recurring payment', { status: 200 })
 
   } 
   else if (event === "subscription.halted") { 
