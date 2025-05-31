@@ -71,6 +71,10 @@ export async function POST(request: NextRequest) {
     console.log("existingPayment", existingPayment)
 
     if (!existingPayment) {
+      console.log("updating creator")
+      console.log(model.creatorId)
+      console.log(userSubscription.id)
+      console.log(Number(model.price) * 0.7)
       // Update subscription status and create payment record in a transaction
       await prisma.$transaction([
         prisma.userSubscription.update({ 
