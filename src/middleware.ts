@@ -23,7 +23,8 @@ const isWebhookRoute = (req: NextRequest) => {
 }
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  // ✅ Skip auth for webhook routes
+  console.log('Middleware called for:', req.nextUrl.pathname)
+  // Skip auth for webhook routes
   if (isWebhookRoute(req)) {
     console.log('Bypassing auth for webhook route:', req.nextUrl.pathname)
     return NextResponse.next()
@@ -31,13 +32,13 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
   const { userId, sessionClaims, redirectToSignIn } = await auth()
 
-  // 🚫 Protected route without auth: redirect to sign in
+  // Protected route without auth: redirect to sign in
   if (!userId && isProtectedRoute(req)) {
     console.log('Blocked unauthenticated access to:', req.nextUrl.pathname)
     return redirectToSignIn()
   }
 
-  // ✅ Redirect if user has already completed questionnaire
+  // Redirect if user has already completed questionnaire
   if (
     isQuestionnaireRoute(req) &&
     (sessionClaims?.metadata as { onboardingComplete?: boolean })?.onboardingComplete
@@ -49,7 +50,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   return NextResponse.next()
 })
 
-// ✅ Updated matcher to ensure webhook routes are included explicitly
+// Updated matcher to ensure webhook routes are included explicitly
 export const config = {
   matcher: [
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',

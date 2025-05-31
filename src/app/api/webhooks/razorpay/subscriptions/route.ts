@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
           remainingCount: subscription.entity.remaining_count,
         }
       })
+      console.log('awaiting creator update');
       //add 70% of the amount to the creator's balance
       await prisma.creator.update({ 
         where: { 
