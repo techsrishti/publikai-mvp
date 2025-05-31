@@ -75,6 +75,16 @@ export async function POST(request: NextRequest) {
       console.log(model.creatorId)
       console.log(userSubscription.id)
       console.log(Number(model.price) * 0.7)
+      
+      const creator = await prisma.creator.findUnique({
+        where: { id: model.creatorId },
+        select: { outstandingAmount: true, totalEarnedAmount: true }
+      });
+
+      const amount = Number(model.price) * 0.7;
+      const newOutstandingAmount = (creator?.outstandingAmount?.toNumber() ?? 0) + amount;
+      const newTotalEarnedAmount = (creator?.totalEarnedAmount?.toNumber() ?? 0) + amount;
+
       // Update subscription status and create payment record in a transaction
       await prisma.$transaction([
         prisma.userSubscription.update({ 
@@ -100,8 +110,8 @@ export async function POST(request: NextRequest) {
             id: model.creatorId,
           },
           data: { 
-            outstandingAmount: { increment: Number(model.price) * 0.7 },
-            totalEarnedAmount: { increment: Number(model.price) * 0.7 },
+            outstandingAmount: newOutstandingAmount,
+            totalEarnedAmount: newTotalEarnedAmount,
           }
         })
       ]);
@@ -109,13 +119,22 @@ export async function POST(request: NextRequest) {
     else {
       console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
       // Update creator amounts even if payment record exists
+      const creator = await prisma.creator.findUnique({
+        where: { id: model.creatorId },
+        select: { outstandingAmount: true, totalEarnedAmount: true }
+      });
+
+      const amount = Number(model.price) * 0.7;
+      const newOutstandingAmount = (creator?.outstandingAmount?.toNumber() ?? 0) + amount;
+      const newTotalEarnedAmount = (creator?.totalEarnedAmount?.toNumber() ?? 0) + amount;
+
       await prisma.creator.update({ 
         where: { 
           id: model.creatorId,
         },
         data: { 
-          outstandingAmount: { increment: Number(model.price) * 0.7 },
-          totalEarnedAmount: { increment: Number(model.price) * 0.7 },
+          outstandingAmount: newOutstandingAmount,
+          totalEarnedAmount: newTotalEarnedAmount,
         }
       });
     }
