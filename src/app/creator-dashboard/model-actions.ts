@@ -745,51 +745,42 @@ function randomBytes(size: number): Buffer {
 export async function getEarningsForAllCreatorModels() {
   try { 
       const { userId: clerkId } = await auth();
+      if (!clerkId) throw new Error('Unauthorized');
 
-      if (!clerkId) { 
-          throw new Error('Unauthorized');
-      }
-      
+      // First, get the user by clerkId
+      const user = await prisma.user.findUnique({
+        where: { clerkId: clerkId },
+        select: { id: true }
+      });
+      if (!user) throw new Error('User not found');
+
+      // Then, get the creator by user.id
+      console.log("user.id", user.id)
       const creator = await prisma.creator.findUnique({ 
-          where: { userId: clerkId },
-          select: { 
-              id: true,
-          }
-      })
-      
-      if (!creator) { 
-          throw new Error('Creator not found');
-      }
+        where: { userId: user.id },
+        select: { 
+          id: true,
+          totalEarnedAmount: true,
+        }
+      });
+      if (!creator) throw new Error('Creator not found');
       
       const models = await prisma.model.findMany({
-          where: {
-            creatorId: creator.id,
-          },
-          select: {
-            id: true,
-            name: true,
-            UserSubscription: {
-              select: {
-                amount: true,
-              },
-            },
-          },
-        });
-        
-        const earningsPerModel = models.map(model => {
-          const totalEarnings = model.UserSubscription.reduce(
-            (sum, sub) => sum + Number(sub.amount),
-            0
-          );
-        
-          return {
-            modelId: model.id,
-            modelName: model.name,
-            totalEarnings,
-          };
-        });
+        where: { creatorId: creator.id },
+        select: { id: true, name: true },
+      });
 
-        return earningsPerModel;
+      const totalEarnedAmount = creator.totalEarnedAmount?.toNumber() ?? 0;
+      const numModels = models.length;
+
+      const earningsPerModel = models.map(model => ({
+        modelId: model.id,
+        modelName: model.name,
+        totalEarnings: totalEarnedAmount,
+        contributionPercentage: numModels === 1 ? 100 : 0,
+      }));
+
+      return earningsPerModel;
   } catch (error) { 
       console.error('Error getting earnings for all creator models:', error);
       return { 

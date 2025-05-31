@@ -20,13 +20,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getCreatorPayoutStats, getTotalSubscribedUsers } from "@/app/creator-dashboard/model-actions"
+import { getMetrics, linkBankAccountOrVpa, getLinkedBankAccountOrVpa, GetLinkedBankAccountOrVpaResponse, getCreatorPayoutStats, getTotalSubscribedUsers, getEarningsForAllCreatorModels } from "@/app/creator-dashboard/model-actions"
 
 interface ModelEarning {
   name: string;
   earnings: string;
   percentage: number;
   trend: string;
+  totalEarnings?: number;
+  contributionPercentage?: number;
 }
 
 interface ModelPerformance {
@@ -184,6 +186,31 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
 
     fetchSubscribedUsers()
   }, [])
+
+  useEffect(() => {
+    // Fetch model earnings from the new backend function
+    async function fetchModelEarnings() {
+      try {
+        const data = await getEarningsForAllCreatorModels();
+        if (Array.isArray(data)) {
+          setMetrics(prev => ({
+            ...prev,
+            modelEarnings: data.map(model => ({
+              name: model.modelName,
+              earnings: `₹${(model.totalEarnings ?? 0).toLocaleString()}`,
+              percentage: model.contributionPercentage ?? 0,
+              trend: '', // You can add trend logic if needed
+              totalEarnings: model.totalEarnings,
+              contributionPercentage: model.contributionPercentage,
+            }))
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching model earnings:', error);
+      }
+    }
+    fetchModelEarnings();
+  }, []);
 
   const handleBankDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -394,10 +421,20 @@ export function ModelOverview({ addNotification }: ModelOverviewProps) {
                       <div className="space-y-1">
                         <h3 className="font-medium text-white">{model.name.toUpperCase()}</h3>
                         <p className="text-sm text-gray-400">{model.trend}</p>
+                        {model.contributionPercentage !== undefined && (
+                          <p className="text-xs text-gray-500">
+                            {model.contributionPercentage}% of total earnings
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-medium text-white">{model.earnings}</p>
+                      {model.totalEarnings !== undefined && (
+                        <p className="text-sm text-gray-400">
+                          Total: ₹{model.totalEarnings.toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))
