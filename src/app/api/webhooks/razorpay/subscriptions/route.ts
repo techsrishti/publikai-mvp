@@ -119,24 +119,24 @@ export async function POST(request: NextRequest) {
     else {
       console.log('Payment record already exists for razorpayPaymentsId:', payment.entity.id);
       // Update creator amounts even if payment record exists
-      const creator = await prisma.creator.findUnique({
-        where: { id: model.creatorId },
-        select: { outstandingAmount: true, totalEarnedAmount: true }
-      });
+      // const creator = await prisma.creator.findUnique({
+      //   where: { id: model.creatorId },
+      //   select: { outstandingAmount: true, totalEarnedAmount: true }
+      // });
 
-      const amount = Number(model.price) * 0.7;
-      const newOutstandingAmount = (creator?.outstandingAmount?.toNumber() ?? 0) + amount;
-      const newTotalEarnedAmount = (creator?.totalEarnedAmount?.toNumber() ?? 0) + amount;
+      // const amount = Number(model.price) * 0.7;
+      // const newOutstandingAmount = (creator?.outstandingAmount?.toNumber() ?? 0) + amount;
+      // const newTotalEarnedAmount = (creator?.totalEarnedAmount?.toNumber() ?? 0) + amount;
 
-      await prisma.creator.update({ 
-        where: { 
-          id: model.creatorId,
-        },
-        data: { 
-          outstandingAmount: newOutstandingAmount,
-          totalEarnedAmount: newTotalEarnedAmount,
-        }
-      });
+      // await prisma.creator.update({ 
+      //   where: { 
+      //     id: model.creatorId,
+      //   },
+      //   data: { 
+      //     outstandingAmount: newOutstandingAmount,
+      //     totalEarnedAmount: newTotalEarnedAmount,
+      //   }
+      // });
     }
 
     return new Response('Webhook received for recurring payment', { status: 200 })
