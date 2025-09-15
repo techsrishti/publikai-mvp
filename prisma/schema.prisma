@@ -36,15 +36,60 @@ enum DeploymentStatus {
   STOPPED
 }
 
+enum RazorpayFundAccountType { 
+  vpa
+  bank_account
+}
+
+enum CreatorPayoutsStatues { 
+  initiated
+  processed
+}
+
 model User {
   id        String   @id @default(cuid())
+  firstName String
+  lastName  String
   clerkId   String   @unique
   email     String   @unique
   role      UserRole @default(USER)
   creator   Creator?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  UserSubscription UserSubscription[]
 }
+
+model UserSubscription { 
+  id        String    @id @default(cuid())
+  userId    String    
+  user      User      @relation(fields: [userId], references: [id])
+  modelId   String    
+  model     Model     @relation(fields: [modelId], references: [id])
+  amount    Decimal   
+  startDate DateTime
+  endDate   DateTime?
+  lastPaymentDate  DateTime
+  nextPaymentDate  DateTime?
+  status    String
+  isSoftSuccess   Boolean?  //updated to facilitate delayed webhooks
+  razorpayPlanId  String  
+  razorpaySubscriptionId  String  @unique
+  apiKey    String?  @unique
+  UserSubscriptionPayments UserSubscriptionPayment[]
+  @@unique([userId, modelId])
+}
+
+model UserSubscriptionPayment { 
+  id         String   @id @default(cuid())
+  razorpayPaymentsId String @unique
+  subscriptionId    String  
+  UserSubscription  UserSubscription @relation(fields: [subscriptionId], references: [id])
+  paymentDate   DateTime
+  status      String
+  remainingCount   Int
+}
+
 
 model Creator {
   id                 String   @id @default(cuid())
@@ -59,8 +104,27 @@ model Creator {
   portfolioUrl       String?
   githubUrl          String?
   models             Model[]  @relation("CreatorToModels")
+  razorpayCreatorId String
+  razorpayFaId      String?  //razorpay fund acc. id.
+  razorpayFaType    RazorpayFundAccountType?
+  outstandingAmount Decimal? 
+  totalPaidAmount   Decimal?
+  totalEarnedAmount Decimal?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  CreatorPayouts    CreatorPayout[]
+}
+
+model CreatorPayout { 
+  id                String  @id @default(cuid())
+  creatorId         String  
+  Creator           Creator @relation(fields: [creatorId], references: [id])  
+  payoutDate        DateTime
+  paidAmount        Decimal
+  razorpayPayoutId  String  @unique
+  referenceNumber   String  @unique
+  idempotencyKey    String  @unique
+  status            String        
 }
 
 model Model {
@@ -81,6 +145,10 @@ model Model {
   creator     Creator      @relation("CreatorToModels", fields: [creatorId], references: [id])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  price       Decimal
+  razorpayPlanId  String 
+
+  UserSubscription  UserSubscription[]  
   Deployment  Deployment[]
   apiCalls    ModelApiCall[]
 }

@@ -249,12 +249,14 @@ export function ModelManagement({ addNotification }: ModelManagementProps) {
                   <div>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        model.deployment
+                        model.deployment?.status === "RUNNING"
                           ? "bg-green-500/10 text-green-400"
-                          : "bg-gray-500/10 text-gray-400"
+                          : model.deployment?.status === "FAILED"
+                          ? "bg-red-500/10 text-red-400"
+                          : "bg-yellow-500/10 text-yellow-400"
                       }`}
                     >
-                      {model.deployment ? "Deployed" : "Not Deployed"}
+                      {model.deployment ? model.deployment.status : "Not Deployed"}
                     </span>
                   </div>
                   <div className="text-center">

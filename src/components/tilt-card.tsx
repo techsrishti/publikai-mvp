@@ -11,6 +11,7 @@ interface TiltCardProps {
   children: React.ReactNode
   disabled?: boolean
   gradientIndex?: number
+  onClick?: () => void
 }
 
 const GRADIENTS = [
@@ -26,7 +27,8 @@ export function TiltCard({
   className, 
   children, 
   disabled = false,
-  gradientIndex = 0 
+  gradientIndex = 0,
+  onClick
 }: TiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const innerCardRef = useRef<HTMLDivElement>(null)
@@ -84,12 +86,13 @@ export function TiltCard({
   return (
     <div
       ref={cardRef}
-      className={cn("group relative overflow-hidden rounded-xl transition-all duration-300", className)}
+      className={cn("group relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer", className)}
       style={{
         transformStyle: "preserve-3d",
         transform: "perspective(1000px)",
         transformOrigin: "center center",
       }}
+      onClick={onClick}
     >
       {/* Gradient border container */}
       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 p-[1px] opacity-100 transition-opacity duration-300 group-hover:opacity-0">

@@ -2,12 +2,18 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight } from "lucide-react"
+import { Upload, Server, Loader2, Check, RefreshCw, ArrowRight, Copy } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { formatRelativeTime, getFormattedDeploymentUrl } from "@/lib/utils"
 import { deployModel, getDeployments, createModelScript } from "@/app/creator-dashboard/model-actions"
 import { getModels, getModelById, updateModelWithScript } from "@/app/creator-dashboard/model-actions"
 import { DeploymentStatus } from "@prisma/client"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ModelDeploymentProps {
   addNotification: (type: "success" | "error" | "info", message: string) => void
@@ -238,7 +244,7 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
       }
 
       // Deploy the model using server action
-      const result = await deployModel(selectedModel, "default")
+      const result = await deployModel(selectedModel)
       
       if (result.success) {
         addNotification("success", "Model deployment initiated!")
@@ -370,6 +376,14 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
             <div className="flex-1 flex flex-col">
               <h3 className="text-lg font-medium text-white mb-4">Upload Model Script</h3>
               <div className="space-y-4 flex-1 flex flex-col">
+                <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-200">
+                    We provide default files for all model types except &quot;other&quot;. If your deployment fails, it might be because the model is unsupported by the default files. In such cases, please upload custom files.
+                  </p>
+                  <p className="text-sm text-blue-200 mt-2">
+                    Note: If your Hugging Face model repository requires an API key for access, you must provide the API key along with your custom script. Otherwise, the deployment will fail due to authentication issues.
+                  </p>
+                </div>
                 <div
                   className="border-2 border-dashed border-blue-500 rounded-lg p-6 flex-1 flex flex-col items-center justify-center text-center bg-blue-950/40 cursor-pointer w-full"
                   onClick={() => document.getElementById('script-upload-input')?.click()}
@@ -416,14 +430,14 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
 
         {/* Right column: Deployment Status */}
         <Card className="p-6 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-800 h-[calc(100vh-12rem)] overflow-auto">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-white">Active Deployments</h3>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white transition-colors"
             >
               {isRefreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -433,62 +447,95 @@ export function ModelDeployment({ addNotification }: ModelDeploymentProps) {
             </Button>
           </div>
           <div className="space-y-4">
-            {deployments.length === 0 && <div className="text-gray-400">No deployments yet.</div>}
+            {deployments.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Server className="h-12 w-12 text-gray-600 mb-3" />
+                <p className="text-gray-400">No deployments yet.</p>
+                <p className="text-sm text-gray-500 mt-1">Select a model and deploy it to get started</p>
+              </div>
+            )}
             {deployments.map((dep: Deployment) => (
-              <div key={dep.id} className="p-4 rounded-lg bg-gray-900/50 border border-gray-800/60">
-                <div className="flex items-center justify-between mb-3">
+              <div key={dep.id} className="p-5 rounded-lg bg-gradient-to-br from-gray-900/50 to-gray-800/50 border border-gray-800/60 hover:border-gray-700/60 transition-colors">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5 text-green-400" />
-                    <span className="font-medium text-gray-200">{dep.model?.name?.toUpperCase() || 'UNKNOWN MODEL'}</span>
+                    <div className="p-2 rounded-lg bg-gray-800/50">
+                      <Server className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-200 block">{dep.model?.name?.toUpperCase() || 'UNKNOWN MODEL'}</span>
+                      <span className="text-xs text-gray-400">{formatRelativeTime(dep.updatedAt)}</span>
+                    </div>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
-                    {dep.status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      dep.status === 'RUNNING' 
+                        ? 'bg-green-500/10 text-green-400' 
+                        : dep.status === 'FAILED'
+                        ? 'bg-red-500/10 text-red-400'
+                        : 'bg-yellow-500/10 text-yellow-400'
+                    }`}>
+                      {dep.status.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <p className="text-gray-400">Deployment URL</p>
+                <div className="space-y-3 text-sm">
+                  <div className="bg-gray-800/30 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs mb-1">Deployment URL</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-gray-200 break-all flex-1">{dep.modelId ? getFormattedDeploymentUrl(dep.modelId) : "-"}</p>
+                      <p className="text-gray-200 break-all flex-1 font-mono text-xs">{dep.modelId ? getFormattedDeploymentUrl(dep.modelId) : "-"}</p>
                       {dep.modelId && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-gray-400 hover:text-gray-200"
-                          onClick={() => handleCopy(getFormattedDeploymentUrl(dep.modelId), `url-${dep.id}`)}
-                        >
-                          {copiedStates[`url-${dep.id}`] ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <span>Copy</span>
-                          )}
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-gray-400 hover:text-gray-200 transition-colors"
+                                onClick={() => handleCopy(getFormattedDeploymentUrl(dep.modelId), `url-${dep.id}`)}
+                              >
+                                {copiedStates[`url-${dep.id}`] ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy URL</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>
-                  <div>
-                    <p className="text-gray-400">API Key</p>
+                  <div className="bg-gray-800/30 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs mb-1">API Key</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-gray-200 break-all flex-1">{dep.apiKey || "-"}</p>
+                      <p className="text-gray-200 break-all flex-1 font-mono text-xs">{dep.apiKey || "-"}</p>
                       {dep.apiKey && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-gray-400 hover:text-gray-200"
-                          onClick={() => handleCopy(dep.apiKey!, `key-${dep.id}`)}
-                        >
-                          {copiedStates[`key-${dep.id}`] ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <span>Copy</span>
-                          )}
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-gray-400 hover:text-gray-200 transition-colors"
+                                onClick={() => handleCopy(dep.apiKey!, `key-${dep.id}`)}
+                              >
+                                {copiedStates[`key-${dep.id}`] ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy API Key</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Updated</p>
-                    <p className="text-gray-200">{formatRelativeTime(dep.updatedAt)}</p>
                   </div>
                 </div>
               </div>

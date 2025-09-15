@@ -12,8 +12,7 @@ const MODEL_TYPES = {
   "translation": "translation.py",
   "summarization": "summarization.py",
   "text-generation": "text-generation-script.py",
-  "masked-language-modeling": "masked-language-modeling.py",
-  "image-classification": "image-classification.py"
+  "masked-language-modeling": "masked-language-modeling.py"
 } as const
 
 async function main() {
