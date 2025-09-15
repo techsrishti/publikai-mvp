@@ -1,0 +1,9 @@
+torch
+fastapi
+uvicorn
+pydantic
+modal
+huggingface_hub
+dotenv
+requests
+transformers
